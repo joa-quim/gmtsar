@@ -194,7 +194,7 @@ typedef int            epr_boolean;
 typedef unsigned char  uchar;
 typedef unsigned short ushort;
 typedef unsigned int   uint;
-typedef unsigned long  ulong;
+typedef uint64_t  ulong;
 
 
 typedef int EPR_Magic;

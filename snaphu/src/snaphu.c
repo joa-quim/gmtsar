@@ -16,18 +16,31 @@
 #include <float.h>
 #include <string.h>
 #include <ctype.h>
-#include <unistd.h>
+#ifdef _WIN32
+#	include "../../unistd.h"
+#else
+#	include <unistd.h>
+#endif
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <sys/wait.h>
-#include <time.h>
-#include <sys/time.h>
-#include <sys/resource.h>
+#ifdef _WIN32
+#	include <windows.h>
+#	include <time.h>
+#	include <process.h>
+#	include <signal.h>
+#	define pid_t int
+#else
+#	include <sys/wait.h>
+#	include <sys/time.h>
+#	include <sys/resource.h>
+#endif
 
 #include "snaphu.h"
 
-
+#ifdef _WIN32
+#include "forkWindows.c"
+#endif
 
 /* global (external) variable definitions */
 
@@ -255,7 +268,9 @@ int Unwrap(infileT *infiles, outfileT *outfiles, paramT *params,
               if(dotilemask[nexttilerow][nexttilecol]){
 
                 /* wait to make sure file i/o, threads, and OS are synched */
+#ifndef _WIN32
                 sleep(sleepinterval);
+#endif
                 
                 /* fork to create new process */
                 fflush(NULL);
@@ -274,7 +289,11 @@ int Unwrap(infileT *infiles, outfileT *outfiles, paramT *params,
                 /* parent kills children and exits if there was a fork error */
                 fflush(NULL);
                 fprintf(sp0,"Error while forking\nAbort\n");
+#ifdef _WIN32
+                abort();
+#else
                 kill(0,SIGKILL);
+#endif
                 exit(ABNORMAL_EXIT);
 
               }else if(pid==0){
@@ -328,15 +347,24 @@ int Unwrap(infileT *infiles, outfileT *outfiles, paramT *params,
             }else{
 
               /* wait for a child to finish (only parent gets here) */
+#ifdef _WIN32
+			intptr_t ret = _cwait(NULL, pid, _WAIT_CHILD);
+			if (ret == -1) {
+#else
               pid=wait(&childstatus);
 
               /* make sure child exited cleanly */
               if(!(WIFEXITED(childstatus)) || (WEXITSTATUS(childstatus))!=0){
+#endif
                 fflush(NULL);
                 fprintf(sp0,"Unexpected or abnormal exit of child process %ld\n"
                         "Abort\n",(long )pid);
                 signal(SIGTERM,SIG_IGN);
+#ifdef _WIN32
+                abort();
+#else
                 kill(0,SIGTERM);
+#endif
                 exit(ABNORMAL_EXIT);
               }
 
@@ -344,7 +372,9 @@ int Unwrap(infileT *infiles, outfileT *outfiles, paramT *params,
               /* shouldn't really need this sleep(), but be extra sure child */
               /*   outputs are really flushed and written to disk by OS */
               if(--nchildren==0){
+#ifndef _WIN32
                 sleep(sleepinterval);
+#endif
                 break;
               }
 
@@ -579,7 +609,9 @@ int UnwrapTile(infileT *infiles, outfileT *outfiles, paramT *params,
   /* if we have a single tile, trap signals for dumping results */
   if(params->ntilerow==1 && params->ntilecol==1){
     signal(SIGINT,SetDump);
+#ifndef _WIN32			/* This does not exist on Windows */
     signal(SIGHUP,SetDump);
+#endif
   }
 
   /* main loop: loop over flow increments and sources */
@@ -697,7 +729,9 @@ int UnwrapTile(infileT *infiles, outfileT *outfiles, paramT *params,
   /* if we have single tile, return signal handlers to default behavior */
   if(params->ntilerow==1 && params->ntilecol==1){
     signal(SIGINT,SIG_DFL);
+#ifndef _WIN32			/* This does not exist on Windows */
     signal(SIGHUP,SIG_DFL);
+#endif
   }
 
   /* free some memory */

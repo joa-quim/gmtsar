@@ -358,7 +358,7 @@ typedef int boolean;
 typedef unsigned char uchar;
 typedef unsigned short ushort;
 typedef unsigned int uint;
-typedef unsigned long ulong;
+typedef uint64_t ulong;
 
 /* function prototypes */
 
@@ -370,7 +370,7 @@ struct sphAuxStruct readSphAux(const char *sphPtr, const int printSphIfZero, con
 int is_bigendian();
 void byte_swap_short(short *buffer, uint number_of_swaps);
 void byte_swap_ushort(ushort *buffer, uint number_of_swaps);
-void byte_swap_long(long *buffer, uint number_of_swaps);
+void byte_swap_long(int64_t *buffer, uint number_of_swaps);
 void byte_swap_ulong(ulong *buffer, uint number_of_swaps);
 void byte_swap_float(float *buffer, uint number_of_swaps);
 
@@ -908,7 +908,7 @@ int main(int argc, char *argv[]) {
 			 * this data type.
 			 */
 			/*
-			       long  days;
+			       int64_t  days;
 			       ulong seconds;
 			       ulong microseconds;
 			*/
@@ -1847,8 +1847,8 @@ void byte_swap_short(short *buffer, uint number_of_swaps) {
  *
  *
  */
-void byte_swap_long(long *buffer, uint number_of_swaps) {
-	long *temp = buffer;
+void byte_swap_long(int64_t *buffer, uint number_of_swaps) {
+	int64_t *temp = buffer;
 	uint swap_loop;
 
 	for (swap_loop = 0, temp = buffer; swap_loop < number_of_swaps; swap_loop++, temp++) {
@@ -1930,7 +1930,7 @@ void byte_swap_ushort(ushort *buffer, uint number_of_swaps) { byte_swap_short((s
  * @param number_of_swaps number of elements to convert
  *
  */
-void byte_swap_ulong(ulong *buffer, uint number_of_swaps) { byte_swap_long((long *)buffer, number_of_swaps); }
+void byte_swap_ulong(ulong *buffer, uint number_of_swaps) { byte_swap_long((int64_t *)buffer, number_of_swaps); }
 
 /*
  *  Function: byte_swap_long.c

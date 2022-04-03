@@ -3,7 +3,7 @@
 #include "siocomplex.h"
 #include <stdlib.h>
 
-void write_orb(FILE *, struct SAT_ORB *);
+EXTERN_MSC void write_orb(FILE *, struct SAT_ORB *);
 
 void write_orb(FILE *ldrfile, struct SAT_ORB *orb) {
 	int n;

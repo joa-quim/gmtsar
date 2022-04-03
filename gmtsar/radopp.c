@@ -13,6 +13,7 @@
  *									*
  ************************************************************************/
 #include <math.h>
+#include "lib_functions.h"
 
 void radopp(double *fd, double *fdd, double *fddd, double r, double del) {
 

@@ -17,7 +17,7 @@
 void calc_dop(struct PRM *prm) {
 	unsigned char *indata;
 	int i, j;
-	long n;
+	int64_t n;
 	float *xr, *ac, *sg;
 	double sumd;
 	fcomplex *ai, *bi, *ab;

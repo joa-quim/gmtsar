@@ -45,7 +45,12 @@ J. Geophys. Res., 108, 2416, doi:10.1029/2002JB002267, B9.
 
 #include "gmtsar.h"
 #include<stdint.h>
+#ifdef _WIN32
+#include "mman.h"
+#include "mman.c"
+#else
 #include <sys/mman.h>
+#endif
 #include <fcntl.h>
 #define Malloc(type, n) (type *)malloc((n) * sizeof(type))
 #define max(a, b) (((a) > (b)) ? (a) : (b))
@@ -54,6 +59,7 @@ J. Geophys. Res., 108, 2416, doi:10.1029/2002JB002267, B9.
 #else
 #define checkpoint()
 #endif
+#include "sbas.h"
 
 char *sbas_USAGE = " \n\nUSAGE: sbas intf.tab scene.tab N S xdim ydim [-atm ni] [-smooth sf] "
                    "[-wavelength wl] [-incidence inc] [-range -rng] [-rms] [-dem]\n\n"
@@ -711,7 +717,7 @@ int sum_intfs(float *phi, int64_t *mark, float *screen, int64_t xdim, int64_t yd
 	return (1);
 }
 
-int connect(int64_t *L, int64_t *H, double *time, int64_t *hit, int64_t *mark, int64_t N, int64_t S, int64_t n, int64_t mode) {
+int connect_(int64_t *L, int64_t *H, double *time, int64_t *hit, int64_t *mark, int64_t N, int64_t S, int64_t n, int64_t mode) {
 
 	// mode = 0 for all connections, mode = 1 for even connections
 

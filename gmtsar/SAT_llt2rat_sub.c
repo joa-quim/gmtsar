@@ -62,6 +62,7 @@ void set_prm_defaults(struct PRM *);
 void read_orb(FILE *, struct SAT_ORB *);
 void hermite_c(double *, double *, double *, int, int, double, double *, int *);
 
+EXTERN_MSC void llt2rat_sub(struct PRM *prm, double *target_llt, double *target_rat);
 void llt2rat_sub(struct PRM *prm, double *target_llt, double *target_rat) {
 
 	double rln, rlt, rht, dr, t1, t2, tm;

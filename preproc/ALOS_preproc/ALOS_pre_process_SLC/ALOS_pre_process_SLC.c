@@ -40,10 +40,10 @@ char *USAGE = "\n\nUsage: ALOS_pre_process_SLC imagefile LEDfile [-radius RE] [-
               "LED-ALOS2011986990-140813-HBQR1.1__A -SLC_factor 1. -rbias -70.0000 "
               "-tbias 0.068759 \n";
 
-long read_ALOS_data_SLC(FILE *, FILE *, struct PRM *, long *);
+int64_t read_ALOS_data_SLC(FILE *, FILE *, struct PRM *, int64_t *);
 void parse_ALOS_commands(int, char **, char *, struct PRM *);
 void set_ALOS_defaults(struct PRM *);
-void print_ALOS_defaults(struct PRM *);
+EXTERN_MSC void print_ALOS_defaults(struct PRM *);
 void swap_ALOS_data_info(struct sardata_info *);
 void get_files(struct PRM *, FILE **, FILE **, char *, char *, int);
 
@@ -53,7 +53,7 @@ int main(int argc, char **argv) {
 	FILE *rawfile[11], *prmfile[11];
 	char prmfilename[128];
 	int nPRF;
-	long byte_offset;
+	int64_t byte_offset;
 	struct PRM prm;
 	struct ALOS_ORB orb;
 	/*char   	date[8];*/

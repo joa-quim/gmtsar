@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+EXTERN_MSC void hermite_c(double *x, double *y, double *z, int nmax, int nval, double xp, double *yp, int *ir);
 void hermite_c(double *x, double *y, double *z, int nmax, int nval, double xp, double *yp, int *ir) {
 	/*
 

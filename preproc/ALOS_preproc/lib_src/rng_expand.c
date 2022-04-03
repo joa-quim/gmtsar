@@ -14,6 +14,7 @@
 
 #include "image_sio.h"
 #include "siocomplex.h"
+#include "lib_functions.h"
 
 void cfft1d_(int *, fcomplex *, int *);
 

@@ -10,7 +10,7 @@
 #define FACTOR 1000000
 
 int prm2roi(struct PRM, double *, double *, int *, double *, double *, int *, int *, int *);
-long get_file_size(FILE *);
+int64_t get_file_size(FILE *);
 int get_utc(double, struct SAR_info, double *, double *, double *, double, int);
 int write_roi_orbit(struct ALOS_ORB, char *);
 
@@ -20,7 +20,7 @@ int write_roi(char *imagery, FILE *ldrfile, struct PRM prm, struct ALOS_ORB orb,
 	int xmin, xmax, ymax;
 	int file_length, width, first_sample;
 	int yr, yr2, mo, da, mn, hr, sc, ms;
-	long size;
+	int64_t size;
 
 	double C = 299792458.0;
 	double ANTENNA_SIDE = -1;
@@ -201,8 +201,8 @@ int prm2roi(struct PRM prm, double *start_time, double *starting_range, int *fir
 	return (EXIT_SUCCESS);
 }
 /*--------------------------------------------------------------------------------------------------------------*/
-long get_file_size(FILE *datafile) {
-	long size;
+int64_t get_file_size(FILE *datafile) {
+	int64_t size;
 
 	fseek(datafile, 0, SEEK_END);
 	size = ftell(datafile);

@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include "lib_functions.h"
 
 /* February 11, 2010 converted from fortran routines spline.f providrd by Bob
    Parker the conversion was first performed using f2c.  Then Rob Mellors made

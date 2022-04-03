@@ -45,22 +45,38 @@ clock_start clock_stop
 #include "image_sio.h"
 #include "lib_functions.h"
 
-void swap32(float *, float *, int);
+//void swap32(float *, float *, int);
 void swap_ALOS_data_info(struct sardata_info *sdr);
-long read_sardata_info(FILE *, struct PRM *, int *, int *);
+int64_t read_sardata_info(FILE *, struct PRM *, int *, int *);
 void print_params(struct PRM *prm);
 int assign_sardata_params(struct PRM *, int, int *, int *);
 int check_shift(struct PRM *, int *, int *, int *, int);
-int set_file_position(FILE *, long *, int);
-int reset_params(struct PRM *prm, long *, int *, int *);
+int set_file_position(FILE *, int64_t *, int);
+int reset_params(struct PRM *prm, int64_t *, int *, int *);
 int fill_shift_data(int, int, int, int, int, char *, char *, FILE *);
-int handle_prf_change(struct PRM *, FILE *, long *, int);
+int handle_prf_change(struct PRM *, FILE *, int64_t *, int);
+
+void swap32_(char *in, char *out, int n) { /* Swaps 4 bytes within each 32-bit word of array in. */
+	register char *ip, *op; /* Local register variables */
+
+	if (n > 0) {
+		ip = in + 4;
+		op = out;
+		while (n--) {
+			*op++ = *--ip;
+			*op++ = *--ip;
+			*op++ = *--ip;
+			*op++ = *--ip;
+			ip += 8;
+		}
+	}
+}
 
 struct sardata_record r1;
 struct sardata_descriptor dfd;
 struct sardata_info sdr;
 
-long read_ALOS_data_SLC(FILE *imagefile, FILE *outfile, struct PRM *prm, long *byte_offset) {
+int64_t read_ALOS_data_SLC(FILE *imagefile, FILE *outfile, struct PRM *prm, int64_t *byte_offset) {
 
 	float *rdata, *rdata_swap;
 	short *i2data;
@@ -166,7 +182,7 @@ long read_ALOS_data_SLC(FILE *imagefile, FILE *outfile, struct PRM *prm, long *b
 
 		/* swap the floats if needed and compute some statistics */
 		if (swap)
-			swap32(rdata, rdata_swap, data_length);
+			swap32_(rdata, rdata_swap, data_length);
 		for (jj = 0; jj < data_length; jj++) {
 			sgn = 1.;
 			// if(jj%2 != 0) sgn = -1.;  experiment to switch sign of imaginary
@@ -263,8 +279,8 @@ void print_params(struct PRM *prm) {
 	fprintf(stdout, "clock_stop              = %16.12lf \n", prm->clock_stop);
 }
 /***************************************************************************/
-long read_sardata_info(FILE *imagefile, struct PRM *prm, int *header_size, int *line_prefix_size) {
-	long nitems;
+int64_t read_sardata_info(FILE *imagefile, struct PRM *prm, int *header_size, int *line_prefix_size) {
+	int64_t nitems;
 
 	*header_size = sizeof(struct sardata_record) + sizeof(struct sardata_descriptor);
 	*line_prefix_size = sizeof(struct sardata_info) + prefix_off;
@@ -376,7 +392,7 @@ int check_shift(struct PRM *prm, int *shift, int *ishift, int *shift0, int recor
 	return (EXIT_SUCCESS);
 }
 /***************************************************************************/
-int set_file_position(FILE *imagefile, long *byte_offset, int header_size) {
+int set_file_position(FILE *imagefile, int64_t *byte_offset, int header_size) {
 	if (*byte_offset < 0) {
 		*byte_offset = 0;
 		rewind(imagefile);
@@ -389,7 +405,7 @@ int set_file_position(FILE *imagefile, long *byte_offset, int header_size) {
 	return (EXIT_SUCCESS);
 }
 /***************************************************************************/
-int reset_params(struct PRM *prm, long *byte_offset, int *n, int *m) {
+int reset_params(struct PRM *prm, int64_t *byte_offset, int *n, int *m) {
 	double get_clock();
 
 	prm->clock_start = get_clock(sdr, tbias);
@@ -432,7 +448,7 @@ int fill_shift_data(int shift, int ishift, int data_length, int line_suffix_size
 	return (EXIT_SUCCESS);
 }
 /***************************************************************************/
-int handle_prf_change(struct PRM *prm, FILE *imagefile, long *byte_offset, int n) {
+int handle_prf_change(struct PRM *prm, FILE *imagefile, int64_t *byte_offset, int n) {
 	prm->num_lines = n;
 
 	/* skip back to beginning of the line */

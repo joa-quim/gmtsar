@@ -39,24 +39,24 @@ char *USAGE = "Usage: (two modes)\n"
  */
 
 /* function prototypes */
-double find_dist(double, double, double, double, double, double);
-double find_alpha_degrees(double, double);
-void find_unit_vectors(double, double, double, double *, double *, double *, double *);
-void endpoint_distance(int, double, double, double, double, double *, double *, double *, double *, int *);
-void find_parallel_perp_baseline(struct PRM, struct PRM, double, double *, double *);
-void write_prm_baseline(struct PRM);
-void get_sign(struct PRM, double, double, double, double, int *);
-void write_bperp(struct PRM, char *);
-void baseline_parse_command_line(char **, int *, int *);
-void read_input_file(char *, int, char **);
-void baseline(struct PRM *, struct SAT_ORB *, int, int, char **, double);
-void read_all_ldr(struct PRM *, struct SAT_ORB *, int);
-void read_orb(FILE *, struct SAT_ORB *);
-void llt2rat_sub(struct PRM *, double *, double *);
-void interpolate_SAT_orbit_slow(struct SAT_ORB *orb, double time, double *, double *, double *, int *);
-void interpolate_SAT_orbit(struct SAT_ORB *, double *, double *, double *, double, double *, double *, double *, int *);
-void calc_height_velocity(struct SAT_ORB *, struct PRM *, double, double, double *, double *, double *, double *, double *);
-void polyfit(double *, double *, double *, int *, int *);
+EXTERN_MSC double find_dist(double, double, double, double, double, double);
+EXTERN_MSC double find_alpha_degrees(double, double);
+EXTERN_MSC void find_unit_vectors(double, double, double, double *, double *, double *, double *);
+EXTERN_MSC void endpoint_distance(int, double, double, double, double, double *, double *, double *, double *, int *);
+EXTERN_MSC void find_parallel_perp_baseline(struct PRM, struct PRM, double, double *, double *);
+EXTERN_MSC void write_prm_baseline(struct PRM);
+EXTERN_MSC void get_sign(struct PRM, double, double, double, double, int *);
+EXTERN_MSC void write_bperp(struct PRM, char *);
+EXTERN_MSC void baseline_parse_command_line(char **, int *, int *);
+EXTERN_MSC void read_input_file(char *, int, char **);
+EXTERN_MSC void baseline(struct PRM *, struct SAT_ORB *, int, int, char **, double);
+EXTERN_MSC void read_all_ldr(struct PRM *, struct SAT_ORB *, int);
+EXTERN_MSC void read_orb(FILE *, struct SAT_ORB *);
+EXTERN_MSC void llt2rat_sub(struct PRM *, double *, double *);
+EXTERN_MSC void interpolate_SAT_orbit_slow(struct SAT_ORB *orb, double time, double *, double *, double *, int *);
+EXTERN_MSC void interpolate_SAT_orbit(struct SAT_ORB *, double *, double *, double *, double, double *, double *, double *, int *);
+EXTERN_MSC void calc_height_velocity(struct SAT_ORB *, struct PRM *, double, double, double *, double *, double *, double *, double *);
+EXTERN_MSC void polyfit(double *, double *, double *, int *, int *);
 
 int main(int argc, char **argv) {
 	int i;
@@ -481,12 +481,12 @@ void baseline_parse_command_line(char **argv, int *nfiles, int *input_flag) {
 
 	if (strncmp(argv[1], "-input", 6) != 0) {
 
-		printf(stderr, "using command line\n");
+		fprintf(stderr, "using command line\n");
 		*nfiles = 2;
 	}
 	else {
 
-		printf(stderr, "using input file \n");
+		fprintf(stderr, "using input file \n");
 		*input_flag = 1;
 
 		if ((inputfile = fopen(argv[2], "r")) == NULL)

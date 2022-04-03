@@ -14,7 +14,12 @@
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
+#ifdef _WIN32
+#include "mman.h"
+#include "mman.c"
+#else
 #include <sys/mman.h>
+#endif
 #include <sys/types.h>
 
 char *USAGE = "geocode_slc [GMTSAR] - Sample slc to DEM and remove propogation delay\n\n"

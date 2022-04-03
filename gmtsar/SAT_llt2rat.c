@@ -79,12 +79,12 @@ char *USAGE = " \n Usage: "
 
 int npad = 8000;
 
-void read_orb(FILE *, struct SAT_ORB *);
-void set_prm_defaults(struct PRM *);
-void hermite_c(double *, double *, double *, int, int, double, double *, int *);
-void set_prm_defaults(struct PRM *);
-void interpolate_SAT_orbit_slow(struct SAT_ORB *orb, double time, double *, double *, double *, int *);
-void polyfit(double *, double *, double *, int *, int *);
+EXTERN_MSC void read_orb(FILE *, struct SAT_ORB *);
+EXTERN_MSC void set_prm_defaults(struct PRM *);
+EXTERN_MSC void hermite_c(double *, double *, double *, int, int, double, double *, int *);
+EXTERN_MSC void set_prm_defaults(struct PRM *);
+EXTERN_MSC void interpolate_SAT_orbit_slow(struct SAT_ORB *orb, double time, double *, double *, double *, int *);
+EXTERN_MSC void polyfit(double *, double *, double *, int *, int *);
 
 int main(int argc, char **argv) {
 

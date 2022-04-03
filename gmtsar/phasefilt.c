@@ -83,7 +83,7 @@ int read_file_hdr(void *API, char *sim, struct GMT_GRID **IM, char *sre, struct 
 
 int phasefilt_read_data(void *API, char *imname, struct GMT_GRID *IM, char *rename, struct GMT_GRID *RE, struct FCOMPLEX *cdata,
                         float *amp) {
-	long n, i;
+	int64_t  n, i;
 
 	n = IM->header->n_columns * IM->header->n_rows;
 

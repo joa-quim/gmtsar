@@ -16,14 +16,25 @@
 #include <float.h>
 #include <string.h>
 #include <ctype.h>
-#include <unistd.h>
+#ifdef _WIN32
+#	include "../../unistd.h"
+#else
+#	include <unistd.h>
+#endif
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <sys/wait.h>
-#include <time.h>
-#include <sys/time.h>
-#include <sys/resource.h>
+#ifdef _WIN32
+#	include <windows.h>
+#	include <time.h>
+#	include <process.h>
+#	include <signal.h>
+#	define pid_t int
+#else
+#	include <sys/wait.h>
+#	include <sys/time.h>
+#	include <sys/resource.h>
+#endif
 
 #include "snaphu.h"
 
@@ -1106,17 +1117,19 @@ int StringToLong(char *str, long *l){
  */
 int CatchSignals(void (*SigHandler)(int)){
 
-  signal(SIGHUP,SigHandler);
   signal(SIGINT,SigHandler);
-  signal(SIGQUIT,SigHandler);
   signal(SIGILL,SigHandler);
   signal(SIGABRT,SigHandler);
   signal(SIGFPE,SigHandler);
   signal(SIGSEGV,SigHandler);
+  signal(SIGTERM,SigHandler);
+#ifndef _WIN32			/* These do not exist on Windows */
+  signal(SIGHUP,SigHandler);
+  signal(SIGQUIT,SigHandler);
+  signal(SIGBUS,SigHandler);
   signal(SIGPIPE,SigHandler);
   signal(SIGALRM,SigHandler);
-  signal(SIGTERM,SigHandler);
-  signal(SIGBUS,SigHandler);
+#endif
   return(0);
 
 }
@@ -1143,7 +1156,9 @@ void SetDump(int signum){
     dumpresults_global=TRUE;
     requestedstop_global=TRUE;
 
-  }else if(signum==SIGHUP){
+  }
+#ifndef _WIN32
+  else if(signum==SIGHUP){
 
     /* make sure the hangup signal doesn't revert to default behavior */
     signal(SIGHUP,SetDump);
@@ -1153,7 +1168,9 @@ void SetDump(int signum){
     fprintf(sp0,"\n\nSIGHUP signal caught.  Dumping results\n");
     dumpresults_global=TRUE;
 
-  }else{
+  }
+#endif
+  else{
     fflush(NULL);
     fprintf(sp0,"WARNING: Invalid signal (%d) passed to signal handler\n",
             signum);
@@ -1177,7 +1194,11 @@ void KillChildrenExit(int signum){
           signum);
   fflush(NULL);
   signal(SIGTERM,SIG_IGN);
+#ifdef _WIN32
+  abort();
+#else
   kill(0,SIGTERM);
+#endif
   exit(ABNORMAL_EXIT);
 
   /* done */
@@ -1211,6 +1232,7 @@ void SignalExit(int signum){
  */
 int StartTimers(time_t *tstart, double *cputimestart){
   
+#ifndef _WIN32
   struct rusage usagebuf;
 
   *tstart=time(NULL);
@@ -1230,7 +1252,7 @@ int StartTimers(time_t *tstart, double *cputimestart){
 
   /* done */
   return(0);
-
+#endif
 }
 
 
@@ -1245,6 +1267,7 @@ int StartTimers(time_t *tstart, double *cputimestart){
  */
 int DisplayElapsedTime(time_t tstart, double cputimestart){
 
+#ifndef _WIN32
   double cputime, walltime, seconds;
   long hours, minutes;
   time_t tstop;
@@ -1284,6 +1307,7 @@ int DisplayElapsedTime(time_t tstart, double cputimestart){
   /* done */
   return(0);
 
+#endif
 }
 
 

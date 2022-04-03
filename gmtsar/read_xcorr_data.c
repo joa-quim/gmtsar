@@ -8,7 +8,7 @@
 
 /*-------------------------------------------------------*/
 void read_complex_short2(FILE *f, struct FCOMPLEX *d, int iy, int npy, int nx, short *tmp) {
-	long num_to_seek;
+	int64_t num_to_seek;
 	int i, j;
 
 	num_to_seek = 2 * iy * nx * sizeof(short);
@@ -30,7 +30,7 @@ void read_complex_short2(FILE *f, struct FCOMPLEX *d, int iy, int npy, int nx, s
 }
 /*-------------------------------------------------------*/
 void read_real_float2(FILE *f, struct FCOMPLEX *d, int iy, int npy, int nx, float *tmp) {
-	long num_to_seek;
+	int64_t num_to_seek;
 	int i, j;
 
 	num_to_seek = iy * nx * sizeof(float);
@@ -50,7 +50,7 @@ void read_real_float2(FILE *f, struct FCOMPLEX *d, int iy, int npy, int nx, floa
 
 /*-------------------------------------------------------*/
 void read_real_float_grid(struct GMT_GRID *f, struct FCOMPLEX *d, int iy, int npy, int nx, int ny) {
-	// long    num;
+	// int64_t    num;
 	int i, j;
 
 	// num_to_seek = iy*nx;

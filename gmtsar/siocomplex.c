@@ -4,6 +4,7 @@
 
 #include "gmtsar.h"
 #include <math.h>
+#include "siocomplex.h"
 
 fcomplex Cmul(fcomplex x, fcomplex y) {
 	fcomplex z;

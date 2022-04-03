@@ -22,6 +22,7 @@
  ***************************************************************************/
 
 #include "gmtsar.h"
+#include "lib_functions.h"
 
 char *USAGE = "conv [GMTSAR] - 2-D image convolution\n\n"
               "Usage: conv idec jdec filter_file input output \n"
@@ -274,8 +275,8 @@ int main(int argc, char **argv) {
 
 	if ((filter = (float *)malloc(sizeof(float) * narr)) == NULL)
 		die("memory allocation", "");
-	if ((buffer = (float *)malloc(2 * sizeof(float) * nbuff)) == NULL)
-		die("memory allocation", "");
+	//if ((buffer = (float *)malloc(2 * sizeof(float) * nbuff)) == NULL) die("memory allocation", "");
+	if ((buffer = (float *)calloc(2 * nbuff, sizeof(float))) == NULL) die("memory allocation", "");
 
 	if (format_flag == 1)
 		if ((indat = (float *)malloc(4 * xdim)) == NULL)

@@ -14,10 +14,12 @@
 
 void read_raw_data(fcomplex *, unsigned char *, int, struct PRM *);
 
+EXTERN_MSC void calc_dop(struct PRM *prm);
+
 void calc_dop(struct PRM *prm) {
 	unsigned char *indata;
 	int i, j;
-	long n;
+	int64_t n;
 	float *xr, *ac, *sg;
 	double sumd;
 	fcomplex *ai, *bi, *ab;

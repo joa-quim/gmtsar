@@ -49,11 +49,11 @@ char *USAGE = "\n\nUsage: ALOS_pre_process imagefile LEDfile [-near near_range] 
               "ALOS_pre_process  IMG-HH-ALPSRP050420840-H1.0__A "
               "LED-ALPSRP050420840-H1.0__A \n";
 
-long read_ALOS_data(FILE *, FILE *, struct PRM *, long *);
-long read_ALOSE_data(FILE *, FILE *, struct PRM *, long *);
+int64_t read_ALOS_data(FILE *, FILE *, struct PRM *, int64_t *);
+int64_t read_ALOSE_data(FILE *, FILE *, struct PRM *, int64_t *);
 void parse_ALOS_commands(int, char **, char *, struct PRM *);
 void set_ALOS_defaults(struct PRM *);
-void print_ALOS_defaults(struct PRM *);
+EXTERN_MSC void print_ALOS_defaults(struct PRM *);
 void swap_ALOS_data_info(struct sardata_info *);
 void get_files(struct PRM *, FILE **, FILE **, char *, char *, int);
 int write_ALOS_LED(struct ALOS_ORB *, struct PRM *, char *);
@@ -68,7 +68,7 @@ int main(int argc, char **argv) {
 	FILE *rawfile[11], *prmfile[11];
 	char prmfilename[128];
 	int nPRF;
-	long byte_offset;
+	int64_t  byte_offset;
 	struct PRM prm;
 	struct ALOS_ORB orb;
 	char date[8];

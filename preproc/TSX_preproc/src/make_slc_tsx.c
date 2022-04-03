@@ -27,11 +27,11 @@ int write_slc(FILE *, FILE *, int, int);
 
 static int is_big_endian() {
 	union {
-		long l;
-		char c[sizeof(long)];
+		int64_t l;
+		char c[sizeof(int64_t)];
 	} u;
 	u.l = 1;
-	return (u.c[sizeof(long) - 1] == 1 ? 1 : -1);
+	return (u.c[sizeof(int64_t) - 1] == 1 ? 1 : -1);
 }
 
 #ifndef __CYGWIN__
@@ -39,8 +39,8 @@ static inline unsigned short bswap_16(unsigned short x) { return (x >> 8) | (x <
 
 static inline unsigned int bswap_32(unsigned int x) { return (bswap_16(x & 0xffff) << 16) | (bswap_16(x >> 16)); }
 
-/*static inline unsigned long long bswap_64(unsigned long long x) {
-    return (((unsigned long long)bswap_32(x&0xffffffffull))<<32) |
+/*static inline unsigned int64_t bswap_64(unsigned int64_t int64_t x) {
+    return (((unsigned int64_t )bswap_32(x&0xffffffffull))<<32) |
 (bswap_32(x>>32));
 }*/
 #endif

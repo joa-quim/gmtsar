@@ -62,7 +62,12 @@ Geophysical Research: Solid Earth, 120(8), pp.5952-5963.
 #include "sbas.h"
 #include "gmtsar.h"
 #include <stdint.h>
+#ifdef _WIN32
+#include "mman.h"
+#include "mman.c"
+#else
 #include <sys/mman.h>
+#endif
 #include <fcntl.h>
 #define max(a, b) (((a) > (b)) ? (a) : (b))
 #ifdef DEBUG
@@ -197,7 +202,11 @@ int main(int argc, char **argv) {
         /* mmap the phi and var arrays. this must be done in the main program  */
     if (flag_mmap == 1) {
 	    remove("tmp_sbas_phi");
+#ifdef _WIN32
+	    if ((fphi = open("tmp_sbas_phi", O_RDWR | O_CREAT | O_EXCL)) < 0)
+#else
 	    if ((fphi = open("tmp_sbas_phi", O_RDWR | O_CREAT | O_EXCL, (mode_t)0755)) < 0)
+#endif
 		    die("can't open %s for reading", "tmp_sbas_phi");
 	    lseek(fphi,mm_size-1, SEEK_SET);
 	    write(fphi, "",1);
@@ -205,7 +214,11 @@ int main(int argc, char **argv) {
 		    die("mmap error for input", "phi");
 
 	    remove("tmp_sbas_var");
+#ifdef _WIN32
+	    if ((fvar = open("tmp_sbas_var", O_RDWR | O_CREAT | O_EXCL)) < 0)
+#else
 	    if ((fvar = open("tmp_sbas_var", O_RDWR | O_CREAT | O_EXCL, (mode_t)0755)) < 0)
+#endif
 		    die("can't open %s for reading", "tmp_sbas_var");
 	    lseek(fvar,mm_size-1, SEEK_SET);
 	    write(fvar, "",1);
@@ -249,7 +262,11 @@ int main(int argc, char **argv) {
         }
         else {
 		    remove("tmp_sbas_tmp_phi");
+#ifdef _WIN32
+		    if ((ftmp_phi = open("tmp_sbas_tmp_phi", O_RDWR | O_CREAT | O_EXCL)) < 0)
+#else
 		    if ((ftmp_phi = open("tmp_sbas_tmp_phi", O_RDWR | O_CREAT | O_EXCL, (mode_t)0755)) < 0)
+#endif
 			    die("can't open %s for reading", "tmp_sbas_tmp_phi");
 		    lseek(ftmp_phi,mm_size-1, SEEK_SET);
 		    write(ftmp_phi, "",1);
@@ -349,7 +366,7 @@ int main(int argc, char **argv) {
 				fprintf(stderr, "Initial estimate of APS...\n");
 
 				for (i = 0; i < S; i++) {
-					connect(L, H, time, hit, mark, N, S, i, 1);
+					connect_(L, H, time, hit, mark, N, S, i, 1);
 					// compute atm with original interferograms
 					sum_intfs(phi, mark, tmp_screen, xdim, ydim, N);
 					atm_rms[i] = compute_noise(tmp_screen, xdim, ydim);
@@ -366,12 +383,12 @@ int main(int argc, char **argv) {
 
 			// compute and apply aps and update as you go
 			for (i = 0; i < S; i++) {
-				connect(L, H, time, hit, mark, N, S, atm_rank[i], 1);
+				connect_(L, H, time, hit, mark, N, S, atm_rank[i], 1);
 				sum_intfs(tmp_phi, mark, tmp_screen, xdim, ydim, N);
 				atm_rms[atm_rank[i]] = compute_noise(tmp_screen, xdim, ydim);
 				for (j = 0; j < xdim * ydim; j++)
 					screen[atm_rank[i] * xdim * ydim + j] = tmp_screen[j];
-				connect(L, H, time, hit, mark, N, S, atm_rank[i], 0);
+				connect_(L, H, time, hit, mark, N, S, atm_rank[i], 0);
 				apply_screen(tmp_screen, tmp_phi, xdim, ydim, N, mark);
 			}
 			rank_double(atm_rms, atm_rank, S);
@@ -384,7 +401,7 @@ int main(int argc, char **argv) {
 			for (i = 0; i < xdim * ydim * N; i++)
 				tmp_phi[i] = phi[i];
 			for (i = 0; i < S; i++) {
-				connect(L, H, time, hit, mark, N, S, i, 0);
+				connect_(L, H, time, hit, mark, N, S, i, 0);
 				for (j = 0; j < xdim * ydim; j++)
 					tmp_screen[j] = screen[i * xdim * ydim + j];
 				apply_screen(tmp_screen, tmp_phi, xdim, ydim, N, mark);

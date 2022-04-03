@@ -44,10 +44,10 @@ char *USAGE = "\n\nUsage: ALOS_pre_process_SS imagefile LEDfile [-near near_rang
               "   4         34.1        355     \n"
               "   5         36.5        327   \n\n";
 
-long read_ALOS_data_SS(FILE *, FILE *, struct PRM *, long *, int *, int *, int *);
+int64_t read_ALOS_data_SS(FILE *, FILE *, struct PRM *, int64_t *, int *, int *, int *);
 void parse_ALOS_commands(int, char **, char *, struct PRM *, int *, int *, int *);
 void set_ALOS_defaults(struct PRM *);
-void print_ALOS_defaults(struct PRM *);
+EXTERN_MSC void print_ALOS_defaults(struct PRM *);
 void swap_ALOS_data_info(struct sardata_info *);
 void get_files(struct PRM *, FILE **, FILE **, char *, char *, int, int);
 
@@ -56,7 +56,7 @@ int main(int argc, char **argv) {
 	FILE *rawfile[11], *prmfile[11];
 	char prmfilename[128];
 	int nPRF;
-	long byte_offset;
+	int64_t byte_offset;
 	int nsub = 3, burst_skip = 0, num_burst = 1000;
 	struct PRM prm;
 	struct ALOS_ORB orb;

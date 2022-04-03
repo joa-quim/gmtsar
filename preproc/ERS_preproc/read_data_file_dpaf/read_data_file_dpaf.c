@@ -121,7 +121,7 @@ char *argv[];
 		fprintf(logfile, SARDATA_DPAF_REC_WCS, SARDATA_DPAF_REC_RVL(&dpaf_sdr));
 	}
 
-	/* used in SAR processor - each patch is 2800 long */
+	/* used in SAR processor - each patch is 2800 int64_t */
 	nlines = atoi(sar.dataheader->n_records);
 	num_patches = nlines / 2800;
 
@@ -220,10 +220,10 @@ double calc_swst(info) struct lineparam info;
 /*_______________________________*/
 int is_big_endian_() {
 	union {
-		long l;
-		char c[sizeof(long)];
+		int64_t l;
+		char c[sizeof(int64_t)];
 	} u;
 	u.l = 1;
-	return (u.c[sizeof(long) - 1] == 1 ? 1 : -1);
+	return (u.c[sizeof(int64_t) - 1] == 1 ? 1 : -1);
 }
 int is_big_endian__() { return is_big_endian_(); }

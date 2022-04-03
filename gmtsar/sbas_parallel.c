@@ -59,7 +59,12 @@ J. Geophys. Res., 108, 2416, doi:10.1029/2002JB002267, B9.
 #include "gmtsar.h"
 #include<stdint.h>
 #include<omp.h>
+#ifdef _WIN32
+#include "mman.h"
+#include "mman.c"
+#else
 #include <sys/mman.h>
+#endif
 #include <fcntl.h>
 //#define Malloc(type, n) (type *)malloc((n) * sizeof(type))
 

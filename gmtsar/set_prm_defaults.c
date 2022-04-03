@@ -7,6 +7,7 @@
 /* set some defaults					*/
 /* replaces virgin.prm					*/
 /*------------------------------------------------------*/
+EXTERN_MSC void set_prm_defaults(struct PRM *prm);
 void set_prm_defaults(struct PRM *prm) {
 	strncpy(prm->input_file, "data.raw", 8); /* input to SAR processor */
 	prm->input_file[8] = '\0';

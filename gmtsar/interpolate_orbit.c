@@ -14,8 +14,8 @@
 #include <stdlib.h>
 #define FACTOR 1000000
 
-void interpolate_SAT_orbit_slow(struct SAT_ORB *, double, double *, double *, double *, int *);
-void interpolate_SAT_orbit(struct SAT_ORB *, double *, double *, double *, double, double *, double *, double *, int *);
+EXTERN_MSC void interpolate_SAT_orbit_slow(struct SAT_ORB *, double, double *, double *, double *, int *);
+EXTERN_MSC void interpolate_SAT_orbit(struct SAT_ORB *, double *, double *, double *, double, double *, double *, double *, int *);
 void hermite_c(double *, double *, double *, int, int, double, double *, int *);
 
 /*---------------------------------------------------------------*/

@@ -49,6 +49,7 @@ void set_ALOS_defaults(struct PRM *prm) {
 	prm->SLC_scale = 1; /* use 1 as default */
 }
 /*------------------------------------------------------*/
+EXTERN_MSC void print_ALOS_defaults(struct PRM *prm);
 void print_ALOS_defaults(struct PRM *prm) {
 	fprintf(stderr, " \n ALOS default settings *************\n\n");
 	fprintf(stderr, " led_file = %s \n", prm->led_file);

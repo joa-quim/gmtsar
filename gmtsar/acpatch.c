@@ -17,6 +17,8 @@
 #include "siocomplex.h"
 #include "soi.h"
 
+EXTERN_MSC void acpatch(void *API, fcomplex **data, int nrows, double delr, double fd, double fdd, double fddd);
+
 void acpatch(void *API, fcomplex **data, int nrows, double delr, double fd, double fdd, double fddd) {
 	int i, j, k;
 	int n, nfc, nf0;

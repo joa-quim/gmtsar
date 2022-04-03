@@ -16,6 +16,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "lib_functions.h"
 #define min(x, y) (((x) < (y)) ? (x) : (y))
 #define max(x, y) (((x) > (y)) ? (x) : (y))
 

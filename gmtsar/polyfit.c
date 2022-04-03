@@ -1,8 +1,11 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "../declspec.h"
 
 void gauss_jordan(double **, double *, double *, int *);
+
+EXTERN_MSC void polyfit(double *T, double *Y, double *C, int *Mp, int *Np);
 
 void polyfit(double *T, double *Y, double *C, int *Mp, int *Np)
 

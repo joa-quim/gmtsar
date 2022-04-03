@@ -26,7 +26,12 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
+#ifdef _WIN32
+#include "mman.h"
+#include "mman.c"
+#else
 #include <sys/mman.h>
+#endif
 #include <sys/types.h>
 
 char *USAGE = "\nUsage: "
@@ -101,13 +106,18 @@ int main(int argc, char **argv) {
 	}
 
 	/* allocate memory for one row of the aligned image */
-	if ((sout = (short *)malloc(2 * xdimm * sizeof(short))) == NULL) {
+	//if ((sout = (short *)malloc(2 * xdimm * sizeof(short))) == NULL) {
+	if ((sout = (short *)calloc(2 * xdimm, sizeof(short))) == NULL) {
 		fprintf(stderr, "Sorry, couldn't allocate memory for output indata.\n");
 		exit(-1);
 	}
 
 	/* open the input file, determine its length and mmap the input file */
+#ifdef _WIN32
+	if ((fdin = _open(ps.SLC_file, O_RDONLY | _O_BINARY)) < 0)
+#else
 	if ((fdin = open(ps.SLC_file, O_RDONLY)) < 0)
+#endif
 		die("can't open %s for reading", ps.SLC_file);
 
 	st_size = (size_t)4 * (size_t)xdims * (size_t)ydims;

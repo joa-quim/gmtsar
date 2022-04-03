@@ -80,9 +80,9 @@ char *USAGE = " \n Usage: "
               "  Note that the output elevation is the one above reference radius "
               "specified in the PRM file\n";
 
-void read_orb(FILE *, struct SAT_ORB *);
-void hermite_c(double *, double *, double *, int, int, double, double *, int *);
-void set_prm_defaults(struct PRM *);
+EXTERN_MSC void read_orb(FILE *, struct SAT_ORB *);
+EXTERN_MSC void hermite_c(double *, double *, double *, int, int, double, double *, int *);
+EXTERN_MSC void set_prm_defaults(struct PRM *);
 
 int main(int argc, char **argv) {
 

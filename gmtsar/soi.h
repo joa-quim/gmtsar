@@ -45,6 +45,8 @@
 #define sgn(A) ((A) >= 0.0 ? 1.0 : -1.0)
 #define clipi22(A) (((A) > I2MAX1) ? I2MAX1 : (((A) < -I2MAX1) ? -I2MAX1 : A))
 #include "sfd_complex.h"
+#include "lib_functions.h"
+#include "../declspec.h"
 
 char *input_file;
 char *led_file;
@@ -72,7 +74,6 @@ int nlooks;
 int xshift;
 int yshift;
 int fdc_ystrt;
-int fdc_strt;
 
 /*New parameters 4/23/97 -EJP */
 int rec_start;

@@ -16,14 +16,25 @@
 #include <float.h>
 #include <string.h>
 #include <ctype.h>
-#include <unistd.h>
+#ifdef _WIN32
+#	include "../../unistd.h"
+#else
+#	include <unistd.h>
+#endif
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <sys/wait.h>
-#include <time.h>
-#include <sys/time.h>
-#include <sys/resource.h>
+#ifdef _WIN32
+#	include <windows.h>
+#	include <time.h>
+#	include <process.h>
+#	include <signal.h>
+#	define pid_t int
+#else
+#	include <sys/wait.h>
+#	include <sys/time.h>
+#	include <sys/resource.h>
+#endif
 
 #include "snaphu.h"
 
@@ -572,7 +583,7 @@ int CheckParams(infileT *infiles, outfileT *outfiles,
 
   /* make sure output file is writable (try opening in append mode) */
   /* file will be opened in write mode later, clobbering existing file */
-  if((fp=fopen(outfiles->outfile,"a"))==NULL){
+  if((fp=fopen(outfiles->outfile,"ab"))==NULL){
     fflush(NULL);
     fprintf(sp0,"file %s is not writable\n",outfiles->outfile);
     exit(ABNORMAL_EXIT);
@@ -1164,7 +1175,7 @@ int ReadConfigFile(char *conffile, infileT *infiles, outfileT *outfiles,
   
   /* open input config file */
   if(strlen(conffile)){
-    if((fp=fopen(conffile,"r"))==NULL){
+    if((fp=fopen(conffile,"rt"))==NULL){
 
       /* abort if we were given a non-zero length name that is unreadable */
       fflush(NULL);

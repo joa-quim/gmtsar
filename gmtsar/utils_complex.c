@@ -10,7 +10,7 @@
 /* xdim - length of row						*/
 /*								*/
 int read_SLC_short2float(FILE *SLCfile, char *name, short *sdata, fcomplex *cdata, int xdim, int psize, double dfact) {
-	long k;
+	int64_t  k;
 
 	if (fread(sdata, 2 * sizeof(short), psize * xdim, SLCfile) != (size_t)(psize * xdim))
 		die("error reading SLC file", name);
@@ -32,7 +32,7 @@ int read_SLC_short2float(FILE *SLCfile, char *name, short *sdata, fcomplex *cdat
 /* xdim - length of row						*/
 /*								*/
 int read_SLC_short2double(FILE *SLCfile, char *name, short *sdata, dcomplex *cdata, int xdim, int psize, double dfact) {
-	long k;
+	int64_t  k;
 
 	if (fread(sdata, 2 * sizeof(short), psize * xdim, SLCfile) != (size_t)(psize * xdim))
 		die("error reading SLC file", name);

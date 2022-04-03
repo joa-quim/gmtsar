@@ -18,7 +18,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#ifdef _WIN32
+#include "mman.h"
+#include "mman.c"
+#else
 #include <sys/mman.h>
+#endif
 #include <sys/types.h>
 
 int write_column_slc(short *, short *, int, int, int);

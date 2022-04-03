@@ -8,6 +8,11 @@
 
 *************************************************************************/
 
+/* Avoid some annoying warnings from MS Visual Studio */
+#ifdef _MSC_VER
+#	pragma warning( disable : 4244 )	/* conversion from 'uint64_t' to '::size_t', possible loss of data */
+#endif
+
 
 /**********************/
 /* defined constants  */

@@ -16,14 +16,25 @@
 #include <float.h>
 #include <string.h>
 #include <ctype.h>
-#include <unistd.h>
+#ifdef _WIN32
+#	include "../../unistd.h"
+#else
+#	include <unistd.h>
+#endif
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <sys/wait.h>
-#include <time.h>
-#include <sys/time.h>
-#include <sys/resource.h>
+#ifdef _WIN32
+#	include <windows.h>
+#	include <time.h>
+#	include <process.h>
+#	include <signal.h>
+#	define pid_t int
+#else
+#	include <sys/wait.h>
+#	include <sys/time.h>
+#	include <sys/resource.h>
+#endif
 
 #include "snaphu.h"
 

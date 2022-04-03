@@ -2,9 +2,14 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 #include <time.h>
-#include <unistd.h>
+#ifdef _WIN32
+#	include "../../../unistd.h"
+#else
+#	include <unistd.h>
+#endif
 #include <siocomplex.h>
 
 #define SOL 299792456.0
@@ -40,6 +45,12 @@
 #define NULL_INT -99999
 #define NULL_DOUBLE -99999.9999
 #define NULL_CHAR "XXXXXXXX"
+
+/* Avoid some annoying warnings from MS Visual Studio */
+#ifdef _MSC_VER
+#	pragma warning( disable : 4244 )	/* conversion from 'uint64_t' to '::size_t', possible loss of data */
+#	pragma warning( disable : 4273 )	/* the bloody "inconsistent dll linkage" -- DRASTIC */
+#endif
 
 struct PRM {
 	char input_file[256];

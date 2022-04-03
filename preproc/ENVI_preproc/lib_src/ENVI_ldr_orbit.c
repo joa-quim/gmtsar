@@ -16,7 +16,9 @@
 #include "image_sio.h"
 #include "lib_functions.h"
 #define FACTOR 1000000
-void calc_height_velocity_envi(struct ALOS_ORB *, struct PRM *, double, double, double *, double *, double *, double *, double *);
+EXTERN_MSC void calc_height_velocity_envi(struct ALOS_ORB *, struct PRM *, double, double, double *, double *, double *, double *, double *);
+EXTERN_MSC void ENVI_ldr_orbit(struct ALOS_ORB *orb, struct PRM *prm);
+
 
 void ENVI_ldr_orbit(struct ALOS_ORB *orb, struct PRM *prm) {
 	double t1, t2;

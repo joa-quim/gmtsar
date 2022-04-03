@@ -15,7 +15,9 @@
 
 #include "llt2xyz.h"
 #include <math.h>
+#include "../../../declspec.h"
 
+EXTERN_MSC void xyz2plh(double *xyz, double *plh, double A, double FL);
 void xyz2plh(double *xyz, double *plh, double A, double FL)
 /********1*********2*********3*********4*********5*********6*********7**
  * input:

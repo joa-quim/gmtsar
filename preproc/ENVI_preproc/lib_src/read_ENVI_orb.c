@@ -2,7 +2,7 @@
 #include "lib_functions.h"
 #include "siocomplex.h"
 
-void read_ENVI_orb(FILE *, struct PRM *, struct ALOS_ORB *);
+EXTERN_MSC void read_ENVI_orb(FILE *, struct PRM *, struct ALOS_ORB *);
 
 void read_ENVI_orb(FILE *ldrfile, struct PRM *prm, struct ALOS_ORB *orb) {
 	int n;

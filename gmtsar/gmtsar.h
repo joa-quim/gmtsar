@@ -8,7 +8,11 @@
 #include <math.h>
 #include <string.h>
 #include <time.h>
-#include <unistd.h>
+#ifdef _WIN32
+#	include "../unistd.h"
+#else
+#	include <unistd.h>
+#endif
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
@@ -56,6 +60,12 @@
 #endif
 #ifndef MAX
 #define MAX(x, y) (((x) > (y)) ? (x) : (y))
+#endif
+
+/* Avoid some annoying warnings from MS Visual Studio */
+#ifdef _MSC_VER
+#	pragma warning( disable : 4244 )	/* conversion from 'uint64_t' to '::size_t', possible loss of data */
+#	pragma warning( disable : 4273 )	/* inconsistent dll linkage */
 #endif
 
 #include "PRM.h"

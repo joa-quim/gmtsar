@@ -28,7 +28,7 @@
 #include "lib_functions.h"
 #include "siocomplex.h"
 
-void rng_compress(fcomplex *cin, int nffti, fcomplex *cout, int nffto);
+EXTERN_MSC void rng_compress(fcomplex *cin, int nffti, fcomplex *cout, int nffto);
 
 #define clip127(A) (((A) > 127) ? 127 : (((A) < 0) ? 0 : A))
 

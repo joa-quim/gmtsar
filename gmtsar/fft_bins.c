@@ -11,6 +11,7 @@
  *									*
  * Date									*
  ************************************************************************/
+#include "lib_functions.h"
 
 int fft_bins(int num) {
 	int ranfft = 2;

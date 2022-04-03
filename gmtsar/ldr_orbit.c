@@ -16,9 +16,10 @@
 #include "gmtsar.h"
 #include "orbit.h"
 #define FACTOR 1000000
-void calc_height_velocity(struct SAT_ORB *, struct PRM *, double, double, double *, double *, double *, double *, double *);
-void interpolate_SAT_orbit_slow(struct SAT_ORB *orb, double time, double *, double *, double *, int *);
+EXTERN_MSC void calc_height_velocity(struct SAT_ORB *, struct PRM *, double, double, double *, double *, double *, double *, double *);
+EXTERN_MSC void interpolate_SAT_orbit_slow(struct SAT_ORB *orb, double time, double *, double *, double *, int *);
 void polyfit(double *, double *, double *, int *, int *);
+EXTERN_MSC void ldr_orbit(struct SAT_ORB *orb, struct PRM *prm);
 
 void ldr_orbit(struct SAT_ORB *orb, struct PRM *prm) {
 	double t1, t2;

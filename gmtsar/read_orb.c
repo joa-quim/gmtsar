@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void read_orb(FILE *, struct SAT_ORB *);
+EXTERN_MSC void read_orb(FILE *, struct SAT_ORB *);
 
 void read_orb(FILE *ldrfile, struct SAT_ORB *orb) {
 	int n;

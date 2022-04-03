@@ -718,9 +718,9 @@ int findlongest(char *szFile, int func) {
 		return EXIT_FAILURE;
 	}
 
-	long pos_before = ftell(file);
+	int64_t  pos_before = ftell(file);
 	for (num_lines = 1; fgets(line, buffer_size, file); ++num_lines) {
-		long pos_after = ftell(file);
+		int64_t  pos_after = ftell(file);
 		size_t line_length = pos_after - pos_before - 1;
 		pos_before = pos_after - 1;
 		while (line_length == buffer_size - 1 && line[line_length - 1] != '\n') {
