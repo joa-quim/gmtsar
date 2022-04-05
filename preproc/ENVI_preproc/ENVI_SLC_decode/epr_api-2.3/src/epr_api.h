@@ -26,6 +26,7 @@ extern "C"
 
 /* to make the FILE structure available */
 #include <stdio.h>
+#include <stdint.h>
 
 /* to make dynamic arrays available*/
 #include "epr_ptrarray.h"

@@ -61,7 +61,8 @@ int compute_eap(fcomplex *, struct tree *, int);
 void fbisinc(double *, fcomplex *, int, int, fcomplex *);
 int get_words(char *);
 
-int DEF_SIZE = 1024;
+//int DEF_SIZE = 1024;
+#define DEF_SIZE 1024
 
 char *USAGE = "\nUsage: make_slc_s1a_tops xml_file tiff_file output mode dr.grd da.grd\n"
               "         xml_file    - name of xml file \n"

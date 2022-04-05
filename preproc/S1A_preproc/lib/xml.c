@@ -146,9 +146,9 @@ int get_tree(FILE *fp, tree *list, int num_parse) {
 	char *buffer;
 	char tmp_char[200], tmp_s[200], *tmp_c;
 	int i1, i2, j1, j2, have_slash;
-	int64_t int count = 0;
+	int64_t count = 0;
 	// int *num_space;
-	int64_t int level[100] = {-1}, lev_ct = 0;
+	int64_t level[100] = {-1}, lev_ct = 0;
 	char lev_rec[100][200];
 
 	buffer = (char *)malloc(MAX_CHAR_SIZE * sizeof(char));
@@ -289,7 +289,7 @@ int space_count(char *str) {
 int itoa_xml(int d, char *buf, int base) {
 	char *p = buf;
 	char *p1, *p2;
-	unsigned int64_t ud = d;
+	uint64_t ud = d;
 	int divisor = 10;
 
 	/* If %d is specified and D is minus, put `-' in the head.  */

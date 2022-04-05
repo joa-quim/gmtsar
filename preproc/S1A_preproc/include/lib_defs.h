@@ -1,7 +1,8 @@
 /* definitions for xml code */
 #include"xmlC.h"
 #include<stdio.h>
-#include "../../declspec.h"
+#include<stdint.h>
+#include "../../../declspec.h"
 
 EXTERN_MSC int space_count(char *);
 EXTERN_MSC int strasign(char *, char *, int, int);

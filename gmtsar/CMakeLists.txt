@@ -5,17 +5,17 @@ if (HAVE_M_LIBRARY)
 	set (GMTSAR_LINK_LIBS ${GMTSAR_LINK_LIBS} m)
 endif (HAVE_M_LIBRARY)
 
-include_directories (${GMT_INCLUDE_DIR} ${TIFF_INCLUDE_DIR})
+include_directories (${GMT_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} ${GETOPT_INC})
 
 add_library (gmtsar aastretch.c acpatch.c calc_dop.c conv2d.c do_freq_xcorr.c
 	do_time_int_xcorr.c fft_bins.c fft_interpolate_routines.c file_stuff.c
 	geoxyz.c get_locations.c get_params.c hermite_c.c highres_corr.c
-	interpolate_orbit.c intp_coef.c ldr_orbit.c parse_xcorr_input.c plxyz.c
+	interpolate_orbit.c intp_coef.c ldr_orbit.c lib_strfuncs.c parse_xcorr_input.c plxyz.c
 	polyfit.c print_results.c radopp.c read_orb.c read_xcorr_data.c
 	SAT_llt2rat_sub.c rmpatch.c rng_cmp.c rng_ref.c set_prm_defaults.c shift.c
 	sio_struct.c siocomplex.c spline.c trans_col.c utils.c utils_complex.c
-	write_orb.c sbas_utils.c gmtsar.h lib_functions.h llt2xyz.h orbit.h
-	sarleader_ALOS.h sarleader_fdr.h sfd_complex.h siocomplex.h soi.h xcorr.h)
+	write_orb.c sbas_utils.c update_PRM_sub.c gmtsar.h lib_functions.h llt2xyz.h orbit.h
+	sarleader_ALOS.h sarleader_fdr.h sfd_complex.h siocomplex.h soi.h update_PRM.h xcorr.h)
 target_link_libraries (gmtsar ${GMTSAR_LINK_LIBS})
 
 set (GMTSAR_LINK_LIBS ${GMTSAR_LINK_LIBS} gmtsar)
@@ -28,6 +28,9 @@ target_link_libraries (calc_dop_orb ${GMTSAR_LINK_LIBS})
 
 add_executable (conv conv.c gmtsar.h)
 target_link_libraries (conv ${GMTSAR_LINK_LIBS})
+
+add_executable (get_PRM get_PRM.c update_PRM_sub.c gmtsar.h)
+target_link_libraries (get_PRM ${GMTSAR_LINK_LIBS})
 
 add_executable (esarp esarp.c soi.h gmtsar.h)
 target_link_libraries (esarp ${GMTSAR_LINK_LIBS})
@@ -65,11 +68,14 @@ target_link_libraries (SAT_look ${GMTSAR_LINK_LIBS})
 add_executable (sbas sbas.c gmtsar.h sbas.h)
 target_link_libraries (sbas ${GMTSAR_LINK_LIBS})
 
+add_executable (update_PRM update_PRM.c update_PRM_sub.c update_PRM.h)
+target_link_libraries (update_PRM ${GMTSAR_LINK_LIBS})
+
 add_executable (xcorr xcorr.c gmtsar.h)
 target_link_libraries (xcorr ${GMTSAR_LINK_LIBS})
 
 # add the install targets
-install (TARGETS gmtsar bperp calc_dop_orb conv esarp extend_orbit make_gaussian_filter offset_topo phase2topo phasediff phasefilt resamp SAT_baseline SAT_llt2rat SAT_look sbas xcorr
+install (TARGETS gmtsar bperp calc_dop_orb get_PRM conv esarp extend_orbit make_gaussian_filter offset_topo phase2topo phasediff phasefilt resamp SAT_baseline SAT_llt2rat SAT_look sbas update_PRM xcorr
 	ARCHIVE DESTINATION lib
 	COMPONENT Runtime
 	LIBRARY DESTINATION lib
