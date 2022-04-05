@@ -25,6 +25,7 @@ compilers.
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 /**
  * The <code>EPR_DataTypeId</code> enumeration lists all possible data
  * types for field elements in ENVISAT dataset records.

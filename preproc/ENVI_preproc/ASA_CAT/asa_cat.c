@@ -22,6 +22,7 @@ integers : Included <string.h> header for older gcc compilers. version 1.3 Sept
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
 /**
  * The <code>EPR_DataTypeId</code> enumeration lists all possible data
