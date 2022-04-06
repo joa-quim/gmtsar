@@ -146,7 +146,7 @@ int main(int argc, char **argv) {
 
 	/* open all the SLC files for reading and writing*/
 	for (kk = 0; kk < nfiles; kk++) {
-		if ((slcin[kk] = fopen(SLCname[kk], "r+")) == NULL)
+		if ((slcin[kk] = fopen(SLCname[kk], "rb+")) == NULL)
 			die("Can't open prmfile ", SLCname[kk]);
 	}
 

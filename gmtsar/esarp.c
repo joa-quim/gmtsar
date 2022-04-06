@@ -109,7 +109,7 @@ int main(int argc, char *argv[]) {
 		fprintf(stderr, "Can't open file %s\n", input_file);
 		exit(-1);
 	}
-	if ((fpq2 = fopen(argv[2], "w")) == NULL) {
+	if ((fpq2 = fopen(argv[2], "wb")) == NULL) {
 		fprintf(stderr, "Bad output file pointer.\n");
 		exit(-1);
 	}

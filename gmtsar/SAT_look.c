@@ -115,6 +115,12 @@ int main(int argc, char **argv) {
 	double local_look[3] = {0, 0, 0};
 	double pole_lon, pole_lat, b, g;
 
+#ifdef _WIN32		/* Set all I/O to binary mode */
+	_setmode(_fileno(stdin), _O_BINARY);
+	_setmode(_fileno(stdout), _O_BINARY);
+	_setmode(_fileno(stderr), _O_BINARY);
+#endif
+
 	/* Make sure usage is correct and files can be opened  */
 	if (argc < 2 || argc > 3) {
 		fprintf(stderr, "%s\n", USAGE);

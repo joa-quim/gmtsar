@@ -47,6 +47,7 @@
 #include "image_sio.h"
 #include "lib_functions.h"
 #include "llt2xyz.h"
+#include <fcntl.h>     /* for _O_TEXT and _O_BINARY */
 
 #define R 0.61803399
 #define C 0.382
@@ -101,6 +102,12 @@ int main(int argc, char **argv) {
 	double rsr;
 	FILE *ldrfile;
 	int calorb_alos(struct ALOS_ORB *, double **orb_pos, double ts, double t1, int nrec);
+
+#ifdef _WIN32		/* Set all I/O to binary mode */
+	_setmode(_fileno(stdin), _O_BINARY);
+	_setmode(_fileno(stdout), _O_BINARY);
+	_setmode(_fileno(stderr), _O_BINARY);
+#endif
 
 	/* Make sure usage is correct and files can be opened  */
 	if (argc < 3 || argc > 4) {

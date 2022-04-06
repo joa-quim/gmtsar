@@ -19,7 +19,7 @@ char *argv[];
 		exit(-1);
 	}
 
-	if ((fpi = fopen(argv[1], "r")) == NULL) {
+	if ((fpi = fopen(argv[1], "rb")) == NULL) {
 		fprintf(stderr, "Can't open file %s \n", argv[1]);
 		exit(-1);
 	}
@@ -29,7 +29,7 @@ char *argv[];
 		exit(-1);
 	}
 
-	if ((fpo = fopen(argv[2], "w")) == NULL) {
+	if ((fpo = fopen(argv[2], "wb")) == NULL) {
 		fprintf(stderr, "Can't open output file %s \n", argv[2]);
 		exit(-1);
 	}

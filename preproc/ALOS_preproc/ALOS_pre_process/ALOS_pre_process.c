@@ -107,7 +107,7 @@ int main(int argc, char **argv) {
 	}
 
 	/* IMG and LED files should exist already */
-	if ((imagefile = fopen(argv[1], "r")) == NULL)
+	if ((imagefile = fopen(argv[1], "rb")) == NULL)
 		die("couldn't open Level 1.0 IMG file \n", argv[1]);
 	if ((ldrfile = fopen(argv[2], "r")) == NULL)
 		die("couldn't open LED file \n", argv[2]);
@@ -224,7 +224,7 @@ void get_files(struct PRM *prm, FILE **rawfile, FILE **prmfile, char *prmfilenam
 	}
 
 	/* now open the files */
-	if ((*rawfile = fopen(prm->input_file, "w")) == NULL)
+	if ((*rawfile = fopen(prm->input_file, "wb")) == NULL)
 		die("can't open ", prm->input_file);
 
 	if ((*prmfile = fopen(prmfilename, "w")) == NULL)

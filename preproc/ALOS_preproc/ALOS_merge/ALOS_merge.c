@@ -69,13 +69,13 @@ int main(int argc, char **argv) {
 	strcpy(p3.input_file, RawOutName);
 
 	/* open raw files */
-	if ((RAWfile1 = fopen(p1.input_file, "r")) == NULL)
+	if ((RAWfile1 = fopen(p1.input_file, "rb")) == NULL)
 		die("cannot open ", p1.input_file);
-	if ((RAWfile2 = fopen(p2.input_file, "r")) == NULL)
+	if ((RAWfile2 = fopen(p2.input_file, "rb")) == NULL)
 		die("cannot open ", p2.input_file);
 
 	/* output */
-	if ((RAWfile3 = fopen(RawOutName, "w")) == NULL)
+	if ((RAWfile3 = fopen(RawOutName, "wb")) == NULL)
 		die("cannot open output file ", RawOutName);
 
 	/* check whether scenes overlap in time */

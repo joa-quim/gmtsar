@@ -55,6 +55,7 @@
 #include "image_sio.h"
 #include "lib_functions.h"
 #include "llt2xyz.h"
+#include <fcntl.h>     /* for _O_TEXT and _O_BINARY */
 
 #define R 0.61803399
 #define C 0.382
@@ -111,6 +112,12 @@ int main(int argc, char **argv) {
 	double A[3][3] = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
 	double local_look[3] = {0, 0, 0};
 	double pole_lon, pole_lat, b, g;
+
+#ifdef _WIN32		/* Set all I/O to binary mode */
+	_setmode(_fileno(stdin), _O_BINARY);
+	_setmode(_fileno(stdout), _O_BINARY);
+	_setmode(_fileno(stderr), _O_BINARY);
+#endif
 
 	/* Make sure usage is correct and files can be opened  */
 	if (argc < 2 || argc > 3) {

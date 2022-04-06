@@ -60,7 +60,7 @@ int main(int argc, char **argv) {
 	get_sio_struct(prmfile, &r);
 
 	/* open input raw data file */
-	if ((datafile = fopen(r.input_file, "r")) == NULL)
+	if ((datafile = fopen(r.input_file, "rb")) == NULL)
 		die("Can't open ", r.input_file);
 
 	/* open output PRM file	*/
@@ -72,7 +72,7 @@ int main(int argc, char **argv) {
 	r.input_file[strlen(argv[2]) - 4] = 0;
 	strcat(r.input_file, ".raw");
 	/* open output file for single look complex	 image */
-	if ((dataout = fopen(r.input_file, "w")) == NULL)
+	if ((dataout = fopen(r.input_file, "wb")) == NULL)
 		die("Can't open ", r.input_file);
 
 	/* compute the sizes for the input and output buffers and allocate the memory

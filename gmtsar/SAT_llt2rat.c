@@ -113,6 +113,13 @@ int main(int argc, char **argv) {
 	FILE *ldrfile = NULL;
 	int calorb_alos(struct SAT_ORB *, double **orb_pos, double ts, double t1, int nrec);
 
+#ifdef _WIN32		/* Set all I/O to binary mode */
+	_setmode(_fileno(stdin), _O_BINARY);
+	_setmode(_fileno(stdout), _O_BINARY);
+	_setmode(_fileno(stderr), _O_BINARY);
+	//_set_fmode(_O_BINARY);
+#endif
+
 	/* Make sure usage is correct and files can be opened  */
 
 	if (argc < 3 || argc > 4) {

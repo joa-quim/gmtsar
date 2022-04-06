@@ -10,6 +10,7 @@
 #include <time.h>
 #ifdef _WIN32
 #	include "../unistd.h"
+#	include <fcntl.h>     /* for _O_TEXT and _O_BINARY */
 #else
 #	include <unistd.h>
 #endif
