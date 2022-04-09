@@ -657,7 +657,17 @@
         filter.csh $ref.PRM $rep.PRM $filter $dec $range_dec $azimuth_dec $compute_phase_gradient
       else 
         ln -s ../../topo/topo_ra.grd . 
+
+echo "MERDA intf"
+echo $ref.PRM $rep.PRM 
+echo ""
+
         intf.csh $ref.PRM $rep.PRM -topo topo_ra.grd 
+
+echo "MERDA filter"
+echo  $ref.PRM $rep.PRM $filter $dec $range_dec $azimuth_dec $compute_phase_gradient 
+echo ""
+
         filter.csh $ref.PRM $rep.PRM $filter $dec $range_dec $azimuth_dec $compute_phase_gradient
       endif
     else

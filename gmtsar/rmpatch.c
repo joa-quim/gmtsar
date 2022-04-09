@@ -37,35 +37,35 @@ void rmpatch(fcomplex **data, int nrows, double delr, double fd, double fdd, dou
 	}
 
 	if ((nvtmp = (int *)malloc(num_rng_bins * sizeof(int))) == NULL) {
-		printf("Sorry, can't allocate memory for nvtmp.\n");
+		fprintf(stderr, "Sorry, can't allocate memory for nvtmp.\n");
 		exit(-1);
 	}
 	if ((rd0 = (double *)malloc(num_rng_bins * sizeof(double))) == NULL) {
-		printf("Sorry, can't allocate memory for rd0.\n");
+		fprintf(stderr, "Sorry, can't allocate memory for rd0.\n");
 		exit(-1);
 	}
 	if ((f0 = (float *)malloc(num_rng_bins * sizeof(float))) == NULL) {
-		printf("Sorry, can't allocate memory for f0.\n");
+		fprintf(stderr, "Sorry, can't allocate memory for f0.\n");
 		exit(-1);
 	}
 	if ((f_rate = (float *)malloc(num_rng_bins * sizeof(float))) == NULL) {
-		printf("Sorry, can't allocate memory for f_rate.\n");
+		fprintf(stderr, "Sorry, can't allocate memory for f_rate.\n");
 		exit(-1);
 	}
 	if ((bdel = (float *)malloc(num_rng_bins * sizeof(float))) == NULL) {
-		printf("Sorry, can't allocate memory for bdel.\n");
+		fprintf(stderr, "Sorry, can't allocate memory for bdel.\n");
 		exit(-1);
 	}
 	if ((vtmp = (float *)malloc(num_rng_bins * sizeof(float))) == NULL) {
-		printf("Sorry, can't allocate memory for vtmp.\n");
+		fprintf(stderr, "Sorry, can't allocate memory for vtmp.\n");
 		exit(-1);
 	}
 	if ((r = (double *)malloc(num_rng_bins * sizeof(double))) == NULL) {
-		printf("Sorry, can't allocate memory for r.\n");
+		fprintf(stderr, "Sorry, can't allocate memory for r.\n");
 		exit(-1);
 	}
 	if ((c_ctmpa = (fcomplex *)malloc(num_rng_bins * sizeof(fcomplex))) == NULL) {
-		printf("Sorry, can't allocate memory for rd0.\n");
+		fprintf(stderr, "Sorry, can't allocate memory for rd0.\n");
 		exit(-1);
 	}
 

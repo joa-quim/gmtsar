@@ -92,7 +92,7 @@ int main(int argc, char *argv[]) {
 	else {
 		dfact = I2SCALE;
 	}
-	printf("I2SCALE %f \n", dfact);
+	fprintf(stdout, "I2SCALE %f \n", dfact);
 
 	/* change the units of doppler parameters */
 	radopp(&fd1, &fdd1, &fddd1, near_range, delr);

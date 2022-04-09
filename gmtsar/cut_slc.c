@@ -103,7 +103,7 @@ int main(int argc, char **argv) {
 
 	pp.num_lines = (yh - yl) + 1;
 	if (pp.num_lines % 4 != 0) {
-		printf("Number of lines is set to a multiple of 4\n");
+		fprintf(stderr, "Number of lines is set to a multiple of 4\n");
 		pp.num_lines = pp.num_lines - pp.num_lines % 4;
 	}
 
@@ -122,7 +122,7 @@ int main(int argc, char **argv) {
 
 	pp.num_rng_bins = xh - xl + 1;
 	if (pp.num_rng_bins % 4 != 0) {
-		printf("Number of range pixels is set to a multiple of 4\n");
+		fprintf(stderr, "Number of range pixels is set to a multiple of 4\n");
 		pp.num_rng_bins = pp.num_rng_bins - pp.num_rng_bins % 4;
 	}
 	pp.bytes_per_line = pp.num_rng_bins * 4;
@@ -134,13 +134,13 @@ int main(int argc, char **argv) {
 		die("can't open prm file", str);
 	put_sio_struct(pp, PRM_out);
 	fclose(PRM_out);
-	printf("New PRM file written ...\n");
+	fprintf(stderr, "New PRM file written ...\n");
 
 
     if (do_slc == 1) {
 	    buf_out = (short *)malloc(pp.num_rng_bins * 2 * sizeof(short));
 
-	    printf("Writing image (%d x %d) ...\n", pp.num_rng_bins, pp.num_lines);
+	    fprintf(stderr, "Writing image (%d x %d) ...\n", pp.num_rng_bins, pp.num_lines);
 	    // printf("Hahahaha %d %d %d %d\n",nr,nl,pp.num_rng_bins,pp.num_lines);
 	    for (ii = 0; ii < nl; ii++) {
 		    // printf("%d ",ii);

@@ -71,7 +71,7 @@ Geophysical Research: Solid Earth, 120(8), pp.5952-5963.
 #include <fcntl.h>
 #define max(a, b) (((a) > (b)) ? (a) : (b))
 #ifdef DEBUG
-#define checkpoint() printf("Checkpoint at line %lld in file %s\n", __LINE__, __FILE__)
+#define checkpoint() fprintf(stderr, "Checkpoint at line %lld in file %s\n", __LINE__, __FILE__)
 #else
 #define checkpoint()
 #endif

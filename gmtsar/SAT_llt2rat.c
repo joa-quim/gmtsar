@@ -297,6 +297,7 @@ int main(int argc, char **argv) {
 			fwrite(dd, sizeof(double), 5, stdout);
 		}
 	}
+	fflush(stdout);		/* Make sure output buffer is flushed  */
 
 	/* free the orb_pos array  */
 	for (j = 0; j < 4; j++) {

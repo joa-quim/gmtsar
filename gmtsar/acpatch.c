@@ -33,31 +33,31 @@ void acpatch(void *API, fcomplex **data, int nrows, double delr, double fd, doub
 	/* allocate memory */
 
 	if ((np = (int *)malloc(num_rng_bins * sizeof(int))) == NULL) {
-		printf("sorry, couldn't allocate mem for np.\n");
+		fprintf(stderr, "sorry, couldn't allocate mem for np.\n");
 		exit(-1);
 	}
 	if ((r = (double *)malloc(num_rng_bins * sizeof(double))) == NULL) {
-		printf("sorry, couldn't allocate mem for r.\n");
+		fprintf(stderr, "sorry, couldn't allocate mem for r.\n");
 		exit(-1);
 	}
 	if ((y = (float *)malloc(num_rng_bins * sizeof(float))) == NULL) {
-		printf("sorry, couldn't allocate mem for y.\n");
+		fprintf(stderr, "sorry, couldn't allocate mem for y.\n");
 		exit(-1);
 	}
 	if ((f0 = (float *)malloc(num_rng_bins * sizeof(float))) == NULL) {
-		printf("sorry, couldn't allocate mem for f0.\n");
+		fprintf(stderr, "sorry, couldn't allocate mem for f0.\n");
 		exit(-1);
 	}
 	if ((f_rate = (float *)malloc(num_rng_bins * sizeof(float))) == NULL) {
-		printf("sorry, couldn't allocate mem for f_rate.\n");
+		fprintf(stderr, "sorry, couldn't allocate mem for f_rate.\n");
 		exit(-1);
 	}
 	if ((ref = (fcomplex *)malloc(nrows * sizeof(fcomplex))) == NULL) {
-		printf("sorry, couldn't allocate mem for ref.\n");
+		fprintf(stderr, "sorry, couldn't allocate mem for ref.\n");
 		exit(-1);
 	}
 	if ((fft_vec = (fcomplex *)malloc(nrows * sizeof(fcomplex))) == NULL) {
-		printf("sorry, couldn't allocate mem for fft_vec.\n");
+		fprintf(stderr, "sorry, couldn't allocate mem for fft_vec.\n");
 		exit(-1);
 	}
 

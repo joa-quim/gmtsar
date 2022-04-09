@@ -158,9 +158,9 @@ int main(int argc, char **argv) {
         write_column_slc(out_b, buf_b, j, nl, num_rng_bins);
     }
     fprintf(stderr,"...\n");
-    printf("average_spectrum_frequency_forward  = %.6f\n",f_f/w_f);
-    printf("average_spectrum_frequency_backward = %.6f\n",f_b/w_b);
-    printf("average_spectrum_frequency_separation = %.6f\n",f_f/w_f-f_b/w_b);
+    fprintf(stderr, "average_spectrum_frequency_forward  = %.6f\n",f_f/w_f);
+    fprintf(stderr, "average_spectrum_frequency_backward = %.6f\n",f_b/w_b);
+    fprintf(stderr, "average_spectrum_frequency_separation = %.6f\n",f_f/w_f-f_b/w_b);
     free(buf);free(buf_b);free(buf_f);
     free(fbuf);free(fbuf_b);free(fbuf_f);
     close(fin);close(fout_b);close(fout_f);

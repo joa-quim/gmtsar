@@ -45,6 +45,8 @@ int main(int argc, char **argv) {
 	if (argc != 3 && argc != 2)
 		die("", USAGE1);
 	split1(argc, argv);
+	fflush(stdout);		/* Make sure output buffer is flushed  */
+
 	return (1);
 }
 

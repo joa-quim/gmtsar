@@ -576,7 +576,7 @@ int setvalue(struct PRM *prm, char *name, char *value) {
 	}
 	/* Exit with a fatal error if variable isn't found */
 	if (n == LOOKUPTABLE_SIZE) {
-		printf("Fatal Error:\n");
+		fprintf(stderr, "Fatal Error:\n");
 		die("Variable name not found ", name);
 	}
 
@@ -624,7 +624,7 @@ char *get_PRM(char *prmfile, char *valuename) {
 
 	/* Exit with a fatal error if variable isn't found */
 	if (n == LOOKUPTABLE_SIZE) {
-		printf("Fatal Error:\n");
+		fprintf(stderr, "Fatal Error:\n");
 		die("Variable name not found ", valuename);
 	}
 

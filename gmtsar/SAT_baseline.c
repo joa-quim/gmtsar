@@ -106,10 +106,11 @@ int main(int argc, char **argv) {
 		fclose(prmfile);
 	}
 
-	printf("SC_identity = %d \n", r[0].SC_identity);
+	fprintf(stdout, "SC_identity = %d \n", r[0].SC_identity);
 	orb = malloc(nfiles * sizeof(struct SAT_ORB));
 	read_all_ldr(r, orb, nfiles);
 	baseline(r, orb, nfiles, input_flag, filename, fs0);
+	fflush(stdout);		/* Make sure output buffer is flushed  */
 
 	return (EXIT_SUCCESS);
 }
@@ -441,8 +442,8 @@ void baseline(struct PRM *r, struct SAT_ORB *orb, int nfiles, int input_flag, ch
 	fll = (r[0].ra - r[0].rc) / r[0].ra;
 	xyz2plh(target, target_llt, r[0].ra, fll);
 
-	printf("lon_tie_point =  %f\n", (target_llt[1] > 180.0) ? target_llt[1] - 360.0 : target_llt[1]);
-	printf("lat_tie_point =  %f\n", target_llt[0]);
+	fprintf(stdout, "lon_tie_point =  %f\n", (target_llt[1] > 180.0) ? target_llt[1] - 360.0 : target_llt[1]);
+	fprintf(stdout, "lat_tie_point =  %f\n", target_llt[0]);
 
 	llt2rat_sub(&r[0], target_llt, target_rat_ref);
 	llt2rat_sub(&r[ii], target_llt, target_rat_rep);
@@ -539,26 +540,26 @@ void get_sign(struct PRM r, double x11, double y11, double x21, double y21, int 
 }
 /*---------------------------------------------------------------------------*/
 void write_prm_baseline(struct PRM rep) {
-	printf("SC_vel              = %.12f \n", rep.vel);
-	printf("SC_height           = %.12f \n", rep.ht);
-	printf("SC_height_start     = %.12f \n", rep.ht_start);
-	printf("SC_height_end       = %.12f \n", rep.ht_end);
-	printf("earth_radius        = %.12f \n", rep.RE);
-	printf("rshift              = %d \n", rep.rshift);
-	printf("sub_int_r           = 0.0 \n");
-	printf("ashift              = %d\n", rep.ashift);
-	printf("sub_int_a           = 0.0 \n");
-	printf("B_parallel          = %.12f \n", rep.bpara);
-	printf("B_perpendicular     = %.12f \n", rep.bperp);
-	printf("baseline_start      = %.12f \n", rep.baseline_start);
-	printf("baseline_center     = %.12f \n", rep.baseline_center);
-	printf("baseline_end        = %.12f \n", rep.baseline_end);
-	printf("alpha_start         = %.12f \n", rep.alpha_start);
-	printf("alpha_center        = %.12f \n", rep.alpha_center);
-	printf("alpha_end           = %.12f \n", rep.alpha_end);
-	printf("B_offset_start      = %.12f \n", rep.B_offset_start);
-	printf("B_offset_center     = %.12f \n", rep.B_offset_center);
-	printf("B_offset_end        = %.12f \n", rep.B_offset_end);
+	fprintf(stdout, "SC_vel              = %.12f \n", rep.vel);
+	fprintf(stdout, "SC_height           = %.12f \n", rep.ht);
+	fprintf(stdout, "SC_height_start     = %.12f \n", rep.ht_start);
+	fprintf(stdout, "SC_height_end       = %.12f \n", rep.ht_end);
+	fprintf(stdout, "earth_radius        = %.12f \n", rep.RE);
+	fprintf(stdout, "rshift              = %d \n", rep.rshift);
+	fprintf(stdout, "sub_int_r           = 0.0 \n");
+	fprintf(stdout, "ashift              = %d\n", rep.ashift);
+	fprintf(stdout, "sub_int_a           = 0.0 \n");
+	fprintf(stdout, "B_parallel          = %.12f \n", rep.bpara);
+	fprintf(stdout, "B_perpendicular     = %.12f \n", rep.bperp);
+	fprintf(stdout, "baseline_start      = %.12f \n", rep.baseline_start);
+	fprintf(stdout, "baseline_center     = %.12f \n", rep.baseline_center);
+	fprintf(stdout, "baseline_end        = %.12f \n", rep.baseline_end);
+	fprintf(stdout, "alpha_start         = %.12f \n", rep.alpha_start);
+	fprintf(stdout, "alpha_center        = %.12f \n", rep.alpha_center);
+	fprintf(stdout, "alpha_end           = %.12f \n", rep.alpha_end);
+	fprintf(stdout, "B_offset_start      = %.12f \n", rep.B_offset_start);
+	fprintf(stdout, "B_offset_center     = %.12f \n", rep.B_offset_center);
+	fprintf(stdout, "B_offset_end        = %.12f \n", rep.B_offset_end);
 }
 
 /*---------------------------------------------------------------------------*/

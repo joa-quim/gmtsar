@@ -250,8 +250,10 @@ int main(int argc, char **argv) {
 
 	if (debug)
 		print_prm_params(p1, p2);
-	if (p2.baseline_start < -9000)
+	if (p2.baseline_start < -9000) {
+		print_prm_params(p1, p2);
 		die("baseline < -9000 not set ?", "");
+	}
 
 	/* near_range, SC_clock_start, and SC_clock_stop need to be changed */
 	fix_prm_params(&p1, argv[1]);

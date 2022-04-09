@@ -18,7 +18,7 @@ int main(int argc, char **argv) {
 		die(USAGE, "");
 	if (argc == 4) {
 		radius = atoi(argv[3]);
-		printf("Setting search radius to be %d ...\n", radius);
+		fprintf(stderr, "Setting search radius to be %d ...\n", radius);
 	}
 	if ((API = GMT_Create_Session(argv[0], 0U, 0U, NULL)) == NULL)
 		return EXIT_FAILURE;
@@ -145,7 +145,7 @@ double nearest_interp(int nx, int ny, float *m, float *m_interp, int radius) {
 	        bufx[k] = 0; bufy[k] = 0; bufr[k] = 0;
 	    }
 	*/
-	printf("Interpolating to nearest neighbour...\n  ");
+	fprintf(stderr, "Interpolating to nearest neighbour...\n  ");
 	fprintf(stderr, "Working on line  ");
 	for (i = 0; i < ny; i++) {
 		for (k = 0; k < kk; k++)
@@ -218,7 +218,7 @@ double nearest_interp(int nx, int ny, float *m, float *m_interp, int radius) {
 	}
 	fprintf(stderr, "\n");
 
-	printf("%d number of searches used ...\n", cs);
+	fprintf(stderr, "%d number of searches used ...\n", cs);
 	free(is);
 	free(js);
 	free(xs);
@@ -236,7 +236,7 @@ int create_grid(void *API, char *file, char *output, int radius) {
 
 	rr = radius;
 
-	printf("Reading in original grid...\n");
+	fprintf(stderr, "Reading in original grid...\n");
 	if ((T = GMT_Read_Data(API, GMT_IS_GRID, GMT_IS_FILE, GMT_IS_SURFACE, GMT_GRID_HEADER_ONLY, NULL, file, NULL)) == NULL)
 		die("cannot open grdfile", file);
 	if (GMT_Read_Data(API, GMT_IS_GRID, GMT_IS_FILE, GMT_IS_SURFACE, GMT_GRID_DATA_ONLY, NULL, file, T) == NULL)
@@ -244,7 +244,7 @@ int create_grid(void *API, char *file, char *output, int radius) {
 
 	nx = T->header->n_columns;
 	ny = T->header->n_rows;
-	// printf("nx: %d, ny: %d\n",nx,ny);
+	// fprintf(stderr, "nx: %d, ny: %d\n",nx,ny);
 	m = T->data;
 	m_interp = (float *)malloc(sizeof(float) * nx * ny);
 
@@ -258,7 +258,7 @@ int create_grid(void *API, char *file, char *output, int radius) {
 
 	nearest_interp(nx, ny, m, m_interp, rr);
 
-	printf("WRITING GRID IMAGE: Width x Heihgt = %d x %d...\n", nx, ny);
+	fprintf(stderr, "WRITING GRID IMAGE: Width x Heihgt = %d x %d...\n", nx, ny);
 	if (OUT == NULL && (OUT = GMT_Duplicate_Data(API, GMT_IS_GRID, GMT_DUPLICATE_DATA, T)) == NULL)
 		die("error creating output grid", "");
 	OUT->data = m_interp;

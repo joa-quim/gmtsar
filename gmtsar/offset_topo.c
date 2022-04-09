@@ -34,15 +34,15 @@ int main(int argc, char **argv) {
 
 	/* get the information from the command line */
 	if (argc < 6) {
-		printf("\noffset_topo [GMTSAR] - Determine topography offset\n \n");
-		printf("\nUsage: offset_topo amp_master.grd topo_ra.grd rshift ashift ns "
+		fprintf(stderr, "\noffset_topo [GMTSAR] - Determine topography offset\n \n");
+		fprintf(stderr, "\nUsage: offset_topo amp_master.grd topo_ra.grd rshift ashift ns "
 		       "[topo_shift.grd] \n \n");
-		printf("   amp_master.grd - amplitude image of master \n");
-		printf("   topo_ra.grd    - topo in range/azimuth coordinates of master \n");
-		printf("   rshift         - guess at integer range shift \n");
-		printf("   ashift         - guess at integer azimuth shift \n");
-		printf("   ns             - integer search radius \n");
-		printf("   topo_shift.grd - shifted topo_ra - optional, will be shifted by "
+		fprintf(stderr, "   amp_master.grd - amplitude image of master \n");
+		fprintf(stderr, "   topo_ra.grd    - topo in range/azimuth coordinates of master \n");
+		fprintf(stderr, "   rshift         - guess at integer range shift \n");
+		fprintf(stderr, "   ashift         - guess at integer azimuth shift \n");
+		fprintf(stderr, "   ns             - integer search radius \n");
+		fprintf(stderr, "   topo_shift.grd - shifted topo_ra - optional, will be shifted by "
 		       "rshift, ashift \n \n");
 		exit(-1);
 	}

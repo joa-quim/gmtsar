@@ -55,7 +55,7 @@ J. Geophys. Res., 108, 2416, doi:10.1029/2002JB002267, B9.
 #define Malloc(type, n) (type *)malloc((n) * sizeof(type))
 #define max(a, b) (((a) > (b)) ? (a) : (b))
 #ifdef DEBUG
-#define checkpoint() printf("Checkpoint64_t at line %lld in file %s\n", __LINE__, __FILE__)
+#define checkpoint() fprintf(stderr, "Checkpoint64_t at line %lld in file %s\n", __LINE__, __FILE__)
 #else
 #define checkpoint()
 #endif
@@ -222,7 +222,7 @@ int allocate_memory_ts(int64_t **jpvt, double **work, double **d, double **ds, f
 	//if ((*var = Malloc(float, N *xdim *ydim)) == NULL)
 		//die("memory allocation!", "var");
 
-	printf("Memory Allocation Successful...\n");
+	fprintf(stderr, "Memory Allocation Successful...\n");
 	return (1);
 }
 
@@ -257,7 +257,7 @@ int read_table_data_ts(void *API, FILE *infile, FILE *datefile, char **gfile, ch
 	float *corin, *grdin;
 	struct GMT_GRID *CC = NULL, *GG = NULL;
 
-	printf("read table file ...\n");
+	fprintf(stderr, "read table file ...\n");
 	/* read in scene.tab */
 	i = 0;
 	while (fscanf(datefile, "%s %s", &tmp1[0], &tmp2[0]) == 2) {
@@ -288,7 +288,7 @@ int read_table_data_ts(void *API, FILE *infile, FILE *datefile, char **gfile, ch
 	fprintf(stderr, "number of interferograms is %lld \n", N);
 
 	/* read in N 2-dimensional grd file into 3D array */
-	printf("read phase and correlation grids ...\n");
+	fprintf(stderr, "read phase and correlation grids ...\n");
 	for (i = 0; i < N; i++) {
 		if ((CC = GMT_Read_Data(API, GMT_IS_GRID, GMT_IS_FILE, GMT_IS_SURFACE, GMT_GRID_HEADER_ONLY, NULL, cfile[i], NULL)) ==
 		    NULL)
@@ -347,7 +347,7 @@ int init_G_ts(double *G, double *Gs, int64_t N, int64_t S, int64_t m, int64_t n,
 
 	int64_t i, j;
 
-	printf("fill the G matrix ...\n");
+	fprintf(stderr, "fill the G matrix ...\n");
 	for (i = 0; i < N; i++) {
 		for (j = 0; j < S - 1; j++) {
 			if (L[j] >= H[i * 2 + 0] && L[j] < H[i * 2 + 1]) {
@@ -386,7 +386,7 @@ int64_t lsqlin_sov_ts(int64_t xdim, int64_t ydim, float *disp, float *vel, int64
 		if (atm_rms[i] != 0.0 && i != 0 && i != 1 && i != S - 1 && i != S - 2)
 			count++;
 
-	printf("run least-squares problem over %lld by %lld pixel (%lld) ...\n", xdim, ydim, count);
+	fprintf(stderr, "run least-squares problem over %lld by %lld pixel (%lld) ...\n", xdim, ydim, count);
 	for (k = 0; k < ydim; k++) {
 		for (j = 0; j < xdim; j++) {
 			/* check the dummy value of the grd file */
@@ -417,15 +417,15 @@ int64_t lsqlin_sov_ts(int64_t xdim, int64_t ydim, float *disp, float *vel, int64
 				dgelsy_(&m, &n, &nrhs, G, &lda, d, &ldb, jpvt, &rcond, &rank, work, &lwork, &info);
 
 				if (info != 0)
-					printf("warning! input has an illegal value\n");
+					fprintf(stderr, "warning! input has an illegal value\n");
 				if (j == 0 && k == 0) {
 					if (rank == n) {
-						printf("matrix is full rank: %lld\n\n", rank);
+						fprintf(stderr, "matrix is full rank: %lld\n\n", rank);
 					}
 					else if (rank < n) {
-						printf("matrix is rank-deficient: %lld\n\n", rank);
+						fprintf(stderr, "matrix is rank-deficient: %lld\n\n", rank);
 						if (rank == 0) {
-							printf("WARNING: rank is zero. Check scene.tab and intf.tab for "
+							fprintf(stderr, "WARNING: rank is zero. Check scene.tab and intf.tab for "
 							       "possible duplicates.\n\n");
 							for (i = 0; i < N; i++) {
 								for (p = 0; p < S - 1; p++) {
@@ -538,7 +538,7 @@ int write_output_ts(void *API, struct GMT_GRID *Out, int64_t agc, char **agv, in
 	float *grdin, *save_grid;
 	char tmp1[200], outfile[200];
 
-	printf("write output ...\n");
+	fprintf(stderr, "write output ...\n");
 
 	strcpy(Out->header->title, "");
 	strcpy(Out->header->remark, "");

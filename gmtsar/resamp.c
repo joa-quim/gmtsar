@@ -232,7 +232,7 @@ void bicubic_one(double *rdata, double *idata, double x, double y, double *cz) {
 		ij += 4;
 	}
 	if (wsum <= 0.0)
-		printf(" error wsum is zero \n");
+		fprintf(stderr, " error wsum is zero \n");
 	cz[0] = rsum / wsum;
 	cz[1] = isum / wsum;
 }
@@ -603,7 +603,7 @@ void sinc_one(double *rdata, double *idata, double x, double y, double *cz) {
 		ij += NS;
 	}
 	if (wsum <= 0.0)
-		printf(" error wsum is zero \n");
+		fprintf(stderr, " error wsum is zero \n");
 	cz[0] = rsum / wsum;
 	cz[1] = isum / wsum;
 }

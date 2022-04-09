@@ -74,7 +74,7 @@ int main(int argc, char **argv) {
 	char tmpstring[MAX_PATH];
 
 	if (argc > 6 || argc == 1 || argv[1] == NULL || argv[2] == NULL || file_exists(argv[4]) == 0) {
-		printf("Usage: fitoffset npar_rng npar_azi xcorr.dat prmfile.PRM [SNR]\n");
+		fprintf(stderr, "Usage: fitoffset npar_rng npar_azi xcorr.dat prmfile.PRM [SNR]\n");
 		return 1;
 	}
 
@@ -134,7 +134,7 @@ int main(int argc, char **argv) {
 		unlink(s_r_xyz);
 		unlink(s_a_xyz);
 
-		printf("FAILED - not enough points to estimate parameters\ntry using a "
+		fprintf(stderr, "FAILED - not enough points to estimate parameters\ntry using a "
 		       "lower SNR\nNPTS0 = %d NPTS = %d\n\n",
 		       NPTS0, NPTS);
 		return 1;
@@ -232,7 +232,7 @@ int main(int argc, char **argv) {
 	/* Remove the temporary files */
 	unlink(s_r_xyz);
 	unlink(s_a_xyz);
-	printf("fitoffset:\nUpdated %s with offset parameters calculated from %s\n", argv[4], argv[3]);
+	fprintf(stderr, "fitoffset:\nUpdated %s with offset parameters calculated from %s\n", argv[4], argv[3]);
 	return 0;
 }
 

@@ -83,7 +83,7 @@ FILE *read_PRM_file(char *prmfilename, char *input_file_name, struct PRM p, int 
 		format_flag = 3;
 	if (verbose)
 		fprintf(stderr, " reading PRM file %s\n", input_file_name);
-	if ((f_input = fopen(input_file_name, "r")) == NULL)
+	if ((f_input = fopen(input_file_name, "rb")) == NULL)
 		die("Can't open input data ", input_file_name);
 	*xdim = p.num_rng_bins;
 	*ydim = p.num_valid_az * p.num_patches;
@@ -208,7 +208,7 @@ int main(int argc, char **argv) {
 			die("Can't open ", input_name);
 		if ((c = strstr(input_name, "=bf")))
 			c[0] = '\0'; /* Chop off any trailing =bf flag */
-		if ((f_input = fopen(input_name, "r")) == NULL)
+		if ((f_input = fopen(input_name, "rb")) == NULL)
 			die("Can't open ", input_name);
 		fseek(f_input, 892L, SEEK_SET); /* Skip past the header */
 		xdim = In->header->n_columns;
