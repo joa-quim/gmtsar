@@ -43,7 +43,7 @@ void read_ALOS_sarleader(FILE *ldrfile, struct PRM *prm, struct ALOS_ORB *orb) {
 	if (verbose) {
 		logfile = fopen("LED.log", "w");
 		if (logfile == NULL)
-			die("can't open", "LED.log");
+			ALOS_die("can't open", "LED.log");
 		fprintf(stderr, " opened LED log file %s \n", "LED.log");
 		if (verbose)
 			fprintf(stderr, ".... reading sarleader \n");

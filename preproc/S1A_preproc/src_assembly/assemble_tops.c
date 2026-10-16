@@ -1,3 +1,13 @@
+#ifdef GMTSAR_MODULE_BUILD
+#define main gmtsar_assemble_tops_run
+#endif
+#define USAGE assemble_tops_USAGE
+#define edit_tree assemble_tops_edit_tree
+#define assemble_tifs assemble_tops_assemble_tifs
+#define add_index assemble_tops_add_index
+#define time2double assemble_tops_time2double
+#define add_branch assemble_tops_add_branch
+#define edit_leaf assemble_tops_edit_leaf
 /***************************************************************************
  * Creator:  Xiaohua(Eric) XU                                              *
  *           (Scripps Institution of Oceanography)                         *
@@ -9,7 +19,7 @@
  ***************************************************************************/
 
 #include "lib_defs.h"
-#include "lib_functions.h"
+#include "../../../gmtsar/lib_functions.h"
 #include "tiffio.h"
 #include <math.h>
 #include <stdio.h>
@@ -141,8 +151,16 @@ int main(int argc, char **argv) {
 	for (ii = 1; ii < nfiles; ii++)
 		free(xml_tree[ii]);
 	free(xml_tree);
-	return (1);
+	return (EXIT_SUCCESS);
 }
+
+#ifdef GMTSAR_MODULE_BUILD
+int gmtsar_assemble_tops_run(int argc, char **argv);
+
+int gmtsar_assemble_tops(int argc, char **argv) {
+	return gmtsar_assemble_tops_run(argc, argv);
+}
+#endif
 
 int assemble_tifs(TIFF **tif, TIFF *tif_out, int nfiles, int nb_start, int nb_end, int lpb) {
 

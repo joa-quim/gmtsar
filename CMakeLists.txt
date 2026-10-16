@@ -31,6 +31,7 @@ cmake_minimum_required (VERSION 3.5)
 # Use NEW behavior with newer CMake releases
 foreach(p
 		CMP0025 # CMake 3.0: Compiler id for Apple Clang is now AppleClang
+		CMP0079 # Allow subdirectories to extend/link the central gmtsar target
 		)
 	if(POLICY ${p})
 		cmake_policy(SET ${p} NEW)
@@ -39,6 +40,11 @@ endforeach()
 
 # Define project name and language
 project (GMTSAR C)
+include (CTest)
+
+# CMake builds the implementations into the GMTSAR module library.  The
+# traditional Makefiles still compile these same sources as standalone tools.
+add_compile_definitions (GMTSAR_MODULE_BUILD)
 
 # MSVC needs an export table for legacy libraries whose headers do not
 # consistently use dllexport.

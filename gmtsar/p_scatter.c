@@ -27,12 +27,13 @@ stacking. Journal of Geophysical Research: Solid Earth, 108(B1).
 */
 
 #include "gmtsar.h"
+#include "gmtsar_commands.h"
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
 
-char *USAGE = "\nUsage: "
+static const char *p_scatter_usage = "\nUsage: "
               "p_scatter PRM_filelist fileout.grd mode \n"
               "   PRM_filelist     - list of aligned SLCs \n"
               "   fileout.grd      - output file either average amplitude or "
@@ -47,7 +48,7 @@ char *USAGE = "\nUsage: "
 void read_input_file(char *, int, char **);
 #define BUFSIZE 1024
 
-int main(int argc, char **argv) {
+int gmtsar_p_scatter_run(void *API, int argc, char **argv) {
 	char line[BUFSIZE];
 	char **PRMname;
 	char **SLCname;
@@ -64,15 +65,11 @@ int main(int argc, char **argv) {
 	FILE **slcin = NULL;
 	struct PRM *r;
 	double inc[2], wesn[4];
-	void *API = NULL;                /* GMT control structure */
 	struct GMT_GRID *scatter = NULL; /* For the scatter grid */
 
 	if (argc < 4)
-		die(USAGE, "");
+		die((char *)p_scatter_usage, "");
 
-	/* Begin: Initializing new GMT session */
-	if ((API = GMT_Create_Session(argv[0], 0U, 0U, NULL)) == NULL)
-		return EXIT_FAILURE;
 	imode = atoi(argv[3]);
 
 	/* open the PRM_filelist count the number of lines */
@@ -230,13 +227,20 @@ int main(int argc, char **argv) {
 		die("Failed to write output grd file", "");
 	}
 
-	/* close all the files and remove the GMT machinery*/
+	/* close all the files */
 	for (kk = 0; kk < nfiles; kk++) {
 		fclose(slcin[kk]);
 	}
-	if (GMT_Destroy_Session(API))
-		return EXIT_FAILURE;
 	return (EXIT_SUCCESS);
+}
+
+int gmtsar_p_scatter(int argc, char **argv) {
+	void *API = GMT_Create_Session(argv[0], 0U, 0U, NULL);
+	int status;
+	if (!API) return EXIT_FAILURE;
+	status = gmtsar_p_scatter_run(API, argc, argv);
+	if (GMT_Destroy_Session(API) && status == EXIT_SUCCESS) status = EXIT_FAILURE;
+	return status;
 }
 /*---------------------------------------------------------------------------*/
 void read_input_file(char *inputfilename, int nfiles, char **filename) {

@@ -1,5 +1,5 @@
 /************************************************************************
- * plh2xyz  converts elliptic lat, lon, hgt to geocentric X, Y, Z        *
+ * ALOS_plh2xyz  converts elliptic lat, lon, hgt to geocentric X, Y, Z        *
  *          the library found at http://www.ngs.noaa.gov/PC_PROD/XYZWIN/ *
  ************************************************************************/
 /************************************************************************
@@ -17,8 +17,8 @@
 #include <math.h>
 #include "../../../declspec.h"
 
-EXTERN_MSC void plh2xyz(double *plh, double *xyz, double A, double FL);
-void plh2xyz(double *plh, double *xyz, double A, double FL)
+EXTERN_MSC void ALOS_plh2xyz(double *plh, double *xyz, double A, double FL);
+void ALOS_plh2xyz(double *plh, double *xyz, double A, double FL)
 /********1*********2*********3*********4*********5*********6*********7*********
  * input parameters
  * ----------------
@@ -41,7 +41,7 @@ void plh2xyz(double *plh, double *xyz, double A, double FL)
  *
  * see also:
  * ------------------------------
- * xyz2plh
+ * ALOS_xyz2plh
  */
 
 {

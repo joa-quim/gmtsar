@@ -9,24 +9,41 @@ endif (HAVE_M_LIBRARY)
 
 include_directories (include ../../gmtsar ../ALOS_preproc/include ${GMT_INCLUDE_DIR})
 
-set (LINK_LIBS ${LINK_LIBS} gmtsar ALOS)
+set (LINK_LIBS ${LINK_LIBS} gmtsar)
 
-add_executable (ers_line_fixer ers_line_fixer/ers_line_fixer.c)
+add_library (ERS_modules OBJECT
+	ers_line_fixer/ers_line_fixer.c
+	read_data_file_ccrs/read_data_file_ccrs.c
+	read_data_file_dpaf/read_data_file_dpaf.c
+	read_sarleader_ccrs/read_sarleader_ccrs.c read_sarleader_ccrs/make_prm_ccrs.c
+	read_sarleader_dpaf/read_sarleader_dpaf.c read_sarleader_dpaf/make_prm_dpaf.c
+	utility/ccrs2dpaf.c
+	${CMAKE_CURRENT_SOURCE_DIR}/../../gmtsar/ers_line_fixer_module.c
+	${CMAKE_CURRENT_SOURCE_DIR}/../../gmtsar/read_data_file_ccrs_module.c
+	${CMAKE_CURRENT_SOURCE_DIR}/../../gmtsar/read_data_file_dpaf_module.c
+	${CMAKE_CURRENT_SOURCE_DIR}/../../gmtsar/read_sarleader_ccrs_module.c
+	${CMAKE_CURRENT_SOURCE_DIR}/../../gmtsar/read_sarleader_dpaf_module.c
+	${CMAKE_CURRENT_SOURCE_DIR}/../../gmtsar/ccrs2dpaf_module.c)
+target_include_directories (ERS_modules PRIVATE ${CMAKE_SOURCE_DIR} include ../../gmtsar ../ALOS_preproc/include ${GMT_INCLUDE_DIR} ${GDAL_INCLUDE_DIR})
+target_sources (gmtsar PRIVATE $<TARGET_OBJECTS:ERS_modules>)
+target_link_libraries (gmtsar ${GETOPT_LIB})
+
+add_executable (ers_line_fixer ../../gmtsar/cli/ers_line_fixer.c)
 target_link_libraries (ers_line_fixer ${LINK_LIBS})
 
-add_executable (read_data_file_ccrs read_data_file_ccrs/read_data_file_ccrs.c)
+add_executable (read_data_file_ccrs ../../gmtsar/cli/read_data_file_ccrs.c)
 target_link_libraries (read_data_file_ccrs ${LINK_LIBS})
 
-add_executable (read_data_file_dpaf read_data_file_dpaf/read_data_file_dpaf.c)
+add_executable (read_data_file_dpaf ../../gmtsar/cli/read_data_file_dpaf.c)
 target_link_libraries (read_data_file_dpaf ${LINK_LIBS})
 
-add_executable (read_sarleader_ccrs read_sarleader_ccrs/read_sarleader_ccrs.c read_sarleader_ccrs/make_prm_ccrs.c)
+add_executable (read_sarleader_ccrs ../../gmtsar/cli/read_sarleader_ccrs.c)
 target_link_libraries (read_sarleader_ccrs ${LINK_LIBS})
 
-add_executable (read_sarleader_dpaf read_sarleader_dpaf/read_sarleader_dpaf.c read_sarleader_dpaf/make_prm_dpaf.c)
+add_executable (read_sarleader_dpaf ../../gmtsar/cli/read_sarleader_dpaf.c)
 target_link_libraries (read_sarleader_dpaf ${LINK_LIBS})
 
-add_executable (ccrs2dpaf utility/ccrs2dpaf.c)
+add_executable (ccrs2dpaf ../../gmtsar/cli/ccrs2dpaf.c)
 target_link_libraries (ccrs2dpaf ${LINK_LIBS})
 
 

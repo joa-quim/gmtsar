@@ -22,7 +22,7 @@
 
 #include "gmtsar.h"
 
-char *USAGE = "bperp [GMTSAR] - Perpendicular baseline processing\n\n"
+static const char *bperp_usage = "bperp [GMTSAR] - Perpendicular baseline processing\n\n"
               "   Usage: bperp rep.PRM phase.grd bperp.grd \n\n"
               "   rep.PRM    -  input repeat PRM file that provides the interferometric "
               "baseline \n"
@@ -30,7 +30,7 @@ char *USAGE = "bperp [GMTSAR] - Perpendicular baseline processing\n\n"
               "grd file \n"
               "   bperp.grd  -  output grd file of the perpendicular baseline\n\n";
 
-void print_prm_params(struct PRM p1, struct PRM p2) {
+static void bperp_print_prm_params(struct PRM p1, struct PRM p2) {
 	fprintf(stderr, " SLC 1: num_rng_bins %d num_lines %d \n", p1.num_rng_bins, p1.num_lines);
 	fprintf(stderr, " SLC 2: num_rng_bins %d num_lines %d \n", p2.num_rng_bins, p2.num_lines);
 	fprintf(stderr, " lambda %f \n", p2.lambda);
@@ -47,7 +47,7 @@ void print_prm_params(struct PRM p1, struct PRM p2) {
 	fprintf(stderr, " prf %f \n", p2.prf);
 }
 
-void fix_prm_params(struct PRM *p, char *s) {
+static void bperp_fix_prm_params(struct PRM *p, char *s) {
 	double delr;
 
 	delr = SOL / p->fs / 2.0;
@@ -59,7 +59,7 @@ void fix_prm_params(struct PRM *p, char *s) {
 	p->SC_clock_stop = p->SC_clock_start + (p->num_valid_az * p->num_patches) / (p->prf * 86400.0);
 }
 
-void calc_theta(int xdim, double range0, double drange, double re, double height, double alpha, float *theta) {
+static void bperp_calc_theta(int xdim, double range0, double drange, double re, double height, double alpha, float *theta) {
 	int k;
 	double rho, eta;
 	double c, c2, re2;
@@ -77,27 +77,22 @@ void calc_theta(int xdim, double range0, double drange, double re, double height
 	}
 }
 
-int main(int argc, char **argv) {
+int gmtsar_bperp_run(void *API, int argc, char **argv) {
 	struct PRM prm;
 	float *theta = NULL;
 	double drange, dBh, dBv, Bh0, Bhf, Bv0, Bvf, B, alpha, Bh, Bv, dht, height;
 	unsigned int row, col;
 	uint64_t node;
-	void *API = NULL;                      /* GMT API control structure */
 	struct GMT_GRID *P = NULL, *BP = NULL; /* Grid structure containing ->header and ->data */
 
 	if (argc < 4)
-		die("\n", USAGE);
-
-	/* Begin: Initializing new GMT session */
-	if ((API = GMT_Create_Session(argv[0], 0U, 0U, NULL)) == NULL)
-		return EXIT_FAILURE;
+		die("\n", bperp_usage);
 
 	/* open PRM file */
 	get_prm(&prm, argv[1]);
 
 	/* near_range, SC_clock_start, and SC_clock_stop need to be changed */
-	fix_prm_params(&prm, argv[1]);
+	bperp_fix_prm_params(&prm, argv[1]);
 
 	/* Get header from residual phase file */
 	if ((P = GMT_Read_Data(API, GMT_IS_GRID, GMT_IS_FILE, GMT_IS_SURFACE, GMT_GRID_HEADER_ONLY, NULL, argv[2], NULL)) == NULL)
@@ -143,7 +138,7 @@ int main(int argc, char **argv) {
 		alpha = atan2(Bv, Bh);
 		height = prm.ht_start + dht * row;
 
-		calc_theta(P->header->n_columns, prm.near_range, drange, prm.RE, height, alpha, theta);
+		bperp_calc_theta(P->header->n_columns, prm.near_range, drange, prm.RE, height, alpha, theta);
 
 		/* compute the perpendicular baseline */
 		for (col = 0; col < BP->header->n_columns; col++) { /* For each column, get node number */
@@ -159,8 +154,14 @@ int main(int argc, char **argv) {
 	if (GMT_Write_Data(API, GMT_IS_GRID, GMT_IS_FILE, GMT_IS_SURFACE, GMT_GRID_ALL, NULL, argv[3], BP))
 		return EXIT_FAILURE;
 
-	if (GMT_Destroy_Session(API))
-		return EXIT_FAILURE; /* Remove the GMT machinery */
-
 	return (EXIT_SUCCESS);
+}
+
+int gmtsar_bperp(int argc, char **argv) {
+	void *API = GMT_Create_Session(argv[0], 0U, 0U, NULL);
+	int status;
+	if (!API) return EXIT_FAILURE;
+	status = gmtsar_bperp_run(API, argc, argv);
+	if (GMT_Destroy_Session(API) && status == EXIT_SUCCESS) status = EXIT_FAILURE;
+	return status;
 }

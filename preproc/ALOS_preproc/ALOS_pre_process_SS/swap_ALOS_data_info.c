@@ -1,3 +1,4 @@
+#include "namespace.h"
 #include "image_sio.h"
 #include "lib_functions.h"
 /* this swaps bytes */

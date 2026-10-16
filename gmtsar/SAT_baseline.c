@@ -1,3 +1,5 @@
+#define USAGE SAT_baseline_USAGE
+#define read_input_file SAT_baseline_read_input_file
 /*	$Id$	*/
 /*******************************************************************************
  * Compute the interferometric baseline between reference and repeat           *
@@ -64,7 +66,7 @@ void interpolate_SAT_orbit(struct SAT_ORB *, double *, double *, double *, doubl
 void calc_height_velocity(struct SAT_ORB *, struct PRM *, double, double, double *, double *, double *, double *, double *);
 void polyfit(double *, double *, double *, int *, int *);
 
-int main(int argc, char **argv) {
+int gmtsar_SAT_baseline(int argc, char **argv) {
 	int i;
 	int input_flag, nfiles;
 	double fs0 = 0.;
@@ -116,6 +118,37 @@ int main(int argc, char **argv) {
 	orb = malloc(nfiles * sizeof(struct SAT_ORB));
 	read_all_ldr(r, orb, nfiles);
 	baseline(r, orb, nfiles, input_flag, filename, fs0);
+
+	return (EXIT_SUCCESS);
+}
+
+int gmtsar_SAT_baseline_run(const char *master, const char *aligned) {
+	struct PRM r[2];
+	struct SAT_ORB orb[2];
+	char *filename[2];
+	FILE *prmfile;
+	double fs0 = 0.;
+	int i;
+
+	filename[0] = (char *)master;
+	filename[1] = (char *)aligned;
+
+	for (i = 0; i < 2; i++) {
+		if ((prmfile = fopen(filename[i], "r")) == NULL)
+			die("Can't open prmfile ", filename[i]);
+		null_sio_struct(&r[i]);
+		get_sio_struct(prmfile, &r[i]);
+		if (i == 0)
+			fs0 = r[0].fs;
+		if (r[i].fs != fs0)
+			fprintf(stderr, "\nWARNING:\nRange_sampling_rate is not consistent.\nYou "
+			                "need to do FBD/FBS conversion.\n\n");
+		fclose(prmfile);
+	}
+
+	printf("SC_identity = %d \n", r[0].SC_identity);
+	read_all_ldr(r, orb, 2);
+	baseline(r, orb, 2, 0, filename, fs0);
 
 	return (EXIT_SUCCESS);
 }

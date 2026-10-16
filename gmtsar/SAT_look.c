@@ -1,3 +1,7 @@
+#define USAGE SAT_look_USAGE
+#define dist SAT_look_dist
+#define calorb_alos SAT_look_calorb_alos
+#define goldop SAT_look_goldop
 /*	$Id$	*/
 /***************************************************************************
  *  Program to project a longitude, latitude, and topography
@@ -84,10 +88,9 @@ EXTERN_MSC void read_orb(FILE *, struct SAT_ORB *);
 EXTERN_MSC void hermite_c(double *, double *, double *, int, int, double, double *, int *);
 EXTERN_MSC void set_prm_defaults(struct PRM *);
 
-int main(int argc, char **argv) {
+int gmtsar_SAT_look_run(const char *prmfile, int otype) {
 
 	FILE *fprm1;
-	int otype;
 	double rln, rlt, rht, t1, t2, tm;
 	double ts, rng, thet, relp, telp;
 	double xp[3];
@@ -121,29 +124,8 @@ int main(int argc, char **argv) {
 	_setmode(_fileno(stderr), _O_BINARY);
 #endif
 
-	/* Make sure usage is correct and files can be opened  */
-	if (argc < 2 || argc > 3) {
-		fprintf(stderr, "%s\n", USAGE);
-		exit(-1);
-	}
-
-	/* otype:    1 -- ascii; 2 -- single precision binary; 3 -- double precision
-	 * binary    */
-	otype = 1;
-	if (argc == 3) {
-		if (!strcmp(argv[2], "-bos"))
-			otype = 2;
-		else if (!strcmp(argv[2], "-bod"))
-			otype = 3;
-		else {
-			fprintf(stderr, " %s *** option not recognized ***\n\n", argv[2]);
-			fprintf(stderr, "%s", USAGE);
-			exit(1);
-		}
-	}
-
 	/*  open and read the parameter file */
-	if ((fprm1 = fopen(argv[1], "r")) == NULL) {
+	if ((fprm1 = fopen(prmfile, "r")) == NULL) {
 		fprintf(stderr, "couldn't open master.PRM \n");
 		fprintf(stderr, "%s\n", USAGE);
 		exit(-1);
@@ -397,6 +379,27 @@ int main(int argc, char **argv) {
 	free(orb_pos);
 	free(orb);
 	return (0);
+}
+
+int gmtsar_SAT_look(int argc, char **argv) {
+	int otype = 1;
+
+	if (argc < 2 || argc > 3) {
+		fprintf(stderr, "%s\n", USAGE);
+		exit(-1);
+	}
+	if (argc == 3) {
+		if (!strcmp(argv[2], "-bos"))
+			otype = 2;
+		else if (!strcmp(argv[2], "-bod"))
+			otype = 3;
+		else {
+			fprintf(stderr, " %s *** option not recognized ***\n\n", argv[2]);
+			fprintf(stderr, "%s", USAGE);
+			exit(1);
+		}
+	}
+	return gmtsar_SAT_look_run(argv[1], otype);
 }
 
 /*    subfunctions    */

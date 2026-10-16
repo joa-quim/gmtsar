@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include "gmtsar_commands.h"
 
 struct valuelist {
 	double value1;
@@ -34,10 +35,8 @@ int run_gmt_trend(char *file, int n_model_params, double *coefficient1, double *
 int run_gmt_gmtinfo(char *file, double *coefficient1, double *coefficient2, double *coefficient3, double *coefficient4);
 int file_exists(char *filename);
 
-int main(int argc, char **argv) {
+int gmtsar_fitoffset_run(int rng_p, int azi_p, const char *xcorr_file, const char *prmfile) {
 	double SNR = 20.0;
-	int rng_p = 0;
-	int azi_p = 0;
 	VALUELIST *vcurrent;
 	char s_r_xyz[MAX_PATH] = "";
 	char s_a_xyz[MAX_PATH] = "";
@@ -73,18 +72,7 @@ int main(int argc, char **argv) {
 
 	char tmpstring[MAX_PATH];
 
-	if (argc > 6 || argc == 1 || argv[1] == NULL || argv[2] == NULL || file_exists(argv[4]) == 0) {
-		fprintf(stderr, "Usage: fitoffset npar_rng npar_azi xcorr.dat prmfile.PRM [SNR]\n");
-		return 1;
-	}
-
-	if (argc == 5 && atof(argv[4]) != 0.0)
-		SNR = atof(argv[4]);
-
-	rng_p = atoi(argv[1]);
-	azi_p = atoi(argv[2]);
-
-	load_freq_xcorr(argv[3]);
+	load_freq_xcorr((char *)xcorr_file);
 
 	/* Open a temporary file for r.xyz */
 	strlcpy(s_r_xyz, "/tmp/r.xyz.XXXXXX", sizeof s_r_xyz);
@@ -211,28 +199,28 @@ int main(int argc, char **argv) {
 
 	/* Update rshift and associated params in PRM*/
 	sprintf(tmpstring, "%d", int_rshift);
-	update_PRM_sub(argv[4], "rshift", tmpstring);
+	update_PRM_sub((char *)prmfile, "rshift", tmpstring);
 	sprintf(tmpstring, "%.4f", sub_int_r);
-	update_PRM_sub(argv[4], "sub_int_r", tmpstring);
+	update_PRM_sub((char *)prmfile, "sub_int_r", tmpstring);
 	sprintf(tmpstring, "%.9f", stretch_r);
-	update_PRM_sub(argv[4], "stretch_r", tmpstring);
+	update_PRM_sub((char *)prmfile, "stretch_r", tmpstring);
 	sprintf(tmpstring, "%.9f", a_stretch_r);
-	update_PRM_sub(argv[4], "a_stretch_r", tmpstring);
+	update_PRM_sub((char *)prmfile, "a_stretch_r", tmpstring);
 
 	/* Update ashift and associated params in PRM*/
 	sprintf(tmpstring, "%d", int_ashift);
-	update_PRM_sub(argv[4], "ashift", tmpstring);
+	update_PRM_sub((char *)prmfile, "ashift", tmpstring);
 	sprintf(tmpstring, "%.4f", sub_int_a);
-	update_PRM_sub(argv[4], "sub_int_a", tmpstring);
+	update_PRM_sub((char *)prmfile, "sub_int_a", tmpstring);
 	sprintf(tmpstring, "%.9f", stretch_a);
-	update_PRM_sub(argv[4], "stretch_a", tmpstring);
+	update_PRM_sub((char *)prmfile, "stretch_a", tmpstring);
 	sprintf(tmpstring, "%.9f", a_stretch_a);
-	update_PRM_sub(argv[4], "a_stretch_a", tmpstring);
+	update_PRM_sub((char *)prmfile, "a_stretch_a", tmpstring);
 
 	/* Remove the temporary files */
 	unlink(s_r_xyz);
 	unlink(s_a_xyz);
-	fprintf(stderr, "fitoffset:\nUpdated %s with offset parameters calculated from %s\n", argv[4], argv[3]);
+	fprintf(stderr, "fitoffset:\nUpdated %s with offset parameters calculated from %s\n", prmfile, xcorr_file);
 	return 0;
 }
 
@@ -490,4 +478,12 @@ int file_exists(char *filename) {
 		return 1;
 	}
 	return 0;
+}
+
+int gmtsar_fitoffset(int argc, char **argv) {
+	if (argc < 5 || argc > 6 || argv[1] == NULL || argv[2] == NULL || file_exists(argv[4]) == 0) {
+		fprintf(stderr, "Usage: fitoffset npar_rng npar_azi xcorr.dat prmfile.PRM [SNR]\n");
+		return 1;
+	}
+	return gmtsar_fitoffset_run(atoi(argv[1]), atoi(argv[2]), argv[3], argv[4]);
 }

@@ -1,3 +1,12 @@
+#define USAGE asa_cat_USAGE
+#define byte_swap_short asa_cat_byte_swap_short
+#define byte_swap_ushort asa_cat_byte_swap_ushort
+#define byte_swap_long asa_cat_byte_swap_long
+#define byte_swap_ulong asa_cat_byte_swap_ulong
+#define byte_swap_int asa_cat_byte_swap_int
+#define byte_swap_uint asa_cat_byte_swap_uint
+#define byte_swap_float asa_cat_byte_swap_float
+#define is_bigendian asa_cat_is_bigendian
 /***********************************************************************************************************************************
 
 asa_cat.c
@@ -387,7 +396,7 @@ void bubbleSort(double array[], int len);
 
 /**********************************************************************************************************************************/
 
-int main(int argc, char *argv[]) {
+int gmtsar_asa_cat_run(int argc, char *argv[]) {
 
 	/* variable definitions */
 
@@ -611,7 +620,7 @@ int main(int argc, char *argv[]) {
 		       "non-overlaping frames are found. (0: Discontinue, 1: Continue, "
 		       "Default: 0)\n");
 		fprintf(stderr, "Notes:\n\n");
-		return 0;
+		return EXIT_FAILURE;
 	}
 
 	sscanf(argv[1], "%d", &numFiles);
@@ -1523,9 +1532,13 @@ int main(int argc, char *argv[]) {
 	fclose(outFilePtr);
 
 	fprintf(stderr, "\nDone.\n\n");
-	return 0;
+	return EXIT_SUCCESS;
 
 } /* end main */
+
+int gmtsar_asa_cat(int argc, char **argv) {
+	return gmtsar_asa_cat_run(argc, argv);
+}
 
 /**********************************************************************************************************************************/
 

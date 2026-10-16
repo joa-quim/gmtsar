@@ -12,6 +12,9 @@
  *   4 For each of the xyz points, calculate range, azimuth and topography
  ****************************************************************************/
 
+#define calorb_alos ALOS_baseline_calorb_alos
+#define dist ALOS_baseline_dist
+#define goldop ALOS_baseline_goldop
 /***************************************************************************
  * Creator:  Xiaopeng Tong and David T. Sandwell                           *
  *           (Scripps Institution of Oceanography)                         *
@@ -90,12 +93,12 @@ void ALOS_llt2rat_sub(char *filename, double *target_llt, double *target_rat) {
 
 	/* initialize the prm file   */
 	set_ALOS_defaults(&prm);
-	get_sio_struct(fprm1, &prm);
+	ALOS_get_sio_struct(fprm1, &prm);
 
 	/*  get the orbit data */
 	ldrfile = fopen(prm.led_file, "r");
 	if (ldrfile == NULL)
-		die("can't open ", prm.led_file);
+		ALOS_die("can't open ", prm.led_file);
 	orb = (struct ALOS_ORB *)malloc(sizeof(struct ALOS_ORB));
 	read_ALOS_sarleader(ldrfile, &prm, orb);
 
@@ -106,7 +109,7 @@ void ALOS_llt2rat_sub(char *filename, double *target_llt, double *target_rat) {
 	}
 	while (fscanf(fprm1, "%s = %s \n", name, value) != EOF) {
 		if (strcmp(name, "rng_samp_rate") == 0) {
-			get_double(name, "rng_samp_rate", value, &rsr);
+			ALOS_get_double(name, "rng_samp_rate", value, &rsr);
 		}
 	}
 	prm.fs = rsr;
@@ -151,7 +154,7 @@ void ALOS_llt2rat_sub(char *filename, double *target_llt, double *target_rat) {
 	rp[0] = rlt;
 	rp[1] = rln;
 	rp[2] = rht;
-	plh2xyz(rp, xp, prm.ra, fll);
+	ALOS_plh2xyz(rp, xp, prm.ra, fll);
 	xt[0] = -1.0;
 
 	/* compute the topography due to the difference between the local radius and
@@ -305,9 +308,9 @@ int calorb_alos(struct ALOS_ORB *orb, double **orb_pos, double ts, double t1, in
 		time = t1 - npad * ts + i * ts;
 		orb_pos[0][i] = time;
 
-		hermite_c(pt, px, pvx, orb->nd, nval, time, &xs, &ir);
-		hermite_c(pt, py, pvy, orb->nd, nval, time, &ys, &ir);
-		hermite_c(pt, pz, pvz, orb->nd, nval, time, &zs, &ir);
+		ALOS_hermite_c(pt, px, pvx, orb->nd, nval, time, &xs, &ir);
+		ALOS_hermite_c(pt, py, pvy, orb->nd, nval, time, &ys, &ir);
+		ALOS_hermite_c(pt, pz, pvz, orb->nd, nval, time, &zs, &ir);
 
 		orb_pos[1][i] = xs;
 		orb_pos[2][i] = ys;

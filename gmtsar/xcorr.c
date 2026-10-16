@@ -29,8 +29,9 @@
 
 /*-------------------------------------------------------*/
 #include "gmtsar.h"
+#include "gmtsar_commands.h"
 
-char *USAGE = "xcorr [GMTSAR] - Compute 2-D cross-correlation of two images\n\n"
+static const char *xcorr_usage = "xcorr [GMTSAR] - Compute 2-D cross-correlation of two images\n\n"
               "\nUsage: xcorr master.PRM aligned.PRM [-time] [-real] [-freq] [-nx n] [-ny "
               "n] [-xsearch xs] [-ysearch ys]\n"
               "master.PRM     	PRM file for reference image\n"
@@ -251,12 +252,11 @@ void allocate_arrays(struct xcorr *xc) {
 }
 
 /*-------------------------------------------------------*/
-int main(int argc, char **argv) {
+int gmtsar_xcorr_run(void *API, int argc, char **argv) {
 	int input_flag, nfiles;
 	struct xcorr *xc;
 	clock_t start, end;
 	double cpu_time;
-	void *API = NULL; /* GMT API control structure */
 
 	xc = (struct xcorr *)malloc(sizeof(struct xcorr));
 
@@ -267,16 +267,12 @@ int main(int argc, char **argv) {
 	xc->interp_flag = 0;
 	xc->corr_flag = 2;
 
-	/* Begin: Initializing new GMT session */
-	if ((API = GMT_Create_Session(argv[0], 0U, 0U, NULL)) == NULL)
-		return EXIT_FAILURE;
-
 	if (argc < 3)
-		die(USAGE, "");
+		die((char *)xcorr_usage, "");
 
 	set_defaults(xc);
 
-	parse_command_line(argc, argv, xc, &nfiles, &input_flag, USAGE);
+	parse_command_line(argc, argv, xc, &nfiles, &input_flag, (char *)xcorr_usage);
 
 	/* read prm files */
 	if (input_flag == 0)
@@ -319,8 +315,14 @@ int main(int argc, char **argv) {
           fclose(xc->data2);
         }
 
-	if (GMT_Destroy_Session(API))
-		return EXIT_FAILURE; /* Remove the GMT machinery */
-
 	return (EXIT_SUCCESS);
+}
+
+int gmtsar_xcorr(int argc, char **argv) {
+	void *API = GMT_Create_Session(argv[0], 0U, 0U, NULL);
+	int status;
+	if (!API) return EXIT_FAILURE;
+	status = gmtsar_xcorr_run(API, argc, argv);
+	if (GMT_Destroy_Session(API) && status == EXIT_SUCCESS) status = EXIT_FAILURE;
+	return status;
 }

@@ -1,3 +1,4 @@
+#include "namespace.h"
 /***************************************************************************/
 /* read_ALOSE_data reads an ERSDAC ALOS file containing raw signal data    */
 /* and creates a raw-file and PRM-file suitable for our esarp processor.   */
@@ -107,13 +108,13 @@ int64_t read_ALOSE_data(FILE *imagefile, FILE *outfile, struct PRM *prm, int64_t
 		printf("record_length0 = %d \n", record_length0); /* bytof */
 
 	if ((data = (char *)malloc(record_length0)) == NULL)
-		die("couldn't allocate memory for input indata.\n", "");
+		ALOS_die("couldn't allocate memory for input indata.\n", "");
 	if (sdr.receive_polarization == 2)
 		if ((data_fbd = (char *)malloc(record_length0)) == NULL)
-			die("couldn't allocate memory for input indata.\n", "");
+			ALOS_die("couldn't allocate memory for input indata.\n", "");
 
 	if ((shift_data = (char *)malloc(record_length0)) == NULL)
-		die("couldn't allocate memory for input indata.\n", "");
+		ALOS_die("couldn't allocate memory for input indata.\n", "");
 
 	/* if byte_offset < 0 this is the first time through 	*/
 	/* if prf change has occurred, set file to byte_offset  */
@@ -145,7 +146,7 @@ int64_t read_ALOSE_data(FILE *imagefile, FILE *outfile, struct PRM *prm, int64_t
 		/* check for changes in record_length and PRF */
 		record_length1 = sdr.record_length - line_prefix_size;
 		if (record_length0 != record_length1)
-			die("record_length changed", "");
+			ALOS_die("record_length changed", "");
 
 		/* if prf changes, close file and set byte_offset */
 		if ((sdr.PRF) != prm->prf) {
@@ -253,10 +254,10 @@ int64_t read_sardata_info_ALOSE(FILE *imagefile, struct PRM *prm, int *header_si
 		printf("*line_prefix_size = %d \n", *line_prefix_size); /* bytof */
 
 	if (*header_size != 16252)
-		die("header size is not 16252 bytes\n", ""); /* restec format change - bytof */
+		ALOS_die("header size is not 16252 bytes\n", ""); /* restec format change - bytof */
 
 	if (*line_prefix_size != 292)
-		die("line_prefix_size is not 292 bytes\n", ""); /* bytof */
+		ALOS_die("line_prefix_size is not 292 bytes\n", ""); /* bytof */
 
 	if (debug)
 		fprintf(stderr, " header_size %d line_prefix_size %d swap data %d\n", *header_size, *line_prefix_size, swap);
@@ -349,7 +350,7 @@ int assign_sardata_params_ALOSE(struct PRM *prm, int line_prefix_size, int *line
 
 	if (*record_length0 > 50000) {
 		fprintf(stderr, "**** record_length is %d !\n", *record_length0);
-		die("expect something like 21100 .... try -swap option?\n", "exiting");
+		ALOS_die("expect something like 21100 .... try -swap option?\n", "exiting");
 	}
 
 	return (EXIT_SUCCESS);

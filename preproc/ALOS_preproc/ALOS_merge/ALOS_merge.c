@@ -1,3 +1,5 @@
+#define USAGE ALOS_merge_USAGE
+#define get_clock ALOS_merge_get_clock
 /********************************************************************************
  * Program to merge adjacent frames of ALOS palsar data *
  *******************************************************************************/
@@ -26,10 +28,11 @@ void parse_ALOS_merge(int, int, char **, char *, char *);
 void assign_output(char *, char *, char *);
 void fill_PRM(struct PRM *, FILE *);
 int64_t  read_ALOS_raw_data(FILE *, FILE *, struct PRM *, int *);
-int main(int argc, char **argv) {
+int gmtsar_ALOS_merge_run(const char *prm1_file, const char *prm2_file, const char *output_stem, int calc_doppler,
+                          int verbose_flag) {
 	char RawOutName[128], tmp[128];
 	char PRMOutName[128];
-	int start_frame, narg;
+	int start_frame;
 	int64_t  nlines1, nlines2, nlines;
 	double overlap;
 	FILE *PRMfile1, *RAWfile1;
@@ -40,25 +43,20 @@ int main(int argc, char **argv) {
 	struct PRM p2;
 	struct PRM p3;
 
-	narg = 3;
-	if (argc < narg)
-		die(USAGE, "");
-
-	verbose = 0;
+	verbose = verbose_flag;
+	dopp = calc_doppler;
 
 	/* default name */
-	strcpy(tmp, "merge");
-	if (argc > narg)
-		parse_ALOS_merge(argc, narg, argv, tmp, USAGE);
+	strcpy(tmp, output_stem ? output_stem : "merge");
 	assign_output(RawOutName, PRMOutName, tmp);
 
 	/* open files */
-	if ((PRMfile1 = fopen(argv[1], "r")) == NULL)
-		die("can't open prfile", argv[1]);
-	if ((PRMfile2 = fopen(argv[2], "r")) == NULL)
-		die("can't open prfile", argv[2]);
+	if ((PRMfile1 = fopen(prm1_file, "r")) == NULL)
+		ALOS_die("can't open prfile", (char *)prm1_file);
+	if ((PRMfile2 = fopen(prm2_file, "r")) == NULL)
+		ALOS_die("can't open prfile", (char *)prm2_file);
 	if ((PRMfile3 = fopen(PRMOutName, "w")) == NULL)
-		die("can't open prfile", PRMOutName);
+		ALOS_die("can't open prfile", PRMOutName);
 
 	/* read prm values; put file1 prm into file 3 */
 	fill_PRM(&p1, PRMfile1);
@@ -70,18 +68,18 @@ int main(int argc, char **argv) {
 
 	/* open raw files */
 	if ((RAWfile1 = fopen(p1.input_file, "rb")) == NULL)
-		die("cannot open ", p1.input_file);
+		ALOS_die("cannot open ", p1.input_file);
 	if ((RAWfile2 = fopen(p2.input_file, "rb")) == NULL)
-		die("cannot open ", p2.input_file);
+		ALOS_die("cannot open ", p2.input_file);
 
 	/* output */
 	if ((RAWfile3 = fopen(RawOutName, "wb")) == NULL)
-		die("cannot open output file ", RawOutName);
+		ALOS_die("cannot open output file ", RawOutName);
 
 	/* check whether scenes overlap in time */
 	overlap = p1.SC_clock_stop - p2.SC_clock_start;
 	if (overlap < 0)
-		die("frames do not overlap in time", "");
+		ALOS_die("frames do not overlap in time", "");
 	if (verbose)
 		fprintf(stderr, " frame 1 %lf %lf\n frame 2 %lf %lf overlap %lf\n", p1.SC_clock_start, p1.SC_clock_stop,
 		        p2.SC_clock_start, p2.SC_clock_stop, overlap);
@@ -111,20 +109,37 @@ int main(int argc, char **argv) {
 
 	/* now recalculate doppler for the whole file */
 	if (dopp == 1)
-		calc_dop(&p3);
+		ALOS_calc_dop(&p3);
 
 	/* write out PRM file */
-	put_sio_struct(p3, PRMfile3);
+	ALOS_put_sio_struct(p3, PRMfile3);
 
 	return (EXIT_SUCCESS);
+}
+
+int gmtsar_ALOS_merge(int argc, char **argv) {
+	char tmp[128];
+	int narg = 3;
+
+	if (argc < narg)
+		ALOS_die(USAGE, "");
+
+	verbose = 0;
+	dopp = 1; /* default is to calculate doppler, per USAGE text */
+
+	strcpy(tmp, "merge");
+	if (argc > narg)
+		parse_ALOS_merge(argc, narg, argv, tmp, USAGE);
+
+	return gmtsar_ALOS_merge_run(argv[1], argv[2], tmp, dopp, verbose);
 }
 /*-----------------------------------------------*/
 void fill_PRM(struct PRM *p, FILE *Pfile) {
 	/* set all prm parameters in structure to NULL values */
-	null_sio_struct(p);
+	ALOS_null_sio_struct(p);
 
 	/* now rad new ones 			*/
-	get_sio_struct(Pfile, p);
+	ALOS_get_sio_struct(Pfile, p);
 }
 /*-----------------------------------------------*/
 void assign_output(char *rawname, char *prmname, char *base) {
@@ -149,7 +164,7 @@ void parse_ALOS_merge(int na, int nstart, char **a, char *filename, char *USAGE)
 		if (!strcmp(a[n], "-output")) {
 			n++;
 			if (n > na)
-				die(" no option after -output!\n", "");
+				ALOS_die(" no option after -output!\n", "");
 			strcpy(filename, a[n]);
 			fprintf(stderr, " setting output file %s \n", filename);
 			n++;

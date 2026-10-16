@@ -1,3 +1,4 @@
+#include "namespace.h"
 /***************************************************************************/
 /* read_ALOS_data reads an ALOS IMG file containing SLC data.              */
 /* The program skips the first 720 bytes of the IMG file but copies the    */
@@ -104,11 +105,11 @@ int64_t read_ALOS_data_SLC(FILE *imagefile, FILE *outfile, struct PRM *prm, int6
 
 	/* allocate memory */
 	if ((rdata = (float *)malloc(record_length0)) == NULL)
-		die("couldn't allocate memory for input indata.\n", "");
+		ALOS_die("couldn't allocate memory for input indata.\n", "");
 	if ((rdata_swap = (float *)malloc(record_length0)) == NULL)
-		die("couldn't allocate memory for input indata.\n", "");
+		ALOS_die("couldn't allocate memory for input indata.\n", "");
 	if ((i2data = (short *)malloc(record_length0)) == NULL)
-		die("couldn't allocate memory for output indata.\n", "");
+		ALOS_die("couldn't allocate memory for output indata.\n", "");
 
 	// fprintf(stderr,"after allocate data\n");
 
@@ -151,7 +152,7 @@ int64_t read_ALOS_data_SLC(FILE *imagefile, FILE *outfile, struct PRM *prm, int6
 		/* check for changes in record_length and PRF */
 		record_length1 = sdr.record_length - line_prefix_size - line_suffix_size;
 		if (record_length0 != record_length1)
-			die("record_length changed", "");
+			ALOS_die("record_length changed", "");
 
 		/* if prf changes, close file and set byte_offset */
 		if ((sdr.PRF) != prm->prf) {
@@ -289,9 +290,9 @@ int64_t read_sardata_info(FILE *imagefile, struct PRM *prm, int *header_size, in
 	*line_prefix_size = sizeof(struct sardata_info) + prefix_off;
 
 	if (*header_size != 720)
-		die("header size is not 720 bytes\n", "");
+		ALOS_die("header size is not 720 bytes\n", "");
 	if (*line_prefix_size != (412 + prefix_off))
-		die("prefix size is incorrect \n", "");
+		ALOS_die("prefix size is incorrect \n", "");
 
 	if (debug)
 		fprintf(stderr, " header_size %d line_prefix_size %d swap data %d\n", *header_size, *line_prefix_size, swap);
@@ -372,7 +373,7 @@ int assign_sardata_params(struct PRM *prm, int line_prefix_size, int *line_suffi
 
 	if (*record_length0 > 340000) {
 		fprintf(stderr, "**** record_length is %d !\n", *record_length0);
-		die("expect something like 340000 .... try -swap option?\n", "exiting");
+		ALOS_die("expect something like 340000 .... try -swap option?\n", "exiting");
 	}
 
 	return (EXIT_SUCCESS);
@@ -384,7 +385,7 @@ int check_shift(struct PRM *prm, int *shift, int *ishift, int *shift0, int recor
 
 	if (*ishift > record_length1) {
 		fprintf(stderr, " end: shift exceeds data window %d \n", *shift);
-		die("exitting", "");
+		ALOS_die("exitting", "");
 	}
 
 	if (*shift != *shift0) {

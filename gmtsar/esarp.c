@@ -1,3 +1,4 @@
+#define print_time esarp_print_time
 /*	$Id$	*/
 /************************************************************************
  * esarp reads a file of raw radar echos, and an associated parameter    *
@@ -40,7 +41,7 @@ void print_time(float timer) {
 	fprintf(stderr, "Processing Elapsed Time: %d min %.2f sec\n", min, sec);
 }
 
-int main(int argc, char *argv[]) {
+int gmtsar_esarp_run(void *API, int argc, char *argv[]) {
 	unsigned char *indata;
 	FILE *fph = NULL, *fpq2 = NULL, *fpi = NULL;
 	int ranfft;
@@ -52,11 +53,6 @@ int main(int argc, char *argv[]) {
 	int i2test = 1, nclip = 0;
 	int pcount = 24, count = 0;
 	int ineg = 0;
-	void *API = NULL; /* GMT API control structure */
-
-	/* Begin: Initializing new GMT session */
-	if ((API = GMT_Create_Session(argv[0], 0U, 0U, NULL)) == NULL)
-		return EXIT_FAILURE;
 
 	if (argc < 3) {
 		fprintf(stderr, "esarp [GMTSAR] - Produce SAR processed image\n\n");
@@ -363,7 +359,14 @@ int main(int argc, char *argv[]) {
 		fprintf(stderr, "number of points clipped to short int %d \n", nclip);
 	}
 
-	if (GMT_Destroy_Session(API))
-		return EXIT_FAILURE; /* Remove the GMT machinery */
 	return (EXIT_SUCCESS);
+}
+
+int gmtsar_esarp(int argc, char *argv[]) {
+	void *API = GMT_Create_Session(argv[0], 0U, 0U, NULL);
+	int status;
+	if (!API) return EXIT_FAILURE;
+	status = gmtsar_esarp_run(API, argc, argv);
+	if (GMT_Destroy_Session(API) && status == EXIT_SUCCESS) status = EXIT_FAILURE;
+	return status;
 }

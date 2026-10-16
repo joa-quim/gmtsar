@@ -13,7 +13,7 @@ EXTERN_MSC int get_tree(FILE *, tree *, int);
 EXTERN_MSC int search_tree(tree *, char *, char *, int, int, int);
 EXTERN_MSC int cat_nums(char *, char *);
 EXTERN_MSC int str2ints(int *, char *);
-EXTERN_MSC double date2MJD(int, int, int, int, int, double);
+EXTERN_MSC double xmlC_date2MJD(int, int, int, int, int, double);
 EXTERN_MSC int str_date2JD(char *, char *);
 EXTERN_MSC double str2double(char *);
 EXTERN_MSC int str2dbs(double *, char *);

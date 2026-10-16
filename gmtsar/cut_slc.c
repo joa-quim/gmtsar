@@ -17,8 +17,9 @@
 #include "gmtsar.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include "gmtsar_commands.h"
 
-char *USAGE = "\nUsage: "
+static const char *cut_slc_usage = "\nUsage: "
               "cut_slc stem.PRM new_stem range [prm_only]\n"
               "    stem.PRM      - PRM file for coregistered image to be cut\n"
               "    new_stem      - stem for newly generated SLC and PRM file\n"
@@ -57,7 +58,7 @@ int get_range(char *str, int *xl, int *xh, int *yl, int *yh) {
 	return (1);
 }
 
-int main(int argc, char **argv) {
+int gmtsar_cut_slc_run(const char *stem, const char *new_stem, const char *range, int prm_only) {
 
 	int ii, jj, xl, xh, yl, yh, nl, nr;
 	short *buf_in, *buf_out;
@@ -65,17 +66,12 @@ int main(int argc, char **argv) {
 	FILE *SLC_in, *SLC_out, *PRM_out;
 	char str[1024];
 	double dr;
-    int do_slc = 1;
+    int do_slc = prm_only ? 0 : 1;
 
-	if (argc < 4 || argc > 5)
-		die(USAGE, "");
-    if (argc == 5)
-        do_slc = 0;
-
-	get_prm(&pp, argv[1]);
+	get_prm(&pp, (char *)stem);
 	// xl = 0; xh = pp.num_rng_bins-1;
 	// yl = 0; yh = pp.num_patches*num_valid_az-1;
-	get_range(argv[3], &xl, &xh, &yl, &yh);
+	get_range((char *)range, &xl, &xh, &yl, &yh);
 	nl = pp.num_patches * pp.num_valid_az;
 	nr = pp.num_rng_bins;
 
@@ -90,7 +86,7 @@ int main(int argc, char **argv) {
 	    if ((SLC_in = fopen(pp.SLC_file, "rb")) == NULL)
 		    die("Can't open SLCfile", pp.SLC_file);
 
-	strcpy(str, argv[2]);
+	strcpy(str, new_stem);
 	// str[strlen(str)-3] = '\0';
 	strcat(str, ".SLC");
 
@@ -128,7 +124,7 @@ int main(int argc, char **argv) {
 	pp.bytes_per_line = pp.num_rng_bins * 4;
 	pp.good_bytes = pp.bytes_per_line;
 
-	strcpy(str, argv[2]);
+	strcpy(str, new_stem);
 	strcat(str, ".PRM");
 	if ((PRM_out = fopen(str, "w")) == NULL)
 		die("can't open prm file", str);
@@ -160,5 +156,14 @@ int main(int argc, char **argv) {
     free(buf_in);
     }
 
-	return (1);
+	return (EXIT_SUCCESS);
+}
+
+int gmtsar_cut_slc(int argc, char **argv) {
+	int prm_only = 0;
+	if (argc < 4 || argc > 5)
+		die((char *)cut_slc_usage, "");
+	if (argc == 5)
+		prm_only = 1;
+	return gmtsar_cut_slc_run(argv[1], argv[2], argv[3], prm_only);
 }

@@ -1,3 +1,8 @@
+#define USAGE ers_line_fixer_USAGE
+#define calc_pri ers_line_fixer_calc_pri
+#define calc_swst ers_line_fixer_calc_swst
+#define is_big_endian_ ers_line_fixer_is_big_endian_
+#define is_big_endian__ ers_line_fixer_is_big_endian__
 /*----------------------------------------------------------------------*/
 /* NAME									*/
 /*	ers_line_fixer - fixes lines in an ERS SAR raw data file	*/
@@ -132,7 +137,7 @@ char opt_adjust, opt_line, opt_header, opt_station;
 /* MAIN PROGRAM: line_fixer */
 /*==========================*/
 
-int main(int argc, char *argv[]) {
+int gmtsar_ers_line_fixer_run(int argc, char *argv[]) {
 	char *output_filename, *station_name, *filename, *data, *data_buf;
 	char **input_filenames;
 	unsigned short swst_dn, old_swst_dn, swst_dn1 = 0, pri_dn, old_pri_dn;
@@ -546,6 +551,11 @@ int main(int argc, char *argv[]) {
 
 	close(ifd);
 	close(ofd);
+	return EXIT_SUCCESS;
+}
+
+int gmtsar_ers_line_fixer(int argc, char **argv) {
+	return gmtsar_ers_line_fixer_run(argc, argv);
 }
 
 /*----------*/

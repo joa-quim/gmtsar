@@ -454,7 +454,7 @@ int cat_nums(char *str_out, char *str) {
 	return (j);
 }
 
-double date2MJD(int yr, int mo, int day, int hr, int min, double sec) {
+double xmlC_date2MJD(int yr, int mo, int day, int hr, int min, double sec) {
 	/* convert to date to MJD */
 	double part1, part2;
 	double MJD;
@@ -489,8 +489,8 @@ int str_date2JD(char *str_JD, char *str_date) {
 	strasign(tmp, str_date, 14, 19);
 	sec = sec + str2double(tmp) / 1000000.0;
 	// printf("%d %d %d %d %d %.10f\n",yr,mo,day,hr,min,sec);
-	MJDyr = date2MJD(yr, 1, 1, 0, 0, 0);
-	MJDday = date2MJD(yr, mo, day, 0, 0, 0);
+	MJDyr = xmlC_date2MJD(yr, 1, 1, 0, 0, 0);
+	MJDday = xmlC_date2MJD(yr, mo, day, 0, 0, 0);
 	MJDfrac = (((hr * 60.) + min) * 60 + sec) / 86400;
 	doy = (int)(MJDday - MJDyr + .1);
 	sprintf(str_JD, "%.12f", doy + MJDfrac);
@@ -829,7 +829,7 @@ int assemble_trees(int nfiles, struct tree **T, int ct, int lvl, FILE *fp) {
 
 /*
 add_branch(int n, struct tree **T, str, ct) {
-    
+    
     int i;
     char str_out[60000];
     i = search_tree(T[0],str,str_out,1,0,1);
@@ -879,7 +879,7 @@ getting a good tree structure
     int ii1,jj1,kk1,ct,nn1,ii2,jj2,kk2,kk3,nn2,qq;
     char tmp_c[60000],s_name[200],s_out[200];
     double t1,t2;
-  
+  
     ct = 0;
     while (T[0][ct].sibr != -1 || T[0][ct].firstchild != -1) {
         if (T[0][ct].sibr != -1) ct = T[0][ct].sibr;
@@ -940,7 +940,7 @@ T[0][ii2+nlmx*qq*5].firstchild;
         T[0][kk2].parent = ii1;
         sprintf(tmp_c,"orbitList count=\"%d\"",nn1+nn2-ct);
         strcpy(T[0][ii1].name,tmp_c);
-    
+    
 
     }
 

@@ -12,6 +12,9 @@
  *   4 For each of the xyz points, calculate range, azimuth and topography
  ****************************************************************************/
 
+#define calorb_alos ENVI_baseline_calorb_alos
+#define dist ENVI_baseline_dist
+#define goldop ENVI_baseline_goldop
 /***************************************************************************
  * Creator:  Xiaopeng Tong and David T. Sandwell                           *
  *           (Scripps Institution of Oceanography)                         *

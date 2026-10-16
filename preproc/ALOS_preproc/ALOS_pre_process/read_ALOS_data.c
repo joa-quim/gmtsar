@@ -1,3 +1,4 @@
+#include "namespace.h"
 /***************************************************************************/
 /* read_ALOS_data reads an ALOS IMG file containing raw signal data       */
 /* and creates a raw-file and PRM-file suitable for our esarp processor.   */
@@ -103,11 +104,11 @@ int64_t read_ALOS_data(FILE *imagefile, FILE *outfile, struct PRM *prm, int64_t 
 
 	/* allocate data */
 	if ((data = (char *)malloc(record_length0)) == NULL)
-		die("couldn't allocate memory for input indata.\n", "");
+		ALOS_die("couldn't allocate memory for input indata.\n", "");
 	// fprintf(stderr,"after allocate length0 data\n");
 
 	if ((shift_data = (char *)malloc(record_length0)) == NULL)
-		die("couldn't allocate memory for input indata.\n", "");
+		ALOS_die("couldn't allocate memory for input indata.\n", "");
 
 	// fprintf(stderr,"after allocate data\n");
 
@@ -149,7 +150,7 @@ int64_t read_ALOS_data(FILE *imagefile, FILE *outfile, struct PRM *prm, int64_t 
 		/* check for changes in record_length and PRF */
 		record_length1 = sdr.record_length - line_prefix_size;
 		if (record_length0 != record_length1)
-			die("record_length changed", "");
+			ALOS_die("record_length changed", "");
 
 		/* if prf changes, close file and set byte_offset */
 		if ((sdr.PRF) != prm->prf) {
@@ -249,9 +250,9 @@ int64_t read_sardata_info(FILE *imagefile, struct PRM *prm, int *header_size, in
 	*line_prefix_size = sizeof(struct sardata_info);
 
 	if (*header_size != 720)
-		die("header size is not 720 bytes\n", "");
+		ALOS_die("header size is not 720 bytes\n", "");
 	if (*line_prefix_size != 412)
-		die("header size is not 720 bytes\n", "");
+		ALOS_die("header size is not 720 bytes\n", "");
 
 	if (debug)
 		fprintf(stderr, " header_size %d line_prefix_size %d swap data %d\n", *header_size, *line_prefix_size, swap);
@@ -322,7 +323,7 @@ int assign_sardata_params(struct PRM *prm, int line_prefix_size, int *line_suffi
 
 	if (*record_length0 > 50000) {
 		fprintf(stderr, "**** record_length is %d !\n", *record_length0);
-		die("expect something like 21100 .... try -swap option?\n", "exiting");
+		ALOS_die("expect something like 21100 .... try -swap option?\n", "exiting");
 	}
 
 	return (EXIT_SUCCESS);
@@ -334,7 +335,7 @@ int check_shift(struct PRM *prm, int *shift, int *ishift, int *shift0, int recor
 
 	if (*ishift > record_length1) {
 		printf(" end: shift exceeds data window %d \n", *shift);
-		die("exitting", "");
+		ALOS_die("exitting", "");
 	}
 
 	if (*shift != *shift0) {

@@ -14,7 +14,7 @@
 #include "lib_functions.h"
 #include "siocomplex.h"
 
-void calc_dop(struct PRM *prm) {
+void ALOS_calc_dop(struct PRM *prm) {
 	unsigned char *indata;
 	int i, j;
 	int64_t n;
@@ -27,7 +27,7 @@ void calc_dop(struct PRM *prm) {
 	fprintf(stderr, ".... calculating doppler for %s\n", prm->input_file);
 	fin = fopen(prm->input_file, "r");
 	if (fin == NULL)
-		die("can't open", prm->input_file);
+		ALOS_die("can't open", prm->input_file);
 
 	/* allocate memory */
 	indata = (unsigned char *)malloc(prm->bytes_per_line * sizeof(unsigned char));
@@ -59,7 +59,7 @@ void calc_dop(struct PRM *prm) {
 		for (j = 0; j < n; j++) {
 			read_data(bi, indata, j, prm);
 
-			ctmp = Cmul(Conjg(ai[j]), bi[j]);
+			ctmp = ALOS_Cmul(ALOS_Conjg(ai[j]), bi[j]);
 
 			ab[j].r = ab[j].r + ctmp.r;
 			ab[j].i = ab[j].i + ctmp.i;

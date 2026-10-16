@@ -1,3 +1,7 @@
+#ifdef GMTSAR_MODULE_BUILD
+#define main gmtsar_spectral_diversity
+#endif
+#define USAGE spectral_diversity_USAGE
 /***************************************************************************
  * Creator:  Xiaohua(Eric) XU                                              *
  *           (Scripps Institution of Oceanography)                         *
@@ -12,7 +16,7 @@
 #include "PRM.h"
 #include "gmtsar.h"
 #include "lib_defs.h"
-#include "lib_functions.h"
+#include "../../../gmtsar/lib_functions.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -40,7 +44,7 @@ char *USAGE = "\n Usage: spectral_diversity master_stem aligned_stem bshfit filt
               "\n Output: resitual_shift = 0.001234  [with a file ddphase]\n"
               "\n Note: make sure stem.SLCH stem.SLCL stem.BB exist \n";
 
-int main(int argc, char **argv) {
+int gmtsar_spectral_diversity_run(const char *master_stem, const char *aligned_stem, int bshift_in, const char *filter_file) {
 
 	FILE *MF, *MB, *SF, *SB, *BBM, *BBS, *FILTER, *OUTP;
 	char tmp_str[200];
@@ -56,38 +60,35 @@ int main(int argc, char **argv) {
 	int yarr, xarr, zz, *zz_r;
 	double spec_sep, dta;
 
-	if (argc < 5)
-		die("", USAGE);
-
 	// open corresponding files
-	strcpy(tmp_str, argv[1]);
+	strcpy(tmp_str, master_stem);
 	strcat(tmp_str, ".SLCH");
 	if ((MF = fopen(tmp_str, "rb")) == NULL)
 		die("Couldn't open slch file: \n", tmp_str);
-	strcpy(tmp_str, argv[1]);
+	strcpy(tmp_str, master_stem);
 	strcat(tmp_str, ".SLCL");
 	if ((MB = fopen(tmp_str, "rb")) == NULL)
 		die("Couldn't open slcl file: \n", tmp_str);
-	strcpy(tmp_str, argv[2]);
+	strcpy(tmp_str, aligned_stem);
 	strcat(tmp_str, ".SLCH");
 	if ((SF = fopen(tmp_str, "rb")) == NULL)
 		die("Couldn't open slch file: \n", tmp_str);
-	strcpy(tmp_str, argv[2]);
+	strcpy(tmp_str, aligned_stem);
 	strcat(tmp_str, ".SLCL");
 	if ((SB = fopen(tmp_str, "rb")) == NULL)
 		die("Couldn't open slcl file: \n", tmp_str);
-	strcpy(tmp_str, argv[1]);
+	strcpy(tmp_str, master_stem);
 	strcat(tmp_str, ".BB");
 	if ((BBM = fopen(tmp_str, "rb")) == NULL)
 		die("Couldn't open bb file: \n", tmp_str);
-	strcpy(tmp_str, argv[2]);
+	strcpy(tmp_str, aligned_stem);
 	strcat(tmp_str, ".BB");
 	if ((BBS = fopen(tmp_str, "rb")) == NULL)
 		die("Couldn't open bb file: \n", tmp_str);
-	strcpy(tmp_str, argv[4]);
+	strcpy(tmp_str, filter_file);
 	if ((FILTER = fopen(tmp_str, "rb")) == NULL)
 		die("Couldn't open filter file: \n", tmp_str);
-	bshift = (int)str2double(argv[3]);
+	bshift = bshift_in;
 	nboff = floor((double)bshift / 1400.0 + 0.5);
 	if (nboff != 0) {
 		printf("Image has %d burst offset\n", nboff);
@@ -337,5 +338,11 @@ int main(int argc, char **argv) {
 	fclose(FILTER);
 	fclose(OUTP);
 
-	return (1);
+	return (EXIT_SUCCESS);
+}
+
+int gmtsar_spectral_diversity(int argc, char **argv) {
+	if (argc < 5)
+		die("", USAGE);
+	return gmtsar_spectral_diversity_run(argv[1], argv[2], (int)str2double(argv[3]), argv[4]);
 }

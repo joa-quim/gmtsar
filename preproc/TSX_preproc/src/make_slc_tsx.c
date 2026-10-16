@@ -1,3 +1,8 @@
+#define USAGE make_slc_tsx_USAGE
+#define write_orb make_slc_tsx_write_orb
+#define pop_led make_slc_tsx_pop_led
+#define pop_prm make_slc_tsx_pop_prm
+#define write_slc make_slc_tsx_write_slc
 /***************************************************************************
  * Creator:  Xiaohua(Eric) XU                                              *
  *           (Scripps Institution of Oceanography)                         *
@@ -51,7 +56,7 @@ char *USAGE = "\n\nUsage: make_slc_tsx name_of_xml_file name_of_image_file name_
               "IMAGE_HH_SRA_strip_007.cos TSX_HH_20120615\n"
               "\nOutput: TSX_HH_20120615.SLC TSX_HH_20120615.PRM TSX_HH_20120615.LED\n";
 
-int main(int argc, char **argv) {
+int gmtsar_make_slc_tsx_run(const char *xml_file, const char *image_file, const char *output_stem) {
 
 	FILE *XML_FILE, *OUTPUT_PRM, *OUTPUT_SLC, *OUTPUT_LED, *INPUT_SLC;
 	char tmp_str[200];
@@ -61,12 +66,9 @@ int main(int argc, char **argv) {
 	int rows, cols;
 	int ch, n = 0, nc = 0, nlmx = 0;
 
-	if (argc < 4)
-		die(USAGE, "");
-
 	// find the number of lines and the maximum line length of the xml file
-	if ((XML_FILE = fopen(argv[1], "r")) == NULL)
-		die("Couldn't open xml file: \n", argv[1]);
+	if ((XML_FILE = fopen(xml_file, "r")) == NULL)
+		die("Couldn't open xml file: \n", (char *)xml_file);
 	while (EOF != (ch = fgetc(XML_FILE))) {
 		++nc;
 		if (ch == '\n') {
@@ -80,8 +82,8 @@ int main(int argc, char **argv) {
 	fclose(XML_FILE);
 
 	// generate the xml tree
-	if ((XML_FILE = fopen(argv[1], "r")) == NULL)
-		die("Couldn't open xml file: \n", argv[1]);
+	if ((XML_FILE = fopen(xml_file, "r")) == NULL)
+		die("Couldn't open xml file: \n", (char *)xml_file);
 	get_tree(XML_FILE, xml_tree, 0);
 	fclose(XML_FILE);
 
@@ -91,9 +93,9 @@ int main(int argc, char **argv) {
 	null_sio_struct(&prm);
 
 	// generate the PRM file
-	pop_prm(&prm, xml_tree, argv[3]);
+	pop_prm(&prm, xml_tree, (char *)output_stem);
 
-	strcpy(tmp_str, argv[3]);
+	strcpy(tmp_str, output_stem);
 	strcat(tmp_str, ".PRM");
 	if ((OUTPUT_PRM = fopen(tmp_str, "w")) == NULL)
 		die("Couldn't open prm file: \n", tmp_str);
@@ -103,7 +105,7 @@ int main(int argc, char **argv) {
 	// generate the LED file
 	n = pop_led(xml_tree, sv);
 
-	strcpy(tmp_str, argv[3]);
+	strcpy(tmp_str, output_stem);
 	strcat(tmp_str, ".LED");
 	if ((OUTPUT_LED = fopen(tmp_str, "w")) == NULL)
 		die("Couldn't open led file: \n", tmp_str);
@@ -111,10 +113,10 @@ int main(int argc, char **argv) {
 	fclose(OUTPUT_LED);
 
 	// generate the SLC file
-	if ((INPUT_SLC = fopen(argv[2], "rb")) == NULL)
-		die("Couldn't open data file: \n", argv[2]);
+	if ((INPUT_SLC = fopen(image_file, "rb")) == NULL)
+		die("Couldn't open data file: \n", (char *)image_file);
 
-	strcpy(tmp_str, argv[3]);
+	strcpy(tmp_str, output_stem);
 	strcat(tmp_str, ".SLC");
 	if ((OUTPUT_SLC = fopen(tmp_str, "wb")) == NULL)
 		die("Couldn't open tiff file: \n", tmp_str);
@@ -127,8 +129,13 @@ int main(int argc, char **argv) {
 	fclose(INPUT_SLC);
 	fclose(OUTPUT_SLC);
 
-	// TIFFClose(TIFF_FILE);
-	// fclose(OUTPUT_SLC);
+	return EXIT_SUCCESS;
+}
+
+int gmtsar_make_slc_tsx(int argc, char **argv) {
+	if (argc < 4)
+		die(USAGE, "");
+	return gmtsar_make_slc_tsx_run(argv[1], argv[2], argv[3]);
 }
 
 int write_slc(FILE *input, FILE *slc, int rows, int cols) {

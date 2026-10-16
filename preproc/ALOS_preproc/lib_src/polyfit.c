@@ -1,7 +1,7 @@
 #include "image_sio.h"
 #include "lib_functions.h"
 
-void polyfit(double *T, double *Y, double *C, int *Mp, int *Np)
+void ALOS_polyfit(double *T, double *Y, double *C, int *Mp, int *Np)
 
 /* T   - array of independent variable of length M - input */
 /* Y   - array of   dependent variable of length M - input */
@@ -61,13 +61,13 @@ void polyfit(double *T, double *Y, double *C, int *Mp, int *Np)
 		}
 	}
 
-	gauss_jordan(A, B, C, &N); /* solve the equations */
+	ALOS_gauss_jordan(A, B, C, &N); /* solve the equations */
 
 	free(A);
 	free(B);
 }
 
-void gauss_jordan(double **A, double *B, double *X, int *Np) {
+void ALOS_gauss_jordan(double **A, double *B, double *X, int *Np) {
 	/* routine for solving an N by N system of linear equations B = A*X
 	   using Gaussian elimination with back substitution.
 	   FORTRAN callable */

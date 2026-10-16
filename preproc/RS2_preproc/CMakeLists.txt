@@ -9,9 +9,13 @@ endif (HAVE_M_LIBRARY)
 
 include_directories (include ../../gmtsar ../S1A_preproc/include ${GMT_INCLUDE_DIR} ${TIFF_INCLUDE_DIR})
 
-set (LINK_LIBS ${LINK_LIBS} gmtsar xmlC)
+set (LINK_LIBS ${LINK_LIBS} gmtsar)
 
-add_executable (make_slc_rs2 src/make_slc_rs2.c)
+add_library (RS2_modules OBJECT src/make_slc_rs2.c ${CMAKE_CURRENT_SOURCE_DIR}/../../gmtsar/make_slc_rs2_module.c)
+target_include_directories (RS2_modules PRIVATE include ../../gmtsar ../S1A_preproc/include ${GMT_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} ${GDAL_INCLUDE_DIR})
+target_sources (gmtsar PRIVATE $<TARGET_OBJECTS:RS2_modules>)
+
+add_executable (make_slc_rs2 ../../gmtsar/cli/make_slc_rs2.c)
 target_link_libraries (make_slc_rs2 ${LINK_LIBS})
 
 

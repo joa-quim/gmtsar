@@ -4,6 +4,8 @@
    17-April-1017
    $Id: envisat_dump_data.c,v 1.5 2004/08/09 09:43:28 kampes Exp $
 */
+#define dump_data envisat_dump_data_dump_data
+
 #include "epr_api-2.3/src/epr_api.h"
 #include <assert.h>
 #include <errno.h>
@@ -20,23 +22,25 @@
 int dump_data(EPR_ELogLevel log_level, const char *infile, const char *outfile, int pixflag, unsigned int l0, unsigned int lN,
               unsigned int p0, unsigned int pN);
 
-int main(int argc, char **argv) {
+int gmtsar_envisat_dump_data_run(const char *infile, const char *outfile, int have_range, unsigned int l0,
+                                 unsigned int lN, unsigned int p0, unsigned int pN) {
+	int pixflag = have_range ? 0 : 1;
 
-	int status = 0;
-	// ulong           l0;
-	// ulong           lN;
-	// ulong           p0;
-	// ulong           pN;
-	unsigned int l0 = 0; // MA due to difference between 32-bit/64-bit data
-	                     // structure: define typedef like Doris see constant.h
-	unsigned int lN = 0;
-	unsigned int p0 = 0;
-	unsigned int pN = 0;
-	const char *infile;
-	const char *outfile;
-	int pixflag = 0;
+	printf("infile:  %s\n", infile);
+	printf("outfile: %s\n", outfile);
+	if (have_range) {
+		printf("l0: %f\n", (float)l0);
+		printf("lN: %f\n", (float)lN);
+		printf("p0: %f\n", (float)p0);
+		printf("pN: %f\n", (float)pN);
+	}
 
-	/* handle input */
+	return dump_data(e_log_info, infile, outfile, pixflag, l0, lN, p0, pN);
+}
+
+int gmtsar_envisat_dump_data(int argc, char **argv) {
+	unsigned int l0 = 0, lN = 0, p0 = 0, pN = 0;
+
 	fprintf(stderr, "argc: %d\n", argc);
 	if (argc != 3 && argc != 7) {
 		fprintf(stderr, "Usage: envisat_dump_data envisat-product outputfile [l0 lN p0 pN]\n");
@@ -50,29 +54,17 @@ int main(int argc, char **argv) {
 		fprintf(stderr, "  envisat_dump_data "
 		       "ASA_IMS_1PNDPA20021025_175208_000000162010_00356_03416_0005.N1 "
 		       "crop.out 0 10 0 100\n\n");
-		return 1;
+		return EXIT_FAILURE;
 	}
 
-	infile = argv[1];
-	outfile = argv[2];
-	printf("infile:  %s\n", infile);
-	printf("outfile: %s\n", outfile);
 	if (argc == 7) {
-		status = sscanf(argv[3], "%u", &l0);
-		status = sscanf(argv[4], "%u", &lN);
-		status = sscanf(argv[5], "%u", &p0);
-		status = sscanf(argv[6], "%u", &pN);
-		printf("sscanf l0: %f\n", (float)l0);
-		printf("sscanf lN: %f\n", (float)lN);
-		printf("sscanf p0: %f\n", (float)p0);
-		printf("sscanf pN: %f\n", (float)pN);
-		// printf("sscanf lN: %s\n", typeid(lN));
+		sscanf(argv[3], "%u", &l0);
+		sscanf(argv[4], "%u", &lN);
+		sscanf(argv[5], "%u", &p0);
+		sscanf(argv[6], "%u", &pN);
 	}
 
-	if (argc == 3)
-		pixflag = 1;
-
-	return dump_data(e_log_info, infile, outfile, pixflag, l0, lN, p0, pN);
+	return gmtsar_envisat_dump_data_run(argv[1], argv[2], argc == 7, l0, lN, p0, pN);
 }
 
 int dump_data(EPR_ELogLevel log_level, const char *infile, const char *outfile, int pixflag, unsigned int l0, unsigned int lN,

@@ -262,6 +262,7 @@ int ProcessArgs(int argc, char *argv[], infileT *infiles, outfileT *outfiles,
   /* loop over inputs */
   if(argc<2){                             /* catch zero arguments in */
     fprintf(sp1,OPTIONSHELPBRIEF);
+    fflush(NULL);
     exit(ABNORMAL_EXIT);
   }
   for(i=1;i<argc;i++){                  
@@ -275,6 +276,7 @@ int ProcessArgs(int argc, char *argv[], infileT *infiles, outfileT *outfiles,
         for(j=1;j<strlen(argv[i]);j++){
           if(argv[i][j]=='h'){
             fprintf(sp1,OPTIONSHELPFULL);
+            fflush(NULL);
             exit(ABNORMAL_EXIT);
           }else if(argv[i][j]=='u'){
             params->unwrapped=TRUE;
@@ -520,11 +522,12 @@ int ProcessArgs(int argc, char *argv[], infileT *infiles, outfileT *outfiles,
           params->assembleonly=TRUE;
         }else if(!strcmp(argv[i],"--copyright") || !strcmp(argv[i],"--info")){
           fprintf(sp1,COPYRIGHT);
-          exit(ABNORMAL_EXIT);    
-        }else if(!strcmp(argv[i],"--help")){
           fflush(NULL);
+          exit(ABNORMAL_EXIT);
+        }else if(!strcmp(argv[i],"--help")){
           fprintf(sp1,OPTIONSHELPFULL);
-          exit(ABNORMAL_EXIT);    
+          fflush(NULL);
+          exit(ABNORMAL_EXIT);
         }else{
           fflush(NULL);
           fprintf(sp0,"unrecognized option %s\n",argv[i]);

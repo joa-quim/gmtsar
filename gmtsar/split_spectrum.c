@@ -22,18 +22,17 @@
 
 // void right_shift(fcomplex *, int);
 // void left_shift(fcomplex *, int);
-void circ_shift(fcomplex *, fcomplex *, int, int);
+static void circ_shift(fcomplex *, fcomplex *, int, int);
 // void bandpass_filter(double, double, int, int, int, double, fcomplex *);
 // void kaiser(double, int, double *);
 // double bessi0(double);
-int fliplr(double *, int);
-int cos_window(double, double, double, int, double *);
-int hamming_window(double, double, double, int, double *);
-int split1(int, char **);
-int split2(int, char **);
-fcomplex fmean(short *, int);
+static int fliplr(double *, int);
+static int cos_window(double, double, double, int, double *);
+static int hamming_window(double, double, double, int, double *);
+static int split2(int, char **);
+static fcomplex fmean(short *, int);
 
-char *USAGE1 = "\nUSAGE: split_spectrum prm1 [split_half] \n\n"
+static const char *split_spectrum_usage = "\nUSAGE: split_spectrum prm1 [split_half] \n\n"
                "   program used to split range spectrum for SLC using a modified cosine "
                "filter\n\n"
                "   SLCs are bandpassed and then shifted to the center of the spectrum\n\n"
@@ -41,16 +40,7 @@ char *USAGE1 = "\nUSAGE: split_spectrum prm1 [split_half] \n\n"
                "   outputs are SLCH SLCL, for TOPS data, outputs are high.tiff low.tiff\n\n";
 
 
-int main(int argc, char **argv) {
-	if (argc != 3 && argc != 2)
-		die("", USAGE1);
-	split1(argc, argv);
-	fflush(stdout);		/* Make sure output buffer is flushed  */
-
-	return (1);
-}
-
-int split1(int argc1, char **argv1) {
+int gmtsar_split_spectrum_run(void *API, int argc1, char **argv1) {
 
 	FILE *SLC_file1, *SLCH, *SLCL;
     TIFF *tif, *tifh, *tifl;
@@ -65,16 +55,13 @@ int split1(int argc1, char **argv1) {
 	short *buf1;
 	fcomplex *c1, *c1h, *c1l, *tmp, fm;
 	//double f_h=0, f_l=0, w_h=0, w_l=0;
-	
-	void *API = NULL; /* GMT API control structure */
+
 	// double complex zl,zh,zp,z1h,z2h,z1l,z2l;
 	// double *ph;
     int half_band = 0;
 
 	if (argc1 != 2 && argc1 != 3)
-		die("", USAGE1);
-	if ((API = GMT_Create_Session(argv1[0], 0U, 0U, NULL)) == NULL)
-		return EXIT_FAILURE;
+		die("", split_spectrum_usage);
     if (argc1 == 3) half_band = atoi(argv1[2]);
 
 	/* read in prm files */
@@ -368,10 +355,23 @@ int split1(int argc1, char **argv1) {
 	// fclose(SLCH2);
 	// fclose(SLCL2);
 	free(tmp);
-	return (1);
+	return (EXIT_SUCCESS);
 }
 
-fcomplex fmean(short *c, int N) {
+int gmtsar_split_spectrum(int argc, char **argv) {
+	void *API;
+	int status;
+	if (argc != 3 && argc != 2)
+		die("", split_spectrum_usage);
+	if ((API = GMT_Create_Session(argv[0], 0U, 0U, NULL)) == NULL)
+		return EXIT_FAILURE;
+	status = gmtsar_split_spectrum_run(API, argc, argv);
+	fflush(stdout);		/* Make sure output buffer is flushed  */
+	if (GMT_Destroy_Session(API) && status == EXIT_SUCCESS) status = EXIT_FAILURE;
+	return status;
+}
+
+static fcomplex fmean(short *c, int N) {
 
     fcomplex m;
     int i;
@@ -388,7 +388,7 @@ fcomplex fmean(short *c, int N) {
    return(m);
 }
 
-int cos_window(double fc, double fb, double fs, int N, double *filter) {
+static int cos_window(double fc, double fb, double fs, int N, double *filter) {
 	// create a cosine window filter in fourier domain
 
 	int i, nc, nb, flat_nb, cos_nb;
@@ -421,7 +421,7 @@ int cos_window(double fc, double fb, double fs, int N, double *filter) {
 	return (1);
 }
 
-int hamming_window(double a, double rng_bw, double smp_bw, int N, double *filter) {
+static int hamming_window(double a, double rng_bw, double smp_bw, int N, double *filter) {
 	// create a cosine window filter in fourier domain
 
 	int i, j1, j2;
@@ -463,7 +463,7 @@ int hamming_window(double a, double rng_bw, double smp_bw, int N, double *filter
 	return (1);
 }
 
-int fliplr(double *a, int N) {
+static int fliplr(double *a, int N) {
 	int i;
 	double d;
 
@@ -476,7 +476,7 @@ int fliplr(double *a, int N) {
 	return (1);
 }
 
-void circ_shift(fcomplex *in, fcomplex *tmp, int na, int nc) {
+static void circ_shift(fcomplex *in, fcomplex *tmp, int na, int nc) {
 
 	int i, ii;
 	// int ncm;
@@ -508,7 +508,7 @@ void circ_shift(fcomplex *in, fcomplex *tmp, int na, int nc) {
 /*
 
 // modified bessel function
-double bessi0(double x) {
+static double bessi0(double x) {
 
     double ax,ans;
     double y;

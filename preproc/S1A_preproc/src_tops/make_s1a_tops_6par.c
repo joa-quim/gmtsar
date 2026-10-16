@@ -1,3 +1,14 @@
+#ifdef GMTSAR_MODULE_BUILD
+#define main gmtsar_make_s1a_tops_6par
+#endif
+#define USAGE make_s1a_tops_6par_USAGE
+#define write_orb make_s1a_tops_6par_write_orb
+#define pop_led make_s1a_tops_6par_pop_led
+#define pop_burst make_s1a_tops_6par_pop_burst
+#define dramp_dmod make_s1a_tops_6par_dramp_dmod
+#define azi_shift make_s1a_tops_6par_azi_shift
+#define rng_shift make_s1a_tops_6par_rng_shift
+#define sinc_kernel make_s1a_tops_6par_sinc_kernel
 /***************************************************************************
  * Creator:  David Sandwell and Xiaohua(Eric) XU                           *
  *           (Scripps Institution of Oceanography)                         *
@@ -16,7 +27,7 @@
 #include "PRM.h"
 #include "gmtsar.h"
 #include "lib_defs.h"
-#include "lib_functions.h"
+#include "../../../gmtsar/lib_functions.h"
 #include "stateV.h"
 #include "tiffio.h"
 #include <math.h>
@@ -62,7 +73,7 @@ char *USAGE = "\nUsage: make_s1a_tops_6par xml_file tiff_file output mode rng_sh
               "-3.63255e-06 1.37343e-05 -3.13352e-05 \n"
               "\nOutput: S1A20140807.PRM S1A20140807.LED S1A20140807.SLC\n";
 
-int main(int argc, char **argv) {
+int gmtsar_make_s1a_tops_6par_run(void *API, int argc, char **argv) {
 
 	FILE *XML_FILE, *OUTPUT_PRM, *OUTPUT_LED;
 	FILE *OUTPUT_SLCL = NULL, *OUTPUT_SLCC = NULL, *OUTPUT_SLCH = NULL;
@@ -74,11 +85,6 @@ int main(int argc, char **argv) {
 	struct burst_bounds bb[200];
 	int ch, n = 0, nc = 0, nlmx = 0, imode = 0;
 	double rng, azi, stretch_a, a_stretch_a, stretch_r, a_stretch_r;
-
-	// Begin: Initializing new GMT session
-	void *API = NULL; // GMT API control structure
-	if ((API = GMT_Create_Session(argv[0], 0U, 0U, NULL)) == NULL)
-		return EXIT_FAILURE;
 
 	if (argc < 11)
 		die(USAGE, "");
@@ -184,9 +190,16 @@ int main(int argc, char **argv) {
 	put_sio_struct(prm, OUTPUT_PRM);
 	fclose(OUTPUT_PRM);
 	free(xml_tree);
-	if (GMT_Destroy_Session(API))
-		return EXIT_FAILURE; /* Remove the GMT machinery */
 	return (EXIT_SUCCESS);
+}
+
+int gmtsar_make_s1a_tops_6par(int argc, char **argv) {
+	void *API = GMT_Create_Session(argv[0], 0U, 0U, NULL);
+	int status;
+	if (!API) return EXIT_FAILURE;
+	status = gmtsar_make_s1a_tops_6par_run(API, argc, argv);
+	if (GMT_Destroy_Session(API) && status == EXIT_SUCCESS) status = EXIT_FAILURE;
+	return status;
 }
 
 int write_orb(state_vector *sv, FILE *fp, int n) {

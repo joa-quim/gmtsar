@@ -5,7 +5,7 @@
    GMTSAR
 */
 
-char *USAGE = "\nsolid_tide yyyyddd.fffffff < lon_lat > lon_lat_dx_dy_dz \n\n"
+static const char *solid_tide_usage = "\nsolid_tide yyyyddd.fffffff < lon_lat > lon_lat_dx_dy_dz \n\n"
               "    translated from Dennis Milbert's solid.for\n\n"
               "    compute solid earth tide given certain lon lat\n\n";
 
@@ -13,6 +13,7 @@ char *USAGE = "\nsolid_tide yyyyddd.fffffff < lon_lat > lon_lat_dx_dy_dz \n\n"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "gmtsar_commands.h"
 
 double pi, pi2, rad;
 double a = 6378137.0;
@@ -46,20 +47,15 @@ int st1l1(double *, double *, double *, double, double, double *);
 int step2diu(double *, double, double, double *);
 int step2lon(double *, double, double, double *);
 
-int main(int argc, char **argv) {
+int gmtsar_solid_tide_run(double datetime) {
 
 	double yr, day, lon, lat, du, dv, dw;
 	pi = 4.0 * atan(1.0);
 	pi2 = pi * 2;
 	rad = 180.0 / pi;
 
-	if (argc != 2) {
-
-		die("", USAGE);
-	}
-
-	yr = floor(atof(argv[1]) / 1000.0);
-	day = atof(argv[1]) - yr * 1000.0;
+	yr = floor(datetime / 1000.0);
+	day = datetime - yr * 1000.0;
 	while (scanf(" %lf %lf ", &lon, &lat) == 2) {
 		if (lon < 0.0)
 			lon = lon + 360.0;
@@ -74,7 +70,13 @@ int main(int argc, char **argv) {
 		fprintf(stdout, "%.9f %.9f %.12e %.12e %.12e \n", lon, lat, dv, du,
 		        dw); // du = north, dv = east, dw = up
 	}
-	return (1);
+	return (EXIT_SUCCESS);
+}
+
+int gmtsar_solid_tide(int argc, char **argv) {
+	if (argc != 2)
+		die("", (char *)solid_tide_usage);
+	return gmtsar_solid_tide_run(atof(argv[1]));
 }
 
 int compute_tide(double yr, double day, double glod, double glad, double *du, double *dv, double *dw) {

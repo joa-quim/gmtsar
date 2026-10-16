@@ -1,3 +1,8 @@
+#ifdef GMTSAR_MODULE_BUILD
+#define main gmtsar_stitch_tops
+#endif
+#define USAGE stitch_tops_USAGE
+#define calc_offset stitch_tops_calc_offset
 /*      $Id$    */
 /*****************************************************************************************
  *  Program to stitch SLCs and PRMs of TOPS images together. *
@@ -116,7 +121,7 @@ int calc_offset(struct PRM prm1, struct PRM prm2, int nl, int nl0){
     return(imax);
 }
 
-int main(int argc, char **argv) {
+int gmtsar_stitch_tops_run(const char *stem_in, const char *output_stem) {
 
 	/* define variables */
 	FILE *stemin, *SLCin, *SLCout, *PRM;
@@ -128,12 +133,9 @@ int main(int argc, char **argv) {
 	short *buf;
     int line_offset = 0, line_offset_total = 0;
 
-	if (argc != 3)
-		die(USAGE, "");
-
 	/* read in the filelist */
-	if ((stemin = fopen(argv[1], "r")) == NULL)
-		die("Couldn't open stem file: \n", argv[1]);
+	if ((stemin = fopen(stem_in, "r")) == NULL)
+		die("Couldn't open stem file: \n", (char *)stem_in);
 	while (fscanf(stemin, "%s", tmp_str) != EOF) {
 		strcpy(stem[nfile], tmp_str);
 		nfile++;
@@ -164,7 +166,7 @@ int main(int argc, char **argv) {
 	buf = (short *)malloc(width * 2 * sizeof(short) * 2);
 
 	/* open the output SLC file */
-	strcpy(tmp_str, argv[2]);
+	strcpy(tmp_str, output_stem);
 	strcat(tmp_str, ".SLC");
 	if ((SLCout = fopen(tmp_str, "wb")) == NULL)
 		die("Couldn't open output SLC file: \n", tmp_str);
@@ -278,7 +280,7 @@ int main(int argc, char **argv) {
 	fclose(SLCout);
 
 	/* prepare the output PRM */
-	strcpy(tmp_str, argv[2]);
+	strcpy(tmp_str, output_stem);
 	strcat(tmp_str, ".PRM");
 	if ((PRM = fopen(tmp_str, "w")) == NULL)
 		die("Couldn't open output PRM file: \n", tmp_str);
@@ -288,11 +290,11 @@ int main(int argc, char **argv) {
 	prm1.SC_clock_stop = prm1.SC_clock_start + prm1.num_lines / prf / 86400;
 	prm1.clock_stop = prm1.clock_start + prm1.num_lines / prf / 86400;
 
-	strcpy(prm1.input_file, argv[2]);
+	strcpy(prm1.input_file, output_stem);
 	strcat(prm1.input_file, ".raw");
-	strcpy(prm1.led_file, argv[2]);
+	strcpy(prm1.led_file, output_stem);
 	strcat(prm1.led_file, ".LED");
-	strcpy(prm1.SLC_file, argv[2]);
+	strcpy(prm1.SLC_file, output_stem);
 	strcat(prm1.SLC_file, ".SLC");
 
 	put_sio_struct(prm1, PRM);
@@ -300,5 +302,11 @@ int main(int argc, char **argv) {
 	fclose(PRM);
 	free(buf);
 
-	return 1;
+	return EXIT_SUCCESS;
+}
+
+int gmtsar_stitch_tops(int argc, char **argv) {
+	if (argc != 3)
+		die(USAGE, "");
+	return gmtsar_stitch_tops_run(argv[1], argv[2]);
 }

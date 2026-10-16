@@ -3,9 +3,9 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-int find_fft_length(int n);
+int ALOS_find_fft_length(int n);
 /*-----------------------------------------------------------------------*/
-int find_fft_length(int n) {
+int ALOS_find_fft_length(int n) {
 	int nfft;
 
 	nfft = 2;
@@ -14,7 +14,7 @@ int find_fft_length(int n) {
 		nfft = 2 * nfft;
 
 	if (debug)
-		fprintf(stderr, "find_fft_length:\n...data length n %d nfft %d \n\n", n, nfft);
+		fprintf(stderr, "ALOS_find_fft_length:\n...data length n %d nfft %d \n\n", n, nfft);
 
 	return (nfft);
 }

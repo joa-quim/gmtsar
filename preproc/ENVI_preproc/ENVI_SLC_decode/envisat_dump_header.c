@@ -16,7 +16,7 @@
 #include <crtdbg.h>
 #endif /* if defined(WIN32) && defined(_DEBUG) */
 
-int main(int argc, char **argv) {
+int gmtsar_envisat_dump_header_run(const char *product_file_path_in) {
 	EPR_SProductId *product_id;
 	EPR_SDatasetId *MDS1_SQ_ADS;
 	EPR_SDatasetId *MAIN_PROC_PM_ID;
@@ -40,15 +40,7 @@ int main(int argc, char **argv) {
 	printf("+-----------------------------------------------+\n");
 	printf("|  This is envisat_dump_header by Bert Kampes   |\n");
 	printf("+-----------------------------------------------+\n");
-	if (argc <= 1) {
-		fprintf(stderr, "Usage: envisat_dump_header envisat-product\n");
-		fprintf(stderr, "  where envisat-product is the input filename\n");
-		fprintf(stderr, "Example:\n");
-		fprintf(stderr, "  envisat_dump_header "
-		       "ASA_IMS_1PNDPA20021025_175208_000000162010_00356_03416_0005.N1\n\n");
-		exit(1);
-	}
-	product_file_path = argv[1];
+	product_file_path = product_file_path_in;
 	printf("\nInitializing api.\n");
 	printf("-------------------------------------------------\n");
 
@@ -247,5 +239,17 @@ int main(int argc, char **argv) {
 	printf("|  Thank you for using envisat_dump_header      |\n");
 	printf("+-----------------------------------------------+\n\n");
 
-	return 0;
+	return EXIT_SUCCESS;
+}
+
+int gmtsar_envisat_dump_header(int argc, char **argv) {
+	if (argc <= 1) {
+		fprintf(stderr, "Usage: envisat_dump_header envisat-product\n");
+		fprintf(stderr, "  where envisat-product is the input filename\n");
+		fprintf(stderr, "Example:\n");
+		fprintf(stderr, "  envisat_dump_header "
+		       "ASA_IMS_1PNDPA20021025_175208_000000162010_00356_03416_0005.N1\n\n");
+		return EXIT_FAILURE;
+	}
+	return gmtsar_envisat_dump_header_run(argv[1]);
 }

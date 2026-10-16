@@ -1,3 +1,4 @@
+#define USAGE read_sarleader_dpaf_USAGE
 /* This program is supposed to read raw SAR data tapes 	*/
 /* 							*/
 /* 		R. Mellors 	July 1997		*/
@@ -12,22 +13,12 @@
 #include <string.h>
 void make_prm_dpaf(struct SAR_info);
 
-int main(argc, argv) int argc;
-char **argv;
-{
-	char *filename, string[5];
+int gmtsar_read_sarleader_dpaf_run(const char *filename) {
+	char string[5];
 	int i;
-	// int	num_data_points;
 	FILE *file1, *outfile;
 	struct SAR_info sar;
 	struct sarleader_binary slfsb, slvsb, slplb;
-
-	if (argc < 2) {
-		fprintf(stderr, "Usage: read_SAR_tape SARLEADER \n");
-		exit(1);
-	}
-
-	filename = argv[1];
 
 	file1 = fopen(filename, "r");
 	outfile = fopen("ldrfile.log", "w");
@@ -91,4 +82,13 @@ char **argv;
 	}
 
 	make_prm_dpaf(sar);
+	return EXIT_SUCCESS;
+}
+
+int gmtsar_read_sarleader_dpaf(int argc, char **argv) {
+	if (argc < 2) {
+		fprintf(stderr, "Usage: read_SAR_tape SARLEADER \n");
+		return EXIT_FAILURE;
+	}
+	return gmtsar_read_sarleader_dpaf_run(argv[1]);
 }

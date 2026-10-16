@@ -21,7 +21,7 @@
 
 #include "gmtsar.h"
 
-int main(int argc, char **argv) {
+int gmtsar_offset_topo_run(void *API, int argc, char **argv) {
 	int i, j, k, i1, j1, k1;
 	int is, js, ns;
 	int ni, nj, ntot;
@@ -29,7 +29,6 @@ int main(int argc, char **argv) {
 	                               used for corr. must be > 2 */
 	int imax = 0, jmax = 0;
 	double ra, rt, avea, suma, sumt, sumc, corr, denom, maxcorr = -9999.;
-	void *API = NULL;                                 /* GMT control structure */
 	struct GMT_GRID *A = NULL, *T = NULL, *TS = NULL; /* Grid structure containing ->header and ->data */
 
 	/* get the information from the command line */
@@ -46,10 +45,6 @@ int main(int argc, char **argv) {
 		       "rshift, ashift \n \n");
 		exit(-1);
 	}
-
-	/* Begin: Initializing new GMT session */
-	if ((API = GMT_Create_Session(argv[0], 0U, 0U, NULL)) == NULL)
-		return EXIT_FAILURE;
 
 	xshft = atoi(argv[3]);
 	yshft = atoi(argv[4]);
@@ -152,8 +147,14 @@ int main(int argc, char **argv) {
 			return EXIT_FAILURE;
 	}
 
-	if (GMT_Destroy_Session(API))
-		return EXIT_FAILURE; /* Remove the GMT machinery */
-
 	return (EXIT_SUCCESS);
+}
+
+int gmtsar_offset_topo(int argc, char **argv) {
+	void *API = GMT_Create_Session(argv[0], 0U, 0U, NULL);
+	int status;
+	if (!API) return EXIT_FAILURE;
+	status = gmtsar_offset_topo_run(API, argc, argv);
+	if (GMT_Destroy_Session(API) && status == EXIT_SUCCESS) status = EXIT_FAILURE;
+	return status;
 }

@@ -1,5 +1,5 @@
 /************************************************************************
- * xyz2plh Converts XYZ geocentric coordinates to Phi (latitude),        *
+ * ALOS_xyz2plh Converts XYZ geocentric coordinates to Phi (latitude),        *
  *              Lambda (longitude), H (height) referred to an            *
  *              ellipsoid of semi-major axis A and flattening FL.        *
  ************************************************************************/
@@ -17,8 +17,8 @@
 #include <math.h>
 #include "../../../declspec.h"
 
-EXTERN_MSC void xyz2plh(double *xyz, double *plh, double A, double FL);
-void xyz2plh(double *xyz, double *plh, double A, double FL)
+EXTERN_MSC void ALOS_xyz2plh(double *xyz, double *plh, double A, double FL);
+void ALOS_xyz2plh(double *xyz, double *plh, double A, double FL)
 /********1*********2*********3*********4*********5*********6*********7**
  * input:
  * -----------

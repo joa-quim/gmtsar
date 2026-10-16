@@ -11,11 +11,11 @@ typedef struct DCOMPLEX {
 } dcomplex;
 
 #include "../../../declspec.h"
-EXTERN_MSC fcomplex Cmul(fcomplex x, fcomplex y);
-EXTERN_MSC fcomplex Cexp(float theta);
-EXTERN_MSC fcomplex Conjg(fcomplex z);
-EXTERN_MSC fcomplex RCmul(float a, fcomplex z);
-EXTERN_MSC fcomplex Cadd(fcomplex x, fcomplex y);
-EXTERN_MSC float Cabs(fcomplex z);
+EXTERN_MSC fcomplex ALOS_Cmul(fcomplex x, fcomplex y);
+EXTERN_MSC fcomplex ALOS_Cexp(float theta);
+EXTERN_MSC fcomplex ALOS_Conjg(fcomplex z);
+EXTERN_MSC fcomplex ALOS_RCmul(float a, fcomplex z);
+EXTERN_MSC fcomplex ALOS_Cadd(fcomplex x, fcomplex y);
+EXTERN_MSC float ALOS_Cabs(fcomplex z);
 
 #endif /* _COMPLEX_H */

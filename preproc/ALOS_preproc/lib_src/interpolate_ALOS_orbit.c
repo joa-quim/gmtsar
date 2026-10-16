@@ -54,19 +54,19 @@ void interpolate_ALOS_orbit(struct ALOS_ORB *orb, double *pt, double *p, double 
 
 	/* interpolate for each coordinate direction 	*/
 
-	/* hermite_c c version 				*/
+	/* ALOS_hermite_c c version 				*/
 	for (k = 0; k < nd; k++) {
 		p[k] = orb->points[k].px;
 		pv[k] = orb->points[k].vx;
 	}
 
-	hermite_c(pt, p, pv, nd, nval, time, x, ir);
+	ALOS_hermite_c(pt, p, pv, nd, nval, time, x, ir);
 
 	for (k = 0; k < nd; k++) {
 		p[k] = orb->points[k].py;
 		pv[k] = orb->points[k].vy;
 	}
-	hermite_c(pt, p, pv, nd, nval, time, y, ir);
+	ALOS_hermite_c(pt, p, pv, nd, nval, time, y, ir);
 	if (debug)
 		fprintf(stderr, "C pt %lf py %lf pvy %lf time %lf y %lf ir %d \n", *pt, p[0], pv[0], time, *y, *ir);
 
@@ -74,7 +74,7 @@ void interpolate_ALOS_orbit(struct ALOS_ORB *orb, double *pt, double *p, double 
 		p[k] = orb->points[k].pz;
 		pv[k] = orb->points[k].vz;
 	}
-	hermite_c(pt, p, pv, nd, nval, time, z, ir);
+	ALOS_hermite_c(pt, p, pv, nd, nval, time, z, ir);
 	if (debug)
 		fprintf(stderr, "C pt %lf pz %lf pvz %lf time %lf z %lf ir %d \n", *pt, p[0], pv[0], time, *z, *ir);
 }

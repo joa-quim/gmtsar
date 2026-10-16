@@ -1,3 +1,10 @@
+#define USAGE phasediff_USAGE
+#define calc_drho phasediff_calc_drho
+#define calc_average_topo phasediff_calc_average_topo
+#define print_prm_params phasediff_print_prm_params
+#define fix_prm_params phasediff_fix_prm_params
+#define read_optional_args phasediff_read_optional_args
+#define Cexpd phasediff_Cexpd
 /*	$Id: phasediff.c 109 2015-01-19 23:01:24Z sandwell $	*/
 /***************************************************************************
  * phasediff reads two complex SAR_SLC images and computes the phase       *
@@ -211,7 +218,7 @@ fcomplex Cexpd (double theta) {
   return z;
 }
 
-int main(int argc, char **argv) {
+int gmtsar_phasediff_run(void *API, int argc, char **argv) {
 	int j, k, istart;
 	int topoflag, modelflag;
 	int xdim = 0, ydim = 0; /* size of SLC file */
@@ -237,15 +244,10 @@ int main(int argc, char **argv) {
 	char real_filename[128] = "real.grd=bf";
 	fcomplex *intfp = NULL, *iptr1 = NULL, *iptr2 = NULL, pshif;
 	struct PRM p1, p2, tp, mp;
-	void *API = NULL;                       /* GMT control structure */
 	struct GMT_GRID *M = NULL, *T = NULL;   /* Grid structures containing ->header and ->data */
 	struct GMT_GRID *RE = NULL, *IM = NULL; /* For the real and imaginary grids */
 
 	double *range2 = NULL;
-
-	/* Begin: Initializing new GMT session */
-	if ((API = GMT_Create_Session(argv[0], 0U, 0U, NULL)) == NULL)
-		return EXIT_FAILURE;
 
 	verbose = 0;
 	topoflag = modelflag = 0;
@@ -592,8 +594,14 @@ else {
 		die("Failed to update imag.grd grid header", imag_filename);
 	}
 
-	if (GMT_Destroy_Session(API))
-		return EXIT_FAILURE; /* Remove the GMT machinery */
-
 	return (EXIT_SUCCESS);
+}
+
+int gmtsar_phasediff(int argc, char **argv) {
+	void *API = GMT_Create_Session(argv[0], 0U, 0U, NULL);
+	int status;
+	if (!API) return EXIT_FAILURE;
+	status = gmtsar_phasediff_run(API, argc, argv);
+	if (GMT_Destroy_Session(API) && status == EXIT_SUCCESS) status = EXIT_FAILURE;
+	return status;
 }

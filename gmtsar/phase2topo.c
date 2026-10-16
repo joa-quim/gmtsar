@@ -21,8 +21,9 @@
  *                                                         by Xiaopeng     *
  ***************************************************************************/
 #include "gmtsar.h"
+#include "gmtsar_commands.h"
 
-char *USAGE = "phase2topo [GMTSAR] - Compute residual topography\n\n"
+static const char *phase2topo_usage = "phase2topo [GMTSAR] - Compute residual topography\n\n"
               "Usage: phase2topo master.PRM topo_in.grd res_phase.grd topo_out.grd \n \n"
               "    master.PRM    - master PRM files used for mapping \n"
               "    topo_in.grd   - name of input topography in the radar co-ordinates of "
@@ -57,24 +58,19 @@ void calc_phase2topo(int xdim, double range0, double drange, double re, double h
 	}
 }
 
-int main(int argc, char **argv) {
+int gmtsar_phase2topo_run(void *API, int argc, char **argv) {
 	unsigned int col, row;
 	uint64_t node;
 	int ixdec;
 	float *scale = NULL, *res = NULL;
 	double drange, cnst;
 	struct PRM prm;
-	void *API = NULL;                     /* GMT control structure */
 	struct GMT_GRID *P = NULL, *T = NULL; /* Grid structure containing ->header and ->data */
 
 	debug = 0;
 
 	if (argc < 5)
-		die("\n", USAGE);
-
-	/* Begin: Initializing new GMT session */
-	if ((API = GMT_Create_Session(argv[0], 0U, 0U, NULL)) == NULL)
-		return EXIT_FAILURE;
+		die("\n", (char *)phase2topo_usage);
 
 	/* Get header from grd rat file */
 	if ((T = GMT_Read_Data(API, GMT_IS_GRID, GMT_IS_FILE, GMT_IS_SURFACE, GMT_GRID_HEADER_ONLY, NULL, argv[2], NULL)) == NULL)
@@ -123,8 +119,14 @@ int main(int argc, char **argv) {
 	if (GMT_Write_Data(API, GMT_IS_GRID, GMT_IS_FILE, GMT_IS_SURFACE, GMT_GRID_ALL, NULL, argv[4], T))
 		return EXIT_FAILURE;
 
-	if (GMT_Destroy_Session(API))
-		return EXIT_FAILURE; /* Remove the GMT machinery */
-
 	return (EXIT_SUCCESS);
+}
+
+int gmtsar_phase2topo(int argc, char **argv) {
+	void *API = GMT_Create_Session(argv[0], 0U, 0U, NULL);
+	int status;
+	if (!API) return EXIT_FAILURE;
+	status = gmtsar_phase2topo_run(API, argc, argv);
+	if (GMT_Destroy_Session(API) && status == EXIT_SUCCESS) status = EXIT_FAILURE;
+	return status;
 }

@@ -1,3 +1,4 @@
+#define USAGE read_sarleader_ccrs_USAGE
 /* This program is supposed to read raw SAR data tapes 	*/
 /* 							*/
 /* 		R. Mellors 	July 1997		*/
@@ -8,21 +9,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-int main(argc, argv) int argc;
-char **argv;
-{
-	char *filename, string[5];
-	int nitems, i, num_data_points;
+int gmtsar_read_sarleader_ccrs_run(const char *filename) {
+	char string[5];
+	int nitems, i;
 	FILE *file1, *outfile;
 	struct SAR_info sar;
 	struct sarleader_binary slfsb, slvsb, slplb;
-
-	if (argc < 2) {
-		fprintf(stderr, "Usage: read_SAR_tape SARLEADER \n");
-		exit(1);
-	}
-
-	filename = argv[1];
 
 	file1 = fopen(filename, "r");
 	outfile = fopen("ldrfile.log", "w");
@@ -76,4 +68,13 @@ char **argv;
 
 	/* now make the PRM file */
 	make_prm(sar);
+	return EXIT_SUCCESS;
+}
+
+int gmtsar_read_sarleader_ccrs(int argc, char **argv) {
+	if (argc < 2) {
+		fprintf(stderr, "Usage: read_SAR_tape SARLEADER \n");
+		return EXIT_FAILURE;
+	}
+	return gmtsar_read_sarleader_ccrs_run(argv[1]);
 }

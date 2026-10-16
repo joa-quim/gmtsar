@@ -1,3 +1,14 @@
+#define USAGE ALOS_baseline_USAGE
+#define endpoint_distance ALOS_baseline_endpoint_distance
+#define find_alpha_degrees ALOS_baseline_find_alpha_degrees
+#define find_distance ALOS_baseline_find_distance
+#define find_parallel_perp_baseline ALOS_baseline_find_parallel_perp_baseline
+#define find_unit_vectors ALOS_baseline_find_unit_vectors
+#define get_sign ALOS_baseline_get_sign
+#define parse_command_line ALOS_baseline_parse_command_line
+#define read_input_file ALOS_baseline_read_input_file
+#define write_bperp ALOS_baseline_write_bperp
+#define write_prm_baseline ALOS_baseline_write_prm_baseline
 /*******************************************************************************
  * Compute the interferometric baseline between reference and repeat           *
  * images.  Also estimates the crude offset for image matching.                *
@@ -48,7 +59,7 @@ void ALOS_baseline(struct PRM *, struct ALOS_ORB *, int, int, char **, double);
 void read_all_ALOS_ldr(struct PRM *, struct ALOS_ORB *, int);
 void ALOS_llt2rat_sub(char *, double *, double *);
 
-int main(int argc, char **argv) {
+int gmtsar_ALOS_baseline_run(const char *master_prm, const char *aligned_prm, const char *listfile) {
 	int i;
 	int input_flag, nfiles;
 	double fs0 = 0.0;
@@ -58,14 +69,25 @@ int main(int argc, char **argv) {
 	char **filename;
 	FILE *prmfile;
 
-	if (argc < 3)
-		die(USAGE, "");
-
 	verbose = 0;
-	input_flag = 0;
 
-	/* read command line */
-	parse_command_line(argv, &nfiles, &input_flag);
+	/* count the files: either a 2-file pair, or every entry in a list file */
+	if (listfile) {
+		char tmp[132];
+		FILE *inputfile;
+
+		input_flag = 1;
+		nfiles = 0;
+		if ((inputfile = fopen(listfile, "r")) == NULL)
+			ALOS_die("Can't open ", (char *)listfile);
+		while (fscanf(inputfile, " %s ", tmp) != EOF)
+			nfiles++;
+		fclose(inputfile);
+	}
+	else {
+		input_flag = 0;
+		nfiles = 2;
+	}
 
 	filename = malloc(nfiles * sizeof(char *));
 	for (i = 0; i < nfiles; i++)
@@ -74,15 +96,17 @@ int main(int argc, char **argv) {
 	r = malloc(nfiles * sizeof(struct PRM));
 
 	if (input_flag == 1)
-		read_input_file(argv[2], nfiles, filename);
+		read_input_file((char *)listfile, nfiles, filename);
+	else {
+		strcpy(filename[0], master_prm);
+		strcpy(filename[1], aligned_prm);
+	}
 
 	for (i = 0; i < nfiles; i++) {
-		if (input_flag == 0)
-			strcpy(filename[i], argv[i + 1]);
 		if ((prmfile = fopen(filename[i], "r")) == NULL)
-			die("Can't open prmfile ", filename[i]);
+			ALOS_die("Can't open prmfile ", filename[i]);
 
-		get_sio_struct(prmfile, &r[i]);
+		ALOS_get_sio_struct(prmfile, &r[i]);
 
 		/* check whether range sampling rate is same. If not, warning */
 		if (i == 0)
@@ -109,6 +133,14 @@ int main(int argc, char **argv) {
 
 	return (EXIT_SUCCESS);
 }
+
+int gmtsar_ALOS_baseline(int argc, char **argv) {
+	if (argc < 3)
+		ALOS_die(USAGE, "");
+	if (strncmp(argv[1], "-input", 6) == 0)
+		return gmtsar_ALOS_baseline_run(NULL, NULL, argv[2]);
+	return gmtsar_ALOS_baseline_run(argv[1], argv[2], NULL);
+}
 /*---------------------------------------------------------------------------*/
 void read_all_ALOS_ldr(struct PRM *r, struct ALOS_ORB *orb, int nfiles) {
 	int i;
@@ -122,7 +154,7 @@ void read_all_ALOS_ldr(struct PRM *r, struct ALOS_ORB *orb, int nfiles) {
 
 		/* open each ldrfile and read into structure r */
 		if ((ldrfile = fopen(r[i].led_file, "r")) == NULL)
-			die("Can't open ldrfile %s", r[i].led_file);
+			ALOS_die("Can't open ldrfile %s", r[i].led_file);
 
 		read_ALOS_sarleader(ldrfile, &r[i], &orb[i]);
 
@@ -166,7 +198,7 @@ void ALOS_baseline(struct PRM *r, struct ALOS_ORB *orb, int nfiles, int input_fl
 	double far_range;
 
 	/* reference orbit */
-	get_seconds(r[0], &t11, &t12);
+	ALOS_get_seconds(r[0], &t11, &t12);
 	// t13 = (t11 + t12)/2.;
 	dr = 0.5 * SOL / fs0;
 	dt = 0.2 / r[0].prf;
@@ -182,7 +214,7 @@ void ALOS_baseline(struct PRM *r, struct ALOS_ORB *orb, int nfiles, int input_fl
 
 	for (ii = 1; ii < nfiles; ii++) {
 
-		get_seconds(r[ii], &t21, &t22);
+		ALOS_get_seconds(r[ii], &t21, &t22);
 		t23 = (t21 + t22) / 2.;
 		// rr2 = r[ii].near_range;
 
@@ -197,11 +229,11 @@ void ALOS_baseline(struct PRM *r, struct ALOS_ORB *orb, int nfiles, int input_fl
 
 		/* look at other orbit information and recalculate the height using the
 		 * ashift */
-		calc_height_velocity(&orb[ii], &r[ii], t22, t22, &height, &re_c, &vg, &vtot, &rdot);
+		ALOS_calc_height_velocity(&orb[ii], &r[ii], t22, t22, &height, &re_c, &vg, &vtot, &rdot);
 		r[ii].ht_end = height + re_c - r[ii].RE;
-		calc_height_velocity(&orb[ii], &r[ii], t23, t23, &height, &re_c, &vg, &vtot, &rdot);
+		ALOS_calc_height_velocity(&orb[ii], &r[ii], t23, t23, &height, &re_c, &vg, &vtot, &rdot);
 		r[ii].ht = height + re_c - r[ii].RE;
-		calc_height_velocity(&orb[ii], &r[ii], t21, t21, &height, &re_c, &vg, &vtot, &rdot);
+		ALOS_calc_height_velocity(&orb[ii], &r[ii], t21, t21, &height, &re_c, &vg, &vtot, &rdot);
 		r[ii].ht_start = height + re_c - r[ii].RE;
 
 		// fd_orbit = -2.0*rdot/r[ii].lambda;
@@ -248,18 +280,18 @@ void ALOS_baseline(struct PRM *r, struct ALOS_ORB *orb, int nfiles, int input_fl
 		/* compute more orbital information at the min baseline based on m1 */
 
 		ts = t11 + m1 * dt;
-		calc_height_velocity(&orb[0], &r[0], ts, ts, &height, &re_c, &vg, &vtot, &rdot);
+		ALOS_calc_height_velocity(&orb[0], &r[0], ts, ts, &height, &re_c, &vg, &vtot, &rdot);
 		// fd_orbit = -2.0*rdot/r[0].lambda;
 
 		/* shouldn't happen ..					*/
 		if (x11 == -99999.0)
-			die("x11 not initialized", "");
+			ALOS_die("x11 not initialized", "");
 		if (x12 == -99999.0)
-			die("x12 not initialized", "");
+			ALOS_die("x12 not initialized", "");
 		if (x13 == -99999.0)
-			die("x13 not initialized", "");
+			ALOS_die("x13 not initialized", "");
 		if (m1 == -99999)
-			die("m1 not initialized", "");
+			ALOS_die("m1 not initialized", "");
 
 		/* put in structure 					*/
 		r[ii].baseline_start = b1;
@@ -365,7 +397,7 @@ void ALOS_baseline(struct PRM *r, struct ALOS_ORB *orb, int nfiles, int input_fl
 		target[2] = z_sta + glob_look[2] * rho;
 
 		fll = (r[0].ra - r[0].rc) / r[0].ra;
-		xyz2plh(target, target_llt, r[0].ra, fll);
+		ALOS_xyz2plh(target, target_llt, r[0].ra, fll);
 
 		fprintf(stderr, "lon_tie_point =  %f\n", target_llt[1]);
 		fprintf(stderr, "lat_tie_point =  %f\n", target_llt[0]);
@@ -394,7 +426,7 @@ void read_input_file(char *inputfilename, int nfiles, char **filename) {
 	FILE *inputfile;
 
 	if ((inputfile = fopen(inputfilename, "r")) == NULL)
-		die("Can't open ", inputfilename);
+		ALOS_die("Can't open ", inputfilename);
 
 	for (i = 0; i < nfiles; i++)
 		fscanf(inputfile, " %s ", filename[i]);
@@ -419,7 +451,7 @@ void parse_command_line(char **argv, int *nfiles, int *input_flag) {
 		*input_flag = 1;
 
 		if ((inputfile = fopen(argv[2], "r")) == NULL)
-			die("Can't open ", argv[2]);
+			ALOS_die("Can't open ", argv[2]);
 
 		/* count the number of files in inputfile */
 		while (fscanf(inputfile, " %s ", tmp) != EOF)

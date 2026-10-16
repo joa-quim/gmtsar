@@ -1,3 +1,14 @@
+#define USAGE resamp_USAGE
+#define bicubic_one resamp_bicubic_one
+#define nearest resamp_nearest
+#define bilinear resamp_bilinear
+#define bicubic resamp_bicubic
+#define bisinc resamp_bisinc
+#define print_prm_params resamp_print_prm_params
+#define fix_prm_params resamp_fix_prm_params
+#define ram2ras resamp_ram2ras
+#define sinc_kernel resamp_sinc_kernel
+#define sinc_one resamp_sinc_one
 /*	$Id$	*/
 /***************************************************************************
  * resamp resamples a aligned image to match the geometry of a master image. *
@@ -28,7 +39,6 @@
 #include <stdlib.h>
 #ifdef _WIN32
 #include "mman.h"
-#include "mman.c"
 #else
 #include <sys/mman.h>
 #endif
@@ -55,7 +65,7 @@ void bicubic_one(double *, double *, double, double, double *);
 void bisinc(double *, short *, int, int, short *);
 void sinc_one(double *, double *, double, double, double *);
 
-int main(int argc, char **argv) {
+int gmtsar_resamp_run(void *API, int argc, char **argv) {
 	int ii, jj;
 	int debug, intrp;
 	int xdimm, ydimm;                 /* size of master SLC file */
@@ -69,14 +79,9 @@ int main(int argc, char **argv) {
 	size_t st_size;
     struct GMT_GRID *R = NULL, *A = NULL;
     int r1, r2, a1, a2;
-    double f11,f12,f21,f22; 
+    double f11,f12,f21,f22;
     double gx, gy, tx, ty;
     int nx, ny;
-
-    // Begin: Initializing new GMT session
-    void *API = NULL; // GMT API control structure
-    if ((API = GMT_Create_Session(argv[0], 0U, 0U, NULL)) == NULL)
-        return EXIT_FAILURE;
 
 	struct PRM pm, ps;
 
@@ -317,6 +322,15 @@ int main(int argc, char **argv) {
 	fclose(SLC_file2);
 
 	return (EXIT_SUCCESS);
+}
+
+int gmtsar_resamp(int argc, char **argv) {
+	void *API = GMT_Create_Session(argv[0], 0U, 0U, NULL);
+	int status;
+	if (!API) return EXIT_FAILURE;
+	status = gmtsar_resamp_run(API, argc, argv);
+	if (GMT_Destroy_Session(API) && status == EXIT_SUCCESS) status = EXIT_FAILURE;
+	return status;
 }
 
 /************************************************************************

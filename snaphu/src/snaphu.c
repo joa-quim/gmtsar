@@ -1,3 +1,6 @@
+#ifdef GMTSAR_MODULE_BUILD
+#define main gmtsar_snaphu_run
+#endif
 /*************************************************************************
 
   snaphu main source file
@@ -89,7 +92,6 @@ int main(int argc, char **argv){
   double cputimestart;
   long linelen, nlines;
 
-
   /* get current wall clock and CPU time */
   StartTimers(&tstart,&cputimestart);
 
@@ -127,9 +129,15 @@ int main(int argc, char **argv){
   /* finish up */
   fprintf(sp1,"Program %s done\n",PROGRAMNAME);
   DisplayElapsedTime(tstart,cputimestart);
-  exit(NORMAL_EXIT);
+  return NORMAL_EXIT;
 
 } /* end of main() */
+
+#ifdef GMTSAR_MODULE_BUILD
+int gmtsar_snaphu(int argc, char **argv) {
+  return gmtsar_snaphu_run(argc, argv);
+}
+#endif
 
 
 /* function: Unwrap()

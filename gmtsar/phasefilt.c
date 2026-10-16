@@ -1,3 +1,10 @@
+#define USAGE phasefilt_USAGE
+#define print_cpatch phasefilt_print_cpatch
+#define print_patch phasefilt_print_patch
+#define write_grdfile phasefilt_write_grdfile
+#define make_wgt phasefilt_make_wgt
+#define apply_pspec phasefilt_apply_pspec
+#define calc_corr phasefilt_calc_corr
 /*	$Id: phasefilt.c 80 2014-08-11 17:04:28Z sandwell $	*/
 #include "gmtsar.h"
 
@@ -180,7 +187,7 @@ int calc_corr(void *API, char *amp1, char *amp2, unsigned int xdim, unsigned int
 }
 
 int phasefilt_parse_command_line(char **a, int na, char *USAGE, char *sre, char *sim, float *alp, int *ps, char *amp1, char *amp2,
-                                 int *dflag, int *comflag, char *phasefilt, char *corrfilt) {
+                                 int *dflag, int *comflag, char *phasefilt, char *corrfilt, char *realout, char *imagout, char *diffout) {
 	int n;
 	int flag[4];
 
@@ -272,6 +279,13 @@ int phasefilt_parse_command_line(char **a, int na, char *USAGE, char *sre, char 
 			if (verbose)
 				fprintf(stderr, "corrfilt %s \n", corrfilt);
 		}
+		else if (!strcmp(a[n], "-real_out") || !strcmp(a[n], "-imag_out") || !strcmp(a[n], "-diff_out")) {
+			char *dst = !strcmp(a[n], "-real_out") ? realout : !strcmp(a[n], "-imag_out") ? imagout : diffout;
+			if (++n == na) die(" no output file after option!\n", "");
+			strncpy(dst, a[n], 255); dst[255] = '\0';
+			if (dst == realout || dst == imagout) *comflag = 1;
+			else *dflag = 1;
+		}
 		else {
 			fprintf(stderr, " %s *** option not recognized ***\n\n", a[n]);
 			fprintf(stderr, "%s", USAGE);
@@ -340,7 +354,7 @@ char *USAGE = "phasefilt [GMTSAR] - Apply adaptive non-linear phase filter\n\n"
               "example:\n"
               "phasefilt -imag imag.grd -real real.grd -alpha 0.5\n";
 
-int main(int argc, char **argv) {
+int gmtsar_phasefilt_run(void *API, int argc, char **argv) {
 	unsigned int i, j, ii, jj, k1, k2;
 	unsigned int xdim, ydim;
 	unsigned int nxp, nyp;
@@ -352,13 +366,9 @@ int main(int argc, char **argv) {
 	char amp1[256], amp2[256];
 	char phasefilt[256] = "filtphase.grd";
 	char corrfilt[256] = "filtcorr.grd";
+	char realout[256] = "filtphase_real.grd", imagout[256] = "filtphase_imag.grd", diffout[256] = "filtdiff.grd";
 
-	void *API = NULL;                                  /* GMT API control structure */
 	struct GMT_GRID *RE = NULL, *IM = NULL, *T = NULL; /* Grid structure containing ->header and ->data */
-
-	/* Begin: Initializing new GMT session */
-	if ((API = GMT_Create_Session(argv[0], 0U, 0U, NULL)) == NULL)
-		return EXIT_FAILURE;
 
 	debug = verbose = corrflag = comflag = 0;
 	if (argc < 3)
@@ -368,7 +378,8 @@ int main(int argc, char **argv) {
 	psize = 32;   /* size of patch  # changed from 64 */
 	alpha = 0.5f; /* exponent */
 	dflag = 0;    /* write out difference */
-	phasefilt_parse_command_line(argv, argc, USAGE, sre, sim, &alpha, &psize, amp1, amp2, &dflag, &comflag, phasefilt, corrfilt);
+	phasefilt_parse_command_line(argv, argc, USAGE, sre, sim, &alpha, &psize, amp1, amp2, &dflag, &comflag, phasefilt, corrfilt,
+	                              realout, imagout, diffout);
 
 	/* patch size 		*/
 	/* currently square 	*/
@@ -485,22 +496,22 @@ int main(int argc, char **argv) {
 	if (comflag) {
 		for (i = 0; i < T->header->nm; i++)
 			ftmp[i] = fdata[i].r;
-		write_grdfile(API, T, "filtphase_real.grd", "phasefilt", "real", ftmp, verbose);
+		write_grdfile(API, T, realout, "phasefilt", "real", ftmp, verbose);
 		for (i = 0; i < T->header->nm; i++)
 			ftmp[i] = fdata[i].i;
-		write_grdfile(API, T, "filtphase_imag.grd", "phasefilt", "imag", ftmp, verbose);
+		write_grdfile(API, T, imagout, "phasefilt", "imag", ftmp, verbose);
 		free((void *)ftmp);
 	}
 
 	if (dflag) {
 		for (i = 0; i < T->header->nm; i++)
 			diff[i] = atan2f(data[i].i, data[i].r) - outphase[i];
-		write_grdfile(API, T, "filtdiff.grd", "phasefilt", "diff", diff, verbose);
+		write_grdfile(API, T, diffout, "phasefilt", "diff", diff, verbose);
 		free((void *)diff);
 	}
 
-	if (GMT_Destroy_Session(API))
-		return EXIT_FAILURE; /* Remove the GMT machinery */
+	if (GMT_Destroy_Data(API, &RE) || GMT_Destroy_Data(API, &IM) || GMT_Destroy_Data(API, &T))
+		return EXIT_FAILURE;
 
 	free((void *)patch0);
 	free((void *)patch1);
@@ -511,4 +522,13 @@ int main(int argc, char **argv) {
 	free((void *)wgt);
 
 	return (EXIT_SUCCESS);
+}
+
+int gmtsar_phasefilt(int argc, char **argv) {
+	void *API = GMT_Create_Session(argv[0], 0U, 0U, NULL);
+	int status;
+	if (!API) return EXIT_FAILURE;
+	status = gmtsar_phasefilt_run(API, argc, argv);
+	if (GMT_Destroy_Session(API)) return EXIT_FAILURE;
+	return status;
 }

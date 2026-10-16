@@ -11,6 +11,14 @@
  *                                                                         *
  ***************************************************************************/
 
+#define USAGE make_slc_nsr_USAGE
+#define get_range make_slc_nsr_get_range
+#define hdf5_read make_slc_nsr_hdf5_read
+#define write_slc_hdf5 make_slc_nsr_write_slc_hdf5
+#define pop_led_hdf5 make_slc_nsr_pop_led_hdf5
+#define write_orb make_slc_nsr_write_orb
+#define pop_prm_hdf5 make_slc_nsr_pop_prm_hdf5
+
 #include "PRM.h"
 #include "hdf5.h"
 #include "lib_defs.h"
@@ -528,30 +536,25 @@ int pop_prm_hdf5(struct PRM *prm, hid_t input, char *file_name, char *mode, int 
     return (1);
 }
 
-int main(int argc, char **argv) {
-
-    if (argc < 5) {
-        die(USAGE, "");
-    }
+int gmtsar_make_slc_nsr_run(const char *input_file, const char *output_stem, const char *mode_in, double dfact,
+                            const char *region_cut) {
 
     FILE *OUTPUT_PRM, *OUTPUT_SLC, *OUTPUT_LED;
-    char tmp_str[200],mode[10],rslc_base[200],ident_base[200];
+    char tmp_str[200],mode[10],rslc_base[200],ident_base[200],out_stem[200];
     struct PRM prm;
     state_vector sv[200];
     int n, xl=0, xh=0, yl=0, yh=0;
-    double dfact;
-    hid_t file; 
+    hid_t file;
 
-    strcpy(mode,argv[3]);
+    strcpy(mode,mode_in);
+    strcpy(out_stem, output_stem);
 
-    dfact = atof(argv[4]);
-
-    if (argc == 6) {
-	get_range(argv[5], &xl, &xh, &yl, &yh);
+    if (region_cut) {
+	get_range((char *)region_cut, &xl, &xh, &yl, &yh);
     }
 
-    if ((file = H5Fopen(argv[1], H5F_ACC_RDONLY, H5P_DEFAULT)) < 0)
-        die("Couldn't open HDF5 file: \n", argv[1]);
+    if ((file = H5Fopen(input_file, H5F_ACC_RDONLY, H5P_DEFAULT)) < 0)
+        die("Couldn't open HDF5 file: \n", (char *)input_file);
 
     get_nisar_paths(file, rslc_base, sizeof(rslc_base), ident_base, sizeof(ident_base));
     printf("Using NISAR path: %s\n", rslc_base);
@@ -560,12 +563,12 @@ int main(int argc, char **argv) {
 
     /* Rename S-band output basename from ...A to ...S */
     if (strstr(rslc_base, "/SSAR/") != NULL) {
-        size_t l=strlen(argv[2]);
-        if (l>0 && argv[2][l-1]=='A') argv[2][l-1]='S';
+        size_t l=strlen(out_stem);
+        if (l>0 && out_stem[l-1]=='A') out_stem[l-1]='S';
     }
 
     // generate the SLC file
-    strcpy(tmp_str, argv[2]);
+    strcpy(tmp_str, out_stem);
     strcat(tmp_str, ".SLC");
 
     if ((OUTPUT_SLC = fopen(tmp_str, "wb")) == NULL)
@@ -576,11 +579,11 @@ int main(int argc, char **argv) {
     printf("Range after write_SLC xl, xh, yl, yh %d %d %d %d \n",xl, xh, yl, yh);
 
     null_sio_struct(&prm);
-    
-    // generate the PRM file
-    pop_prm_hdf5(&prm, file, argv[2], mode, xl, xh, yl, yh, rslc_base, ident_base);
 
-    strcpy(tmp_str, argv[2]);
+    // generate the PRM file
+    pop_prm_hdf5(&prm, file, out_stem, mode, xl, xh, yl, yh, rslc_base, ident_base);
+
+    strcpy(tmp_str, out_stem);
     strcat(tmp_str, ".PRM");
     if ((OUTPUT_PRM = fopen(tmp_str, "w")) == NULL)
         die("Couldn't open prm file: \n", tmp_str);
@@ -590,15 +593,23 @@ int main(int argc, char **argv) {
     // generate the LED file
     n = pop_led_hdf5(file, sv, rslc_base);
 
-    strcpy(tmp_str, argv[2]);
+    strcpy(tmp_str, out_stem);
     strcat(tmp_str, ".LED");
     if ((OUTPUT_LED = fopen(tmp_str, "w")) == NULL)
         die("Couldn't open led file: \n", tmp_str);
-    write_orb(sv, OUTPUT_LED, n); 
+    write_orb(sv, OUTPUT_LED, n);
     fclose(OUTPUT_LED);
 
     H5Fclose(file);
 
+    return EXIT_SUCCESS;
+}
+
+int gmtsar_make_slc_nsr(int argc, char **argv) {
+    if (argc < 5) {
+        die(USAGE, "");
+    }
+    return gmtsar_make_slc_nsr_run(argv[1], argv[2], argv[3], atof(argv[4]), argc == 6 ? argv[5] : NULL);
 }
 
 

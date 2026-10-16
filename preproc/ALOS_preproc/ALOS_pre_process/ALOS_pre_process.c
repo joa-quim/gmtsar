@@ -1,3 +1,5 @@
+#define USAGE ALOS_pre_process_USAGE
+#include "namespace.h"
 /********************************************************************************
  * Program tp prepare ALOS L1.0 data for InSAR processing.  REad in data and *
  * leader file and write out prm and raw file for siosar *
@@ -57,13 +59,13 @@ EXTERN_MSC void print_ALOS_defaults(struct PRM *);
 void swap_ALOS_data_info(struct sardata_info *);
 void get_files(struct PRM *, FILE **, FILE **, char *, char *, int);
 int write_ALOS_LED(struct ALOS_ORB *, struct PRM *, char *);
-void write_orb(FILE *, struct ALOS_ORB *);
+void ALOS_write_orb(FILE *, struct ALOS_ORB *);
 // roi_pac stuff
 int write_roi_orbit(struct ALOS_ORB, char *);
 int write_roi(char *, FILE *, struct PRM, struct ALOS_ORB, char *);
 
 int ledflag;
-int main(int argc, char **argv) {
+int gmtsar_ALOS_pre_process_run(int argc, char **argv) {
 	FILE *imagefile, *ldrfile;
 	FILE *rawfile[11], *prmfile[11];
 	char prmfilename[128];
@@ -74,7 +76,7 @@ int main(int argc, char **argv) {
 	char date[8];
 
 	if (argc < 3)
-		die(USAGE, "");
+		ALOS_die(USAGE, "");
 
 	/* set flags  */
 	dopp = 1;
@@ -86,7 +88,7 @@ int main(int argc, char **argv) {
 	nPRF = 0;
 	ALOS_format = 0;
 
-	null_sio_struct(&prm);
+	ALOS_null_sio_struct(&prm);
 	set_ALOS_defaults(&prm);
 
 	/* read command line */
@@ -98,7 +100,7 @@ int main(int argc, char **argv) {
 
 	if (verbose)
 		print_ALOS_defaults(&prm);
-	if (is_big_endian_() == -1) {
+	if (ALOS_is_big_endian_() == -1) {
 		swap = 1;
 		fprintf(stderr, ".... swapping bytes\n");
 	}
@@ -108,9 +110,9 @@ int main(int argc, char **argv) {
 
 	/* IMG and LED files should exist already */
 	if ((imagefile = fopen(argv[1], "rb")) == NULL)
-		die("couldn't open Level 1.0 IMG file \n", argv[1]);
+		ALOS_die("couldn't open Level 1.0 IMG file \n", argv[1]);
 	if ((ldrfile = fopen(argv[2], "r")) == NULL)
-		die("couldn't open LED file \n", argv[2]);
+		ALOS_die("couldn't open LED file \n", argv[2]);
 
 	/* if it exists, copy to prm structure */
 	strcpy(prm.led_file, argv[2]);
@@ -176,7 +178,7 @@ int main(int argc, char **argv) {
 
 		/* calculate doppler from raw file */
 		if (dopp == 1)
-			calc_dop(&prm);
+			ALOS_calc_dop(&prm);
 
 		/* divide prf in half for quad_pol 	*/
 		/* fix chirp slope			*/
@@ -194,7 +196,7 @@ int main(int argc, char **argv) {
 			prm.chirp_slope = forced_slope;
 
 		/* write ascii output, SIO format */
-		put_sio_struct(prm, prmfile[nPRF]);
+		ALOS_put_sio_struct(prm, prmfile[nPRF]);
 
 		/* write roi_pac output */
 		if (roi) {
@@ -208,6 +210,10 @@ int main(int argc, char **argv) {
 	}
 
 	return (EXIT_SUCCESS);
+}
+
+int gmtsar_ALOS_pre_process(int argc, char **argv) {
+	return gmtsar_ALOS_pre_process_run(argc, argv);
 }
 /*------------------------------------------------------*/
 void get_files(struct PRM *prm, FILE **rawfile, FILE **prmfile, char *prmfilename, char *name, int n) {
@@ -225,9 +231,9 @@ void get_files(struct PRM *prm, FILE **rawfile, FILE **prmfile, char *prmfilenam
 
 	/* now open the files */
 	if ((*rawfile = fopen(prm->input_file, "wb")) == NULL)
-		die("can't open ", prm->input_file);
+		ALOS_die("can't open ", prm->input_file);
 
 	if ((*prmfile = fopen(prmfilename, "w")) == NULL)
-		die("couldn't open output PRM file \n", prmfilename);
+		ALOS_die("couldn't open output PRM file \n", prmfilename);
 }
 /*------------------------------------------------------*/

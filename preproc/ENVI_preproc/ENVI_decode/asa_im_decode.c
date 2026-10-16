@@ -1,4 +1,17 @@
 
+#define USAGE asa_im_decode_USAGE
+#define byte_swap_float asa_im_decode_byte_swap_float
+#define byte_swap_int asa_im_decode_byte_swap_int
+#define byte_swap_long asa_im_decode_byte_swap_long
+#define byte_swap_short asa_im_decode_byte_swap_short
+#define byte_swap_uint asa_im_decode_byte_swap_uint
+#define byte_swap_ulong asa_im_decode_byte_swap_ulong
+#define byte_swap_ushort asa_im_decode_byte_swap_ushort
+#define is_bigendian asa_im_decode_is_bigendian
+#define readMph asa_im_decode_readMph
+#define readSph asa_im_decode_readSph
+#define readSphAux asa_im_decode_readSphAux
+#define swap_endian_order asa_im_decode_swap_endian_order
 /***********************************************************************************************************************************
 
 asa_im_decode.c
@@ -386,7 +399,7 @@ void byte_swap_InsGads(struct insGadsStruct *InsGads);
 
 /**********************************************************************************************************************************/
 
-int main(int argc, char *argv[]) {
+int gmtsar_asa_im_decode_run(int argc, char *argv[]) {
 
 	/* variable definitions */
 
@@ -544,7 +557,7 @@ int main(int argc, char *argv[]) {
 		       "found at "
 		       "http://envisat.esa.int/dataproducts/asar/"
 		       "CNTR6-3-6.htm#eph.asar.asardf.0pASA_IM__0P\n\n");
-		return 0;
+		return EXIT_FAILURE;
 	}
 
 	/* read in command-line arguments */
@@ -1181,9 +1194,13 @@ int main(int argc, char *argv[]) {
 	fclose(outFilePtr);
 
 	printf("\nDone.\n\n");
-	return 0;
+	return EXIT_SUCCESS;
 
 } /* end main */
+
+int gmtsar_asa_im_decode(int argc, char **argv) {
+	return gmtsar_asa_im_decode_run(argc, argv);
+}
 
 /**********************************************************************************************************************************/
 

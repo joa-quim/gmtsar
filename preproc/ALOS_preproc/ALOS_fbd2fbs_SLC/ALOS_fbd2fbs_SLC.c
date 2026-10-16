@@ -1,3 +1,4 @@
+#define USAGE ALOS_fbd2fbs_SLC_USAGE
 /***************************************************************************
  * ALOS_fbd2fbs_SLC reads a FBD-HH SLC file processed with
  ** ALOS_pre_proc_SLC and upsamples it to FBS-HH bandwidth. The algorithm   *
@@ -38,7 +39,7 @@ char *USAGE = "ALOS_FBD2FBS_SLC FBD.PRM FBS.PRM \n"
               "  FBS.PRM   PRM file for outout image in fine beam single "
               "polarization (FBS 28 MHz) (output) \n";
 
-int main(int argc, char **argv) {
+int gmtsar_ALOS_fbd2fbs_SLC_run(const char *fbd_prm, const char *fbs_prm) {
 	FILE *prmfile, *datafile, *prmout, *dataout;
 	short int *indata, *outdata, *extr;
 	fcomplex *cin, *cout;
@@ -47,36 +48,33 @@ int main(int argc, char **argv) {
 	int ibufsize, obufsize, fbdsamp, fbssamp;
 	struct PRM r;
 
-	if (argc < 3)
-		die(USAGE, "");
-
 	/* flags defined in global_flags.h */
 	verbose = 0;
 	debug = 0;
 
 	/* fill the struct with default parameters */
-	null_sio_struct(&r);
+	ALOS_null_sio_struct(&r);
 
 	/* open input PRM file and read the parameters */
-	if ((prmfile = fopen(argv[1], "r")) == NULL)
-		die("Can't open ", argv[1]);
-	get_sio_struct(prmfile, &r);
+	if ((prmfile = fopen(fbd_prm, "r")) == NULL)
+		ALOS_die("Can't open ", (char *)fbd_prm);
+	ALOS_get_sio_struct(prmfile, &r);
 
 	/* open input raw data file */
 	if ((datafile = fopen(r.input_file, "rb")) == NULL)
-		die("Can't open ", r.input_file);
+		ALOS_die("Can't open ", r.input_file);
 	/* open output PRM file	*/
-	if ((prmout = fopen(argv[2], "w")) == NULL)
-		die("Can't open ", argv[2]);
+	if ((prmout = fopen(fbs_prm, "w")) == NULL)
+		ALOS_die("Can't open ", (char *)fbs_prm);
 
 	/* assemble the output filename and open for writing */
-	sscanf(argv[2], "%s", r.input_file);
-	r.input_file[strlen(argv[2]) - 4] = 0;
+	sscanf(fbs_prm, "%s", r.input_file);
+	r.input_file[strlen(fbs_prm) - 4] = 0;
 	strcat(r.input_file, ".SLC");
 
 	/* open output file for single look complex	 image */
 	if ((dataout = fopen(r.input_file, "wb")) == NULL)
-		die("Can't open ", r.input_file);
+		ALOS_die("Can't open ", r.input_file);
 
 	/* compute the sizes for the input and output buffers and allocate the memory
 	 */
@@ -105,8 +103,8 @@ int main(int argc, char **argv) {
 
 	/* find best length of fft (use power of two) for both input and output
 	 */
-	nffti = find_fft_length(fbdsamp);
-	nffto = find_fft_length(fbssamp);
+	nffti = ALOS_find_fft_length(fbdsamp);
+	nffto = ALOS_find_fft_length(fbssamp);
 	if (debug)
 		fprintf(stderr, " nffti %d nffto %d \n", nffti, nffto);
 
@@ -165,9 +163,9 @@ int main(int argc, char **argv) {
 		fprintf(stderr, " %d %d %d %d %f %f \n", r.chirp_ext, r.good_bytes, r.bytes_per_line, r.num_rng_bins, r.fs,
 		        r.chirp_slope);
 	/*  write the output PRM file */
-	if ((prmout = fopen(argv[2], "w")) == NULL)
-		die("can't open prfile", argv[2]);
-	put_sio_struct(r, prmout);
+	if ((prmout = fopen(fbs_prm, "w")) == NULL)
+		ALOS_die("can't open prfile", (char *)fbs_prm);
+	ALOS_put_sio_struct(r, prmout);
 
 	free(indata);
 	free(outdata);
@@ -177,4 +175,11 @@ int main(int argc, char **argv) {
 	fclose(prmout);
 	fclose(datafile);
 	fclose(dataout);
+	return EXIT_SUCCESS;
+}
+
+int gmtsar_ALOS_fbd2fbs_SLC(int argc, char **argv) {
+	if (argc < 3)
+		ALOS_die(USAGE, "");
+	return gmtsar_ALOS_fbd2fbs_SLC_run(argv[1], argv[2]);
 }

@@ -9,7 +9,7 @@
 #include "image_sio.h"
 #include "lib_functions.h"
 
-void null_sio_struct(struct PRM *p) {
+void ALOS_null_sio_struct(struct PRM *p) {
 
 	/* characters */
 	strncpy(p->input_file, NULL_CHAR, 8);

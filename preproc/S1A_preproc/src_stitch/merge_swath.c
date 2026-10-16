@@ -1,3 +1,8 @@
+#ifdef GMTSAR_MODULE_BUILD
+#define main gmtsar_merge_swath
+#endif
+#define USAGE merge_swath_USAGE
+#define fix_prm merge_swath_fix_prm
 /*      $Id$    */
 /*****************************************************************************************
  *  Program to merge 3 subswaths of TOPS data.                             *
@@ -47,7 +52,7 @@ void fix_prm(struct PRM *p) {
 	p->clock_stop = p->clock_start + (p->num_valid_az * p->num_patches) / (p->prf * 86400.0);
 }
 
-int main(int argc, char **argv) {
+int gmtsar_merge_swath_run(void *API, int argc, char **argv) {
 
 	/* define variables */
 	FILE *stemin = NULL, *PRM = NULL;
@@ -127,9 +132,6 @@ int main(int argc, char **argv) {
 	}
 
 	/* read in the grid files */
-	void *API = NULL; // GMT API control structure
-	if ((API = GMT_Create_Session(argv[0], 0U, 0U, NULL)) == NULL)
-		return EXIT_FAILURE;
 	printf("Reading in the grids...\n");
 	if ((G1 = GMT_Read_Data(API, GMT_IS_GRID, GMT_IS_FILE, GMT_IS_SURFACE, GMT_GRID_HEADER_ONLY, NULL, grid[0], NULL)) == NULL)
 		die("cannot open grids", grid[0]);
@@ -297,7 +299,14 @@ int main(int argc, char **argv) {
 		fclose(PRM);
 	}
 
-	if (GMT_Destroy_Session(API))
-		return EXIT_FAILURE;
 	return (EXIT_SUCCESS);
+}
+
+int gmtsar_merge_swath(int argc, char **argv) {
+	void *API = GMT_Create_Session(argv[0], 0U, 0U, NULL);
+	int status;
+	if (!API) return EXIT_FAILURE;
+	status = gmtsar_merge_swath_run(API, argc, argv);
+	if (GMT_Destroy_Session(API) && status == EXIT_SUCCESS) status = EXIT_FAILURE;
+	return status;
 }

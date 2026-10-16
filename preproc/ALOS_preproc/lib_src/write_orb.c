@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void write_orb(FILE *ldrfile, struct ALOS_ORB *orb) {
+void ALOS_write_orb(FILE *ldrfile, struct ALOS_ORB *orb) {
 	int n;
 	int nd, iy, id;
 	double isec, idsec, pt, px, py, pz, vx, vy, vz;

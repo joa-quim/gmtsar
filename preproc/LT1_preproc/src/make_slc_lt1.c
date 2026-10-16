@@ -11,9 +11,15 @@
  *                                                                         *
  ***************************************************************************/
 
+#define USAGE make_slc_lt1_USAGE
+#define pop_prm make_slc_lt1_pop_prm
+#define pop_led make_slc_lt1_pop_led
+#define write_orb make_slc_lt1_write_orb
+#define write_slc make_slc_lt1_write_slc
+
 #include "PRM.h"
-#include "ctype.h" 
-#include "gmtsar.h" 
+#include "ctype.h"
+#include "gmtsar.h"
 #include "lib_defs.h" 
 #include "lib_functions.h" 
 #include "stateV.h" 
@@ -32,7 +38,7 @@ char *USAGE = "\nUsage: make_slc_lt1 name_of_xml_file name_of_tiff_file name_out
               "\nExample: make_slc_lt1 LT1A_MONO_KSC_STRIP2_006353_E112.2_N33.4_20230328_SLC_HH_S2A_0000087472.meta.xml LT1A_MONO_KSC_STRIP2_006353_E112.2_N33.4_20230328_SLC_HH_S2A_0000087472.tiff LT1A_20230328\n"
               "\nOutput: LT1A_20230328.SLC LT1A_20230328.PRM LT1A_20230328.LED\n";
 
-int main(int argc, char **argv) {
+int gmtsar_make_slc_lt1_run(const char *xml_file, const char *tiff_file, const char *output_stem, double SLC_factor) {
 
 	FILE *XML_FILE, *OUTPUT_PRM, *OUTPUT_SLC, *OUTPUT_LED;
 	TIFF *TIFF_FILE;
@@ -41,18 +47,9 @@ int main(int argc, char **argv) {
 	tree *xml_tree;
 	state_vector sv[2000];
 	int ch, n = 0, nc = 0, nlmx = 0;
-    double SLC_factor = 1.0;
 
-	if (argc < 4)
-		die(USAGE, "");
-    
-    if (argc == 5) {
-        SLC_factor = atof(argv[4]);
-        printf("Setting SLC_factor to %.2f\n", SLC_factor);
-    }
-
-	if ((XML_FILE = fopen(argv[1], "rb")) == NULL)
-		die("Couldn't open xml file: \n", argv[1]);
+	if ((XML_FILE = fopen(xml_file, "rb")) == NULL)
+		die("Couldn't open xml file: \n", (char *)xml_file);
 
 	// find the number of lines and the maximum line length of the xml file
 	while (EOF != (ch = fgetc(XML_FILE))) {
@@ -69,8 +66,8 @@ int main(int argc, char **argv) {
 	fclose(XML_FILE);
 
 	// generate the xml tree
-	if ((XML_FILE = fopen(argv[1], "r")) == NULL)
-		die("Couldn't open xml file: \n", argv[1]);
+	if ((XML_FILE = fopen(xml_file, "r")) == NULL)
+		die("Couldn't open xml file: \n", (char *)xml_file);
 	get_tree(XML_FILE, xml_tree, 1);
 	fclose(XML_FILE);
 
@@ -80,8 +77,8 @@ int main(int argc, char **argv) {
 	null_sio_struct(&prm);
 
 	// generate the PRM file
-	pop_prm(&prm, xml_tree, argv[3]);
-	strcpy(tmp_str, argv[3]);
+	pop_prm(&prm, xml_tree, (char *)output_stem);
+	strcpy(tmp_str, output_stem);
 	strcat(tmp_str, ".PRM");
 	if ((OUTPUT_PRM = fopen(tmp_str, "w")) == NULL)
 		die("Couldn't open prm file: \n", tmp_str);
@@ -90,7 +87,7 @@ int main(int argc, char **argv) {
 	// generate the LED file
 	n = pop_led(xml_tree, sv);
 
-	strcpy(tmp_str, argv[3]);
+	strcpy(tmp_str, output_stem);
 	strcat(tmp_str, ".LED");
 	if ((OUTPUT_LED = fopen(tmp_str, "w")) == NULL)
 		die("Couldn't open led file: \n", tmp_str);
@@ -99,10 +96,10 @@ int main(int argc, char **argv) {
 
 	// generate the SLC file
 	TIFFSetWarningHandler(NULL);
-	if ((TIFF_FILE = TIFFOpen(argv[2], "r")) == NULL)
-		die("Couldn't open tiff file: \n", argv[2]);
+	if ((TIFF_FILE = TIFFOpen(tiff_file, "r")) == NULL)
+		die("Couldn't open tiff file: \n", (char *)tiff_file);
 
-	strcpy(tmp_str, argv[3]);
+	strcpy(tmp_str, output_stem);
 	strcat(tmp_str, ".SLC");
 	if ((OUTPUT_SLC = fopen(tmp_str, "wb")) == NULL)
 		die("Couldn't open slc file: \n", tmp_str);
@@ -110,6 +107,19 @@ int main(int argc, char **argv) {
 
 	TIFFClose(TIFF_FILE);
 	fclose(OUTPUT_SLC);
+
+	return EXIT_SUCCESS;
+}
+
+int gmtsar_make_slc_lt1(int argc, char **argv) {
+	double SLC_factor = 1.0;
+	if (argc < 4)
+		die(USAGE, "");
+	if (argc == 5) {
+		SLC_factor = atof(argv[4]);
+		printf("Setting SLC_factor to %.2f\n", SLC_factor);
+	}
+	return gmtsar_make_slc_lt1_run(argv[1], argv[2], argv[3], SLC_factor);
 }
 
 int write_slc(TIFF *tif, FILE *slc, char *orbdir, double SLC_factor) {

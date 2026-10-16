@@ -1,3 +1,4 @@
+#include "namespace.h"
 #include "image_sio.h"
 #include "lib_functions.h"
 
@@ -11,42 +12,42 @@ void parse_ALOS_commands(int na, char **a, char *USAGE, struct PRM *prm) {
 		if (!strcmp(a[n], "-near")) {
 			n++;
 			if (n == na)
-				die(" no option after -near!\n", "");
+				ALOS_die(" no option after -near!\n", "");
 			prm->near_range = atof(a[n]);
 			fprintf(stderr, " setting near_range to %9.2lf \n", prm->near_range);
 		}
 		else if (!strcmp(a[n], "-radius")) {
 			n++;
 			if (n == na)
-				die(" no option after -radius!\n", "");
+				ALOS_die(" no option after -radius!\n", "");
 			prm->RE = atof(a[n]);
 			fprintf(stderr, " setting radius to %f \n", prm->RE);
 		}
 		else if (!strcmp(a[n], "-nrows")) {
 			n++;
 			if (n == na)
-				die(" no option after -nrows!\n", "");
+				ALOS_die(" no option after -nrows!\n", "");
 			prm->nrows = atoi(a[n]);
 			fprintf(stderr, " setting nrows to %d \n", prm->nrows);
 		}
 		else if (!strcmp(a[n], "-tbias")) {
 			n++;
 			if (n == na)
-				die(" no option after -tbias!\n", "");
+				ALOS_die(" no option after -tbias!\n", "");
 			tbias = atof(a[n]);
 			fprintf(stderr, " setting tbias to %f \n", tbias);
 		}
 		else if (!strcmp(a[n], "-rbias")) {
 			n++;
 			if (n == na)
-				die(" no option after -rbias!\n", "");
+				ALOS_die(" no option after -rbias!\n", "");
 			rbias = atof(a[n]);
 			fprintf(stderr, " setting rbias to %f \n", rbias);
 		}
 		else if (!strcmp(a[n], "-SLC_factor")) {
 			n++;
 			if (n == na)
-				die(" no option after -SLC_factor!\n", "");
+				ALOS_die(" no option after -SLC_factor!\n", "");
 			slc_fact = atof(a[n]);
 			fprintf(stderr, " setting SLC_factor to %f \n", slc_fact);
 		}

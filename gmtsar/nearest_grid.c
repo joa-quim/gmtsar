@@ -3,27 +3,29 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "gmtsar_commands.h"
 
-char *USAGE = "\nUsage: nearest_grid input.grd output.grd [search_radius]\n\n"
+static const char *nearest_grid_usage = "\nUsage: nearest_grid input.grd output.grd [search_radius]\n\n"
               "      NaNs will be interpolated to its nearest neighbour\n\n";
 
-int create_grid(void *, char *, char *, int);
+int gmtsar_nearest_grid_run(void *, const char *, const char *, int);
 
-int main(int argc, char **argv) {
+int gmtsar_nearest_grid(int argc, char **argv) {
 
 	void *API = NULL;
 	int radius = 0;
 
 	if (argc != 3 && argc != 4)
-		die(USAGE, "");
+		die((char *)nearest_grid_usage, "");
 	if (argc == 4) {
 		radius = atoi(argv[3]);
 		fprintf(stderr, "Setting search radius to be %d ...\n", radius);
 	}
 	if ((API = GMT_Create_Session(argv[0], 0U, 0U, NULL)) == NULL)
 		return EXIT_FAILURE;
-	create_grid(API, argv[1], argv[2], radius);
-	return (1);
+	radius = gmtsar_nearest_grid_run(API, argv[1], argv[2], radius);
+	GMT_Destroy_Session(API);
+	return radius;
 }
 
 int find_nearest(int i, int j, int *r2, int *is, int *js, int *xs, int *ys) {
@@ -227,7 +229,7 @@ double nearest_interp(int nx, int ny, float *m, float *m_interp, int radius) {
 	return (1.0);
 }
 
-int create_grid(void *API, char *file, char *output, int radius) {
+int gmtsar_nearest_grid_run(void *API, const char *file, const char *output, int radius) {
 
 	float *m, *m_interp;
 	int i, j, nx, ny, rr;
@@ -238,7 +240,7 @@ int create_grid(void *API, char *file, char *output, int radius) {
 
 	fprintf(stderr, "Reading in original grid...\n");
 	if ((T = GMT_Read_Data(API, GMT_IS_GRID, GMT_IS_FILE, GMT_IS_SURFACE, GMT_GRID_HEADER_ONLY, NULL, file, NULL)) == NULL)
-		die("cannot open grdfile", file);
+		return EXIT_FAILURE;
 	if (GMT_Read_Data(API, GMT_IS_GRID, GMT_IS_FILE, GMT_IS_SURFACE, GMT_GRID_DATA_ONLY, NULL, file, T) == NULL)
 		return EXIT_FAILURE;
 
@@ -247,6 +249,7 @@ int create_grid(void *API, char *file, char *output, int radius) {
 	// fprintf(stderr, "nx: %d, ny: %d\n",nx,ny);
 	m = T->data;
 	m_interp = (float *)malloc(sizeof(float) * nx * ny);
+	if (m_interp == NULL) return EXIT_FAILURE;
 
 	for (i = 0; i < ny; i++)
 		for (j = 0; j < nx; j++)
@@ -259,13 +262,15 @@ int create_grid(void *API, char *file, char *output, int radius) {
 	nearest_interp(nx, ny, m, m_interp, rr);
 
 	fprintf(stderr, "WRITING GRID IMAGE: Width x Heihgt = %d x %d...\n", nx, ny);
-	if (OUT == NULL && (OUT = GMT_Duplicate_Data(API, GMT_IS_GRID, GMT_DUPLICATE_DATA, T)) == NULL)
-		die("error creating output grid", "");
-	OUT->data = m_interp;
+	if (OUT == NULL && (OUT = GMT_Duplicate_Data(API, GMT_IS_GRID, GMT_DUPLICATE_DATA, T)) == NULL) {
+		free(m_interp);
+		return EXIT_FAILURE;
+	}
+	memcpy(OUT->data, m_interp, sizeof(float) * nx * ny);
 	if (GMT_Write_Data(API, GMT_IS_GRID, GMT_IS_FILE, GMT_IS_SURFACE, GMT_GRID_ALL, NULL, output, OUT))
-		die("Failed to write output grid", output);
+		return EXIT_FAILURE;
 
 	free(m_interp);
 
-	return (1);
+	return EXIT_SUCCESS;
 }

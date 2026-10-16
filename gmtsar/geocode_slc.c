@@ -1,3 +1,10 @@
+#define USAGE geocode_slc_USAGE
+#define sinc_kernel geocode_slc_sinc_kernel
+#define sinc_one geocode_slc_sinc_one
+#define dist geocode_slc_dist
+#define calorb_alos geocode_slc_calorb_alos
+#define goldop geocode_slc_goldop
+#define npad geocode_slc_npad
 /***************************************************************************
  * geocode_slc reads in one complex SAR_SLC image and sample it to the     *
  * given DEM file. Propogation delay is geometrically computed and removed *
@@ -16,7 +23,6 @@
 #include <stdlib.h>
 #ifdef _WIN32
 #include "mman.h"
-#include "mman.c"
 #else
 #include <sys/mman.h>
 #endif
@@ -64,8 +70,8 @@ dcomplex Cexpd(double theta) {
     return z;
 }
 
-int main (int argc, char **argv) {
-    
+int gmtsar_geocode_slc_run(void *API, int argc, char **argv) {
+
     FILE *SLCfile = NULL, *ldrfile = NULL, *RMPfile = NULL;
     int i,j,k,ii,jj;
     struct PRM p1;
@@ -86,7 +92,6 @@ int main (int argc, char **argv) {
     int goldop();
     int stai, endi, midi;
     struct PRM prm;
-    void *API = NULL;
     struct GMT_GRID *DEM = NULL, *OUT_R = NULL, *OUT_I = NULL;
     float *real, *imag;
     int fdin,pdin;
@@ -98,11 +103,7 @@ int main (int argc, char **argv) {
     if (argc != 3) {
         fprintf(stderr, "%s\n", USAGE);
         exit(-1);
-    } 
-    
-
-    if ((API = GMT_Create_Session(argv[0], 0U, 0U, NULL)) == NULL)
-        return EXIT_FAILURE;
+    }
 
     get_prm(&prm,argv[1]);
 
@@ -306,10 +307,16 @@ int main (int argc, char **argv) {
     if (GMT_Destroy_Data(API, &OUT_I))
         die("error freeing data ", "imag.grd");
 
-    if (GMT_Destroy_Session(API))
-        return EXIT_FAILURE; /* Remove the GMT machinery */
+    return(EXIT_SUCCESS);
+}
 
-    return(1);
+int gmtsar_geocode_slc(int argc, char **argv) {
+    void *API = GMT_Create_Session(argv[0], 0U, 0U, NULL);
+    int status;
+    if (!API) return EXIT_FAILURE;
+    status = gmtsar_geocode_slc_run(API, argc, argv);
+    if (GMT_Destroy_Session(API) && status == EXIT_SUCCESS) status = EXIT_FAILURE;
+    return status;
 }
 
 #define PI 3.1415926535897932
@@ -637,4 +644,3 @@ int calorb_alos(struct SAT_ORB *orb, double **orb_pos, double ts, double t1, int
 
         return orb->nd;
 }
-

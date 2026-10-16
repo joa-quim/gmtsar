@@ -1,5 +1,5 @@
 /************************************************************************
- * rng_filter applies a low-pass filter in the fourier domain by         *
+ * ALOS_rng_filter applies a low-pass filter in the fourier domain by         *
  *	zeroing in wavenumber space                                     *
  ************************************************************************/
 /************************************************************************
@@ -17,7 +17,7 @@
 
 void cfft1d_(int *, fcomplex *, int *);
 
-void rng_filter(fcomplex *cin, int nffti, fcomplex *cout) {
+void ALOS_rng_filter(fcomplex *cin, int nffti, fcomplex *cout) {
 	int i, dir, nf, nt;
 	nf = .70 * nffti / 2;
 	nt = nffti - 1;

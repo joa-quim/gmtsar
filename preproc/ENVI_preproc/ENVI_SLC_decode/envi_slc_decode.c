@@ -15,10 +15,17 @@
  *                                                                         *
  ***************************************************************************/
 
+#define USAGE envi_slc_decode_USAGE
+#define write_orb envi_slc_decode_write_orb
+#define dump_data envi_slc_decode_dump_data
+#define remove_ext envi_slc_decode_remove_ext
+#define read_header envi_slc_decode_read_header
+#define monthtonum envi_slc_decode_monthtonum
+
 #include "PRM.h"
 #include "epr_api-2.3/src/epr_api.h"
 #include "lib_defs.h"
-#include "lib_functions.h"
+#include "../../../gmtsar/lib_functions.h"
 #include "stateV.h"
 #include "tiffio.h"
 #include <assert.h>
@@ -32,7 +39,12 @@
 #include <crtdbg.h>
 #endif /* if defined(WIN32) && defined(_DEBUG) */
 //#include <typeinfo>
+#ifdef _WIN32
+#define strcasecmp _stricmp
+#define strncasecmp _strnicmp
+#else
 #include <strings.h>
+#endif
 
 int write_orb(state_vector *sv, FILE *fp, int);
 int dump_data(EPR_ELogLevel log_level, const char *infile, FILE *outstream, int pixflag, unsigned int l0, unsigned int lN,
@@ -48,7 +60,7 @@ char *USAGE = "\n\nUsage: envi_slc_decode name_of_data_file (*.E1 *.E2 or *.N1) 
               "SAR_IMS_1PNESA19920914_183429_00000018C087_00442_06098_0000.PRM "
               "SAR_IMS_1PNESA19920914_183429_00000018C087_00442_06098_0000.LED\n";
 
-int main(int argc, char **argv) {
+int gmtsar_envi_slc_decode_run(const char *data_file) {
 
 	FILE *OUTPUT_PRM, *OUTPUT_SLC, *OUTPUT_LED;
 	char *filename = 0;
@@ -61,19 +73,16 @@ int main(int argc, char **argv) {
 	 * e_log_error */
 	enum EPR_LogLevel eloglevel = e_log_error;
 
-	if (argc != 2)
-		die(USAGE, "");
-
 	// initiate the prm
 	null_sio_struct(&prm);
 
-	if (read_header(eloglevel, argv[1], &prm, sv, &n) != 0) {
-		die("Couldn't read envisat header in input file: \n", argv[1]);
+	if (read_header(eloglevel, data_file, &prm, sv, &n) != 0) {
+		die("Couldn't read envisat header in input file: \n", (char *)data_file);
 	}
 
 	// generate the PRM file, test to make sure we can write to it by opening the
 	// file
-	strcpy(tmp_str, argv[1]);
+	strcpy(tmp_str, data_file);
 	filename = remove_ext(tmp_str, '.', '/');
 	strcpy(tmp_str, filename);
 	free(filename);
@@ -89,7 +98,7 @@ int main(int argc, char **argv) {
 
 	// generate the LED file, test to make sure we can write to it by opening the
 	// file
-	strcpy(tmp_str, argv[1]);
+	strcpy(tmp_str, data_file);
 	filename = remove_ext(tmp_str, '.', '/');
 	strcpy(tmp_str, filename);
 	free(filename);
@@ -105,7 +114,7 @@ int main(int argc, char **argv) {
 
 	// generate the SLC file, test to make sure we can write to it by opening the
 	// file and closing it for writing with dump data
-	strcpy(tmp_str, argv[1]);
+	strcpy(tmp_str, data_file);
 	filename = remove_ext(tmp_str, '.', '/');
 	strcpy(tmp_str, filename);
 	free(filename);
@@ -115,11 +124,17 @@ int main(int argc, char **argv) {
 		die("Couldn't open slc file: \n", tmp_str);
 	}
 	else {
-		dump_data(eloglevel, argv[1], OUTPUT_SLC, 1, 0, 0, 0, 0);
+		dump_data(eloglevel, data_file, OUTPUT_SLC, 1, 0, 0, 0, 0);
 		fclose(OUTPUT_SLC);
 	}
 
-	return 0;
+	return EXIT_SUCCESS;
+}
+
+int gmtsar_envi_slc_decode(int argc, char **argv) {
+	if (argc != 2)
+		die(USAGE, "");
+	return gmtsar_envi_slc_decode_run(argv[1]);
 }
 
 int write_orb(state_vector *sv, FILE *fp, int n) {

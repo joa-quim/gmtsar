@@ -1,3 +1,4 @@
+#include "namespace.h"
 #include "image_sio.h"
 #include "lib_functions.h"
 
@@ -12,21 +13,21 @@ void parse_ALOS_commands(int na, char **a, char *USAGE, struct PRM *prm) {
 		if (!strcmp(a[n], "-near")) {
 			n++;
 			if (n == na)
-				die(" no option after -near!\n", "");
+				ALOS_die(" no option after -near!\n", "");
 			prm->near_range = atof(a[n]);
 			fprintf(stderr, " setting near_range to %9.2lf \n", prm->near_range);
 		}
 		else if (!strcmp(a[n], "-radius")) {
 			n++;
 			if (n == na)
-				die(" no option after -radius!\n", "");
+				ALOS_die(" no option after -radius!\n", "");
 			prm->RE = atof(a[n]);
 			fprintf(stderr, " setting radius to %f \n", prm->RE);
 		}
 		else if (!strcmp(a[n], "-force_slope")) {
 			n++;
 			if (n == na)
-				die(" no option after -force_slope!\n", "");
+				ALOS_die(" no option after -force_slope!\n", "");
 			force_slope = 1;
 			forced_slope = atof(a[n]);
 			fprintf(stderr, " setting chirp slope to %f \n", forced_slope);
@@ -34,7 +35,7 @@ void parse_ALOS_commands(int na, char **a, char *USAGE, struct PRM *prm) {
 		else if (!strcmp(a[n], "-fd1")) {
 			n++;
 			if (n == na)
-				die(" no option after -fd1!\n", "");
+				ALOS_die(" no option after -fd1!\n", "");
 			prm->fd1 = atof(a[n]);
 			dopp = 0;
 			fprintf(stderr, " setting fd1 to %f \n", prm->fd1);
@@ -42,28 +43,28 @@ void parse_ALOS_commands(int na, char **a, char *USAGE, struct PRM *prm) {
 		else if (!strcmp(a[n], "-chirp_ext")) {
 			n++;
 			if (n == na)
-				die(" no option after -chirp_ext!\n", "");
+				ALOS_die(" no option after -chirp_ext!\n", "");
 			prm->chirp_ext = atoi(a[n]);
 			fprintf(stderr, " setting chirp extent to %d \n", prm->chirp_ext);
 		}
 		else if (!strcmp(a[n], "-nrows")) {
 			n++;
 			if (n == na)
-				die(" no option after -nrows!\n", "");
+				ALOS_die(" no option after -nrows!\n", "");
 			prm->nrows = atoi(a[n]);
 			fprintf(stderr, " setting nrows to %d \n", prm->nrows);
 		}
 		else if (!strcmp(a[n], "-npatch")) {
 			n++;
 			if (n == na)
-				die(" no option after -npatches!\n", "");
+				ALOS_die(" no option after -npatches!\n", "");
 			prm->num_patches = atoi(a[n]);
 			fprintf(stderr, " setting npatches to %d \n", prm->num_patches);
 		}
 		else if (!strcmp(a[n], "-tbias")) {
 			n++;
 			if (n == na)
-				die(" no option after -tbias!\n", "");
+				ALOS_die(" no option after -tbias!\n", "");
 			tbias = atof(a[n]);
 			fprintf(stderr, " setting tbias to %f \n", tbias);
 		}

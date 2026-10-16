@@ -61,10 +61,10 @@ Geophysical Research: Solid Earth, 120(8), pp.5952-5963.
 
 #include "sbas.h"
 #include "gmtsar.h"
+#include "gmtsar_commands.h"
 #include <stdint.h>
 #ifdef _WIN32
 #include "mman.h"
-#include "mman.c"
 #else
 #include <sys/mman.h>
 #endif
@@ -76,7 +76,7 @@ Geophysical Research: Solid Earth, 120(8), pp.5952-5963.
 #define checkpoint()
 #endif
 
-char *USAGE = "USAGE: sbas intf.tab scene.tab N S xdim ydim [-atm ni] [-smooth sf] "
+static const char *sbas_usage = "USAGE: sbas intf.tab scene.tab N S xdim ydim [-atm ni] [-smooth sf] "
               "[-wavelength wl] [-incidence inc] [-range -rng] [-rms] [-dem]\n\n"
               " input: \n"
               "  intf.tab             --  list of unwrapped (filtered) interferograms:\n"
@@ -128,7 +128,7 @@ char *USAGE = "USAGE: sbas intf.tab scene.tab N S xdim ydim [-atm ni] [-smooth s
               "geothermal step-over revealed by Sentinel-1A InSAR. IEEE Transactions on"
               "Geoscience and Remote Sensing, 55(9), 5284-5292.\n\n";
 
-int main(int argc, char **argv) {
+int gmtsar_sbas_run(void *API, int argc, char **argv) {
 
 	/* define variables */
 	double EE = 2.718281828459046;
@@ -146,7 +146,6 @@ int main(int argc, char **argv) {
 	double *work = NULL, *time = NULL;
 	double rng, wl, theta, scale, aa, bb;
 	FILE *infile = NULL, *datefile = NULL;
-	void *API = NULL;            /* GMT control structure */
 	struct GMT_GRID *Out = NULL; /* For the output grid */
 
 	double *atm_rms;
@@ -156,11 +155,7 @@ int main(int argc, char **argv) {
 	int ftmp_phi = 0, fphi = 0, fvar = 0;
 
 	if (argc < 7)
-		die("\n", USAGE);
-
-	/* Begin: Initializing new GMT session */
-	if ((API = GMT_Create_Session(argv[0], 0U, 0U, NULL)) == NULL)
-		return EXIT_FAILURE;
+		die("\n", (char *)sbas_usage);
 
 	/* default parameters are for ALOS-1 */
 	/* use range at the center of the image*/
@@ -455,8 +450,14 @@ int main(int argc, char **argv) {
 	close(fvar);
 	close(ftmp_phi);
 
-	if (GMT_Destroy_Session(API))
-		return EXIT_FAILURE; /* Remove the GMT machinery */
-
 	return (EXIT_SUCCESS);
+}
+
+int gmtsar_sbas(int argc, char **argv) {
+	void *API = GMT_Create_Session(argv[0], 0U, 0U, NULL);
+	int status;
+	if (!API) return EXIT_FAILURE;
+	status = gmtsar_sbas_run(API, argc, argv);
+	if (GMT_Destroy_Session(API) && status == EXIT_SUCCESS) status = EXIT_FAILURE;
+	return status;
 }

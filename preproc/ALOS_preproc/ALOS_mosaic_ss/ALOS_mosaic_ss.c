@@ -25,6 +25,7 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define USAGE ALOS_mosaic_ss_USAGE
 char *USAGE = " ALOS_mosaic_ss prmfile1 grd1 prmfile2 grd2 prmfile3 grd3 prmfile4 grd4 "
               "prmfile5 grd5 mosaic dec dir \n\n"
               " USAGE:  \n"
@@ -39,14 +40,13 @@ char *USAGE = " ALOS_mosaic_ss prmfile1 grd1 prmfile2 grd2 prmfile3 grd3 prmfile
 #include "gmtsar.h"
 
 void set_ALOS_defaults(struct PRM *);
-void get_sio_struct(FILE *, struct PRM *);
+void ALOS_get_sio_struct(FILE *, struct PRM *);
 
-int main(int argc, char **argv) {
+int gmtsar_ALOS_mosaic_ss_run(void *API, int argc, char **argv) {
 
 	/* define variables */
 	FILE *prmfile;
 	struct PRM prm;
-	void *API = NULL; /* GMT control structure */
 	struct GMT_GRID *grid1 = NULL, *grid2 = NULL, *grid3 = NULL, *grid4 = NULL, *grid5 = NULL, *grid6 = NULL;
 	double inc[2], wesn[4];
 	double clock_start[5], clock_start_rel[5], near_range[5], near_range_rel[5];
@@ -68,11 +68,7 @@ int main(int argc, char **argv) {
 
 	/* parse arguments */
 	if (argc != 14)
-		die("\n", USAGE);
-
-	/* Begin: Initializing new GMT session */
-	if ((API = GMT_Create_Session(argv[0], 2, 0, NULL)) == NULL)
-		return EXIT_FAILURE;
+		ALOS_die("\n", USAGE);
 
 	/* read in dec */
 	dec = atof(argv[12]);
@@ -86,10 +82,10 @@ int main(int argc, char **argv) {
 	/* open and read PRM files */
 	/* subswath 1 */
 	if ((prmfile = fopen(argv[1], "r")) == NULL) {
-		die("\n can't open PRM file:\n", argv[1]);
+		ALOS_die("\n can't open PRM file:\n", argv[1]);
 	}
 	set_ALOS_defaults(&prm);
-	get_sio_struct(prmfile, &prm);
+	ALOS_get_sio_struct(prmfile, &prm);
 	clock_start[0] = 86400.0 * prm.clock_start + (prm.nrows - prm.num_valid_az) / (2. * prm.prf);
 	near_range[0] = prm.near_range;
 	rng_samp_rate[0] = prm.fs;
@@ -101,10 +97,10 @@ int main(int argc, char **argv) {
 
 	/* subswath 2 */
 	if ((prmfile = fopen(argv[3], "r")) == NULL) {
-		die("\n can't open PRM file:\n", argv[3]);
+		ALOS_die("\n can't open PRM file:\n", argv[3]);
 	}
 	set_ALOS_defaults(&prm);
-	get_sio_struct(prmfile, &prm);
+	ALOS_get_sio_struct(prmfile, &prm);
 	clock_start[1] = 86400.0 * prm.clock_start + (prm.nrows - prm.num_valid_az) / (2. * prm.prf);
 	near_range[1] = prm.near_range;
 	rng_samp_rate[1] = prm.fs;
@@ -116,10 +112,10 @@ int main(int argc, char **argv) {
 
 	/* subswath 3 */
 	if ((prmfile = fopen(argv[5], "r")) == NULL) {
-		die("\n can't open PRM file:\n", argv[5]);
+		ALOS_die("\n can't open PRM file:\n", argv[5]);
 	}
 	set_ALOS_defaults(&prm);
-	get_sio_struct(prmfile, &prm);
+	ALOS_get_sio_struct(prmfile, &prm);
 	clock_start[2] = 86400.0 * prm.clock_start + (prm.nrows - prm.num_valid_az) / (2. * prm.prf);
 	near_range[2] = prm.near_range;
 	rng_samp_rate[2] = prm.fs;
@@ -131,10 +127,10 @@ int main(int argc, char **argv) {
 
 	/* subswath 4 */
 	if ((prmfile = fopen(argv[7], "r")) == NULL) {
-		die("\n can't open PRM file:\n", argv[7]);
+		ALOS_die("\n can't open PRM file:\n", argv[7]);
 	}
 	set_ALOS_defaults(&prm);
-	get_sio_struct(prmfile, &prm);
+	ALOS_get_sio_struct(prmfile, &prm);
 	clock_start[3] = 86400.0 * prm.clock_start + (prm.nrows - prm.num_valid_az) / (2. * prm.prf);
 	near_range[3] = prm.near_range;
 	rng_samp_rate[3] = prm.fs;
@@ -146,10 +142,10 @@ int main(int argc, char **argv) {
 
 	/* subswath 5 */
 	if ((prmfile = fopen(argv[9], "r")) == NULL) {
-		die("\n can't open PRM file:\n", argv[9]);
+		ALOS_die("\n can't open PRM file:\n", argv[9]);
 	}
 	set_ALOS_defaults(&prm);
-	get_sio_struct(prmfile, &prm);
+	ALOS_get_sio_struct(prmfile, &prm);
 	clock_start[4] = 86400.0 * prm.clock_start + (prm.nrows - prm.num_valid_az) / (2. * prm.prf);
 	near_range[4] = prm.near_range;
 	rng_samp_rate[4] = prm.fs;
@@ -174,7 +170,7 @@ int main(int argc, char **argv) {
 
 		if ((num_rng[0] != round(grid1->header->n_columns * grid1->header->inc[GMT_X])) ||
 		    (num_azi[0] != round(grid1->header->n_rows * grid1->header->inc[GMT_Y]))) {
-			die("\nPRM file and GMT grid don't match!\n", argv[2]);
+			ALOS_die("\nPRM file and GMT grid don't match!\n", argv[2]);
 		}
 		if (GMT_Read_Data(API, GMT_IS_GRID, GMT_IS_FILE, GMT_IS_SURFACE, GMT_GRID_DATA_ONLY, NULL, argv[2], grid1) == NULL)
 			return EXIT_FAILURE;
@@ -191,7 +187,7 @@ int main(int argc, char **argv) {
 		        grid2->header->n_columns, grid2->header->inc[GMT_X], grid2->header->n_rows, grid2->header->inc[GMT_Y]);
 		if ((num_rng[1] != round(grid2->header->n_columns * grid2->header->inc[GMT_X])) ||
 		    (num_azi[1] != round(grid2->header->n_rows * grid2->header->inc[GMT_Y]))) {
-			die("\nPRM file and GMT grid don't match!\n", argv[4]);
+			ALOS_die("\nPRM file and GMT grid don't match!\n", argv[4]);
 		}
 		if (GMT_Read_Data(API, GMT_IS_GRID, GMT_IS_FILE, GMT_IS_SURFACE, GMT_GRID_DATA_ONLY, NULL, argv[4], grid2) == NULL)
 			return EXIT_FAILURE;
@@ -208,7 +204,7 @@ int main(int argc, char **argv) {
 		        grid3->header->n_columns, grid3->header->inc[GMT_X], grid3->header->n_rows, grid3->header->inc[GMT_Y]);
 		if ((num_rng[2] != round(grid3->header->n_columns * grid3->header->inc[GMT_X])) ||
 		    (num_azi[2] != round(grid3->header->n_rows * grid3->header->inc[GMT_Y]))) {
-			die("\nPRM file and GMT grid don't match!\n", argv[6]);
+			ALOS_die("\nPRM file and GMT grid don't match!\n", argv[6]);
 		}
 		if (GMT_Read_Data(API, GMT_IS_GRID, GMT_IS_FILE, GMT_IS_SURFACE, GMT_GRID_DATA_ONLY, NULL, argv[6], grid3) == NULL)
 			return EXIT_FAILURE;
@@ -225,7 +221,7 @@ int main(int argc, char **argv) {
 		        grid4->header->n_columns, grid4->header->inc[GMT_X], grid4->header->n_rows, grid4->header->inc[GMT_Y]);
 		if ((num_rng[3] != round(grid4->header->n_columns * grid4->header->inc[GMT_X])) ||
 		    (num_azi[3] != round(grid4->header->n_rows * grid4->header->inc[GMT_Y]))) {
-			die("\nPRM file and GMT grid don't match!\n", argv[8]);
+			ALOS_die("\nPRM file and GMT grid don't match!\n", argv[8]);
 		}
 		if (GMT_Read_Data(API, GMT_IS_GRID, GMT_IS_FILE, GMT_IS_SURFACE, GMT_GRID_DATA_ONLY, NULL, argv[8], grid4) == NULL)
 			return EXIT_FAILURE;
@@ -242,7 +238,7 @@ int main(int argc, char **argv) {
 		        grid5->header->n_columns, grid5->header->inc[GMT_X], grid5->header->n_rows, grid5->header->inc[GMT_Y]);
 		if ((num_rng[4] != round(grid5->header->n_columns * grid5->header->inc[GMT_X])) ||
 		    (num_azi[4] != round(grid5->header->n_rows * grid5->header->inc[GMT_Y]))) {
-			die("\nPRM file and GMT grid don't match!\n", argv[10]);
+			ALOS_die("\nPRM file and GMT grid don't match!\n", argv[10]);
 		}
 		if (GMT_Read_Data(API, GMT_IS_GRID, GMT_IS_FILE, GMT_IS_SURFACE, GMT_GRID_DATA_ONLY, NULL, argv[10], grid5) == NULL)
 			return EXIT_FAILURE;
@@ -259,7 +255,7 @@ int main(int argc, char **argv) {
 		fprintf(stderr, "wesn = %f %f %f %f \n", wesn[GMT_XLO], wesn[GMT_YLO], wesn[GMT_XHI], wesn[GMT_YHI]);
 		if ((grid1 = GMT_Create_Data(API, GMT_IS_GRID, GMT_IS_SURFACE, GMT_GRID_ALL, NULL, wesn, inc, GMT_GRID_PIXEL_REG, 0,
 		                             NULL)) == NULL)
-			die("could not allocate grid header", "");
+			ALOS_die("could not allocate grid header", "");
 		if (GMT_Set_Comment(API, GMT_IS_GRID, GMT_COMMENT_IS_REMARK, "subswath 1", grid1))
 			return EXIT_FAILURE;
 		/* fill the empty grid with nan */
@@ -277,7 +273,7 @@ int main(int argc, char **argv) {
 		fprintf(stderr, "wesn = %f %f %f %f \n", wesn[GMT_XLO], wesn[GMT_YLO], wesn[GMT_XHI], wesn[GMT_YHI]);
 		if ((grid2 = GMT_Create_Data(API, GMT_IS_GRID, GMT_IS_SURFACE, GMT_GRID_ALL, NULL, wesn, inc, GMT_GRID_PIXEL_REG, 0,
 		                             NULL)) == NULL)
-			die("could not allocate grid header", "");
+			ALOS_die("could not allocate grid header", "");
 		if (GMT_Set_Comment(API, GMT_IS_GRID, GMT_COMMENT_IS_REMARK, "subswath 2", grid2))
 			return EXIT_FAILURE;
 		/* fill the empty grid with nan */
@@ -295,7 +291,7 @@ int main(int argc, char **argv) {
 		fprintf(stderr, "wesn = %f %f %f %f \n", wesn[GMT_XLO], wesn[GMT_YLO], wesn[GMT_XHI], wesn[GMT_YHI]);
 		if ((grid3 = GMT_Create_Data(API, GMT_IS_GRID, GMT_IS_SURFACE, GMT_GRID_ALL, NULL, wesn, inc, GMT_GRID_PIXEL_REG, 0,
 		                             NULL)) == NULL)
-			die("could not allocate grid header", "");
+			ALOS_die("could not allocate grid header", "");
 		if (GMT_Set_Comment(API, GMT_IS_GRID, GMT_COMMENT_IS_REMARK, "subswath 3", grid3))
 			return EXIT_FAILURE;
 		/* fill the empty grid with nan */
@@ -313,7 +309,7 @@ int main(int argc, char **argv) {
 		fprintf(stderr, "wesn = %f %f %f %f \n", wesn[GMT_XLO], wesn[GMT_YLO], wesn[GMT_XHI], wesn[GMT_YHI]);
 		if ((grid4 = GMT_Create_Data(API, GMT_IS_GRID, GMT_IS_SURFACE, GMT_GRID_ALL, NULL, wesn, inc, GMT_GRID_PIXEL_REG, 0,
 		                             NULL)) == NULL)
-			die("could not allocate grid header", "");
+			ALOS_die("could not allocate grid header", "");
 		if (GMT_Set_Comment(API, GMT_IS_GRID, GMT_COMMENT_IS_REMARK, "subswath 4", grid4))
 			return EXIT_FAILURE;
 		/* fill the empty grid with nan */
@@ -331,7 +327,7 @@ int main(int argc, char **argv) {
 		fprintf(stderr, "wesn = %f %f %f %f \n", wesn[GMT_XLO], wesn[GMT_YLO], wesn[GMT_XHI], wesn[GMT_YHI]);
 		if ((grid5 = GMT_Create_Data(API, GMT_IS_GRID, GMT_IS_SURFACE, GMT_GRID_ALL, NULL, wesn, inc, GMT_GRID_PIXEL_REG, 0,
 		                             NULL)) == NULL)
-			die("could not allocate grid header", "");
+			ALOS_die("could not allocate grid header", "");
 		if (GMT_Set_Comment(API, GMT_IS_GRID, GMT_COMMENT_IS_REMARK, "subswath 5", grid5))
 			return EXIT_FAILURE;
 		/* fill the empty grid with nan */
@@ -339,7 +335,7 @@ int main(int argc, char **argv) {
 			grid5->data[node5] = NAN;
 	}
 	else {
-		die("dir must be either 1 or 0", "");
+		ALOS_die("dir must be either 1 or 0", "");
 	}
 
 	/* find the maximum of the clock start */
@@ -354,7 +350,7 @@ int main(int argc, char **argv) {
 	rsr = rng_samp_rate[0];
 	for (i = 1; i < 5; i++) {
 		if (rsr != rng_samp_rate[i]) {
-			die("\nrange sampling rate from PRM files are not the same.\n", " ");
+			ALOS_die("\nrange sampling rate from PRM files are not the same.\n", " ");
 		}
 	}
 	dr = sol / rsr / 2.0;
@@ -438,7 +434,7 @@ int main(int argc, char **argv) {
 
 		if ((grid6 = GMT_Create_Data(API, GMT_IS_GRID, GMT_IS_SURFACE, GMT_GRID_ALL, NULL, wesn, inc, GMT_GRID_PIXEL_REG, 0,
 		                             NULL)) == NULL)
-			die("could not allocate grid header", "");
+			ALOS_die("could not allocate grid header", "");
 
 		if (GMT_Set_Comment(API, GMT_IS_GRID, GMT_COMMENT_IS_REMARK, "mosaic", grid6))
 			return EXIT_FAILURE;
@@ -624,8 +620,19 @@ int main(int argc, char **argv) {
 			return EXIT_FAILURE;
 	}
 
-	if (GMT_Destroy_Session(API))
-		return EXIT_FAILURE; /* Remove the GMT machinery */
-
 	return (EXIT_SUCCESS);
+}
+
+#ifdef GMTSAR_MODULE_BUILD
+int gmtsar_ALOS_mosaic_ss(int argc, char **argv) {
+#else
+int main(int argc, char **argv) {
+#endif
+	void *API = GMT_Create_Session(argv[0], 2U, 0U, NULL);
+	int status;
+
+	if (!API) return EXIT_FAILURE;
+	status = gmtsar_ALOS_mosaic_ss_run(API, argc, argv);
+	if (GMT_Destroy_Session(API) && status == EXIT_SUCCESS) status = EXIT_FAILURE;
+	return status;
 }

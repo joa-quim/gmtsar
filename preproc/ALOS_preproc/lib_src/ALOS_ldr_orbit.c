@@ -34,9 +34,9 @@ void ALOS_ldr_orbit(struct ALOS_ORB *orb, struct PRM *prm) {
 	t1 = (86400.0) * prm->clock_start + (prm->nrows - prm->num_valid_az) / (2.0 * prm->prf);
 	t2 = t1 + prm->num_patches * prm->num_valid_az / prm->prf;
 
-	calc_height_velocity(orb, prm, t1, t1, &height_start, &re_start, &vg_start, &vtot, &rdot);
-	calc_height_velocity(orb, prm, t2, t2, &height_end, &re_end, &vg_end, &vtot, &rdot);
-	calc_height_velocity(orb, prm, t1, t2, &height, &re_c, &vg, &vtot, &rdot);
+	ALOS_calc_height_velocity(orb, prm, t1, t1, &height_start, &re_start, &vg_start, &vtot, &rdot);
+	ALOS_calc_height_velocity(orb, prm, t2, t2, &height_end, &re_end, &vg_end, &vtot, &rdot);
+	ALOS_calc_height_velocity(orb, prm, t1, t2, &height, &re_c, &vg, &vtot, &rdot);
 	// fd_orbit = -2.0*rdot/prm->lambda;
 
 	if (verbose) {
@@ -67,7 +67,7 @@ void ALOS_ldr_orbit(struct ALOS_ORB *orb, struct PRM *prm) {
 }
 /*---------------------------------------------------------------*/
 /* from David Sandwell's code  */
-void calc_height_velocity(struct ALOS_ORB *orb, struct PRM *prm, double t1, double t2, double *height, double *re2, double *vg,
+void ALOS_calc_height_velocity(struct ALOS_ORB *orb, struct PRM *prm, double t1, double t2, double *height, double *re2, double *vg,
                           double *vtot, double *rdot) {
 
 	int k, ir, nt, nc = 3;
@@ -83,7 +83,7 @@ void calc_height_velocity(struct ALOS_ORB *orb, struct PRM *prm, double t1, doub
 	double t0, ro, ra, rc, dt;
 
 	if (verbose)
-		fprintf(stderr, " ... calc_height_velocity\n");
+		fprintf(stderr, " ... ALOS_calc_height_velocity\n");
 
 	ro = prm->near_range;
 	ra = prm->ra; /* ellipsoid parameters */
@@ -194,7 +194,7 @@ void calc_height_velocity(struct ALOS_ORB *orb, struct PRM *prm, double t1, doub
 	}
 
 	/* fit a second order polynomial to the range versus time function */
-	polyfit(time, rng, d, &nt, &nc);
+	ALOS_polyfit(time, rng, d, &nt, &nc);
 	*rdot = d[1];
 	*vg = sqrt(ro * 2. * d[2]);
 }

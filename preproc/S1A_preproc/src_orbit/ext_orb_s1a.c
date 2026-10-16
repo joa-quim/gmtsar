@@ -1,3 +1,10 @@
+#ifdef GMTSAR_MODULE_BUILD
+#define main gmtsar_ext_orb_s1a
+#endif
+#define USAGE ext_orb_s1a_USAGE
+#define write_orb ext_orb_s1a_write_orb
+#define pop_led_pre ext_orb_s1a_pop_led_pre
+#define yds2ydf ext_orb_s1a_yds2ydf
 /***************************************************************************
  * Creator:  David Sandwell                                                *
  *           (Scripps Institution of Oceanography)                         *
@@ -13,7 +20,7 @@
 
 #include "PRM.h"
 #include "lib_defs.h"
-#include "lib_functions.h"
+#include "../../../gmtsar/lib_functions.h"
 #include "stateV.h"
 #include <math.h>
 #include <stdio.h>
@@ -31,7 +38,7 @@ char *USAGE = "\n\nUsage: ext_orb_s1a.c name_of_prm name_of_orb_xml name_output\
               "EOF output\n"
               "\nOutput: output.LED\n";
 
-int main(int argc, char **argv) {
+int gmtsar_ext_orb_s1a_run(const char *prm_file, const char *orb_xml, const char *output_stem) {
 
 	FILE *XML_FILE, *INPUT_PRM, *OUTPUT_LED;
 	char tmp_str[200];
@@ -41,12 +48,9 @@ int main(int argc, char **argv) {
 	int ch, n = 0, nc = 0, nlmx = 0;
 	double t1, t2;
 
-	if (argc < 3)
-		die(USAGE, "");
-
 	// find the number of lines and the maximum line length of the xml file
-	if ((XML_FILE = fopen(argv[2], "r")) == NULL)
-		die("Couldn't open xml file: \n", argv[2]);
+	if ((XML_FILE = fopen(orb_xml, "r")) == NULL)
+		die("Couldn't open xml file: \n", (char *)orb_xml);
 	while (EOF != (ch = fgetc(XML_FILE))) {
 		++nc;
 		if (ch == '\n') {
@@ -60,15 +64,15 @@ int main(int argc, char **argv) {
 	sv = (struct state_vector *)malloc(n / 2 * sizeof(struct state_vector));
 	fclose(XML_FILE);
 
-	if ((XML_FILE = fopen(argv[2], "r")) == NULL)
-		die("Couldn't open xml file: \n", argv[2]);
+	if ((XML_FILE = fopen(orb_xml, "r")) == NULL)
+		die("Couldn't open xml file: \n", (char *)orb_xml);
 	get_tree(XML_FILE, xml_tree, 1);
 	// show_tree(xml_tree,0,0);
 	fclose(XML_FILE);
 
 	// get the prm
-	if ((INPUT_PRM = fopen(argv[1], "r")) == NULL)
-		die("Couldn't open xml file: \n", argv[1]);
+	if ((INPUT_PRM = fopen(prm_file, "r")) == NULL)
+		die("Couldn't open xml file: \n", (char *)prm_file);
 	get_sio_struct(INPUT_PRM, &prm);
 	// fprintf(stderr,"%.12f  %.12f\n",prm.SC_clock_start,prm.SC_clock_stop);
     // revising t1 and t2 in case only one burst is used.
@@ -85,7 +89,7 @@ int main(int argc, char **argv) {
 	// generate the LED file
 	n = pop_led_pre(xml_tree, sv, t1, t2);
 
-	strcpy(tmp_str, argv[3]);
+	strcpy(tmp_str, output_stem);
 	strcat(tmp_str, ".LED");
 	if ((OUTPUT_LED = fopen(tmp_str, "w")) == NULL)
 		die("Couldn't open led file: \n", tmp_str);
@@ -94,6 +98,13 @@ int main(int argc, char **argv) {
 	fclose(OUTPUT_LED);
 	free(xml_tree);
 	free(sv);
+	return EXIT_SUCCESS;
+}
+
+int gmtsar_ext_orb_s1a(int argc, char **argv) {
+	if (argc < 4)
+		die(USAGE, "");
+	return gmtsar_ext_orb_s1a_run(argv[1], argv[2], argv[3]);
 }
 
 int write_orb(state_vector *sv, FILE *fp, int n) {

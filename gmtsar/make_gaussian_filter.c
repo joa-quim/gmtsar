@@ -18,42 +18,37 @@
 #include <stdlib.h>
 #include <string.h>
 
-double str2double(char *);
-int strasign(char *, char *, int, int);
-int strlocate(char *, int, int);
+static double gaussian_str2double(char *);
+static int gaussian_strasign(char *, char *, int, int);
+static int gaussian_strlocate(char *, int, int);
 
-char *USAGE = "\n\nUsage: make_gaussian_filter name_of_PRM_file RNG_DEC "
+static const char *gaussian_usage = "\n\nUsage: make_gaussian_filter name_of_PRM_file RNG_DEC "
               "AZI_DEC WAVELENGTH(m) [output_filename]\n"
               "\nExample: make_gaussian_filter "
               "IMG-HH-ALPSRP211830620-H1.0__A.PRM 2 4 200\n"
               "\nOutput: gauss_200\n";
 
-int main(int argc, char **argv) {
+int gmtsar_make_gaussian_filter_run(const char *prmfile, int rng_dec, int azi_dec, int w, const char *out_filename) {
 
 	FILE *fid;
-	int rng_dec, azi_dec, w, n_azi, n_rng;
+	int n_azi, n_rng;
 	int i, j, idec, jdec;
 	struct PRM prm;
 	double azi_px_size, rng_px_size, x, y;
 	double c_speed = 299792458.0;
 	double sig_azi, sig_rng, a, rng, cost, cosa;
 	double g[1024][1024];
-	char out_name[128] = "gauss_";
+	char out_name[128];
 
-	if (argc < 4)
-		die(USAGE, "");
-	rng_dec = (int)str2double(argv[2]);
-	azi_dec = (int)str2double(argv[3]);
-	w = (int)str2double(argv[4]);
 	if (rng_dec < 1 || rng_dec > 4)
-		die("Incorrect range decimation factor: \n", argv[2]);
+		die("Incorrect range decimation factor\n", "");
 	if (azi_dec < 1 || azi_dec > 4)
-		die("Incorrect azimuth decimation factor: \n", argv[3]);
+		die("Incorrect azimuth decimation factor\n", "");
 	if (w < 2 || w > 10000)
-		die("Incorrect wavelength: \n", argv[4]);
+		die("Incorrect wavelength\n", "");
 
 	// get the prm
-	get_prm(&prm, argv[1]);
+	get_prm(&prm, (char *)prmfile);
 
 	// compute the range and azimuth pixel size
 	azi_px_size = prm.vel / sqrt(1 + prm.ht / prm.RE) / prm.prf; // real_vel/prf
@@ -91,9 +86,10 @@ int main(int argc, char **argv) {
 	if (n_rng % 2 == 0)
 		n_rng = n_rng + 1;
 
-	strcat(out_name, argv[4]);
-	if (argc > 5)
-		snprintf(out_name, 128, "%s", argv[5]);
+	if (out_filename)
+		snprintf(out_name, sizeof(out_name), "%s", out_filename);
+	else
+		snprintf(out_name, sizeof(out_name), "gauss_%d", w);
 
 	if ((fid = fopen(out_name, "w")) == NULL)
 		die("Couldn't open file: \n", out_name);
@@ -108,9 +104,17 @@ int main(int argc, char **argv) {
 		fprintf(fid, "\n");
 	}
 	fclose(fid);
+	return 0;
 }
 
-int strasign(char *str_out, char *str, int n1, int n2) {
+int gmtsar_make_gaussian_filter(int argc, char **argv) {
+	if (argc < 5)
+		die(gaussian_usage, "");
+	return gmtsar_make_gaussian_filter_run(argv[1], (int)gaussian_str2double(argv[2]), (int)gaussian_str2double(argv[3]),
+		(int)gaussian_str2double(argv[4]), argc > 5 ? argv[5] : NULL);
+}
+
+static int gaussian_strasign(char *str_out, char *str, int n1, int n2) {
 	// asign n1-n2 of str to str_out
 	int i;
 	if (n1 > n2 || n2 > 199) {
@@ -123,7 +127,7 @@ int strasign(char *str_out, char *str, int n1, int n2) {
 	return (1);
 }
 
-int strlocate(char *str, int c, int n) {
+static int gaussian_strlocate(char *str, int c, int n) {
 	// locate the n-th c in str
 	int i, j = 0;
 	for (i = 0; i < strlen(str); i++) {
@@ -137,44 +141,44 @@ int strlocate(char *str, int c, int n) {
 	return (-1);
 }
 
-double str2double(char *str) {
+static double gaussian_str2double(char *str) {
 	int i, n, m;
 	double value = 0.0, value1 = 0.0, value2 = 0.0, sgn = 1.0;
 	char tmp1[100], tmp2[100], tmp[100], str_tmp[100];
 
-	strasign(str_tmp, str, 0, strlen(str));
+	gaussian_strasign(str_tmp, str, 0, strlen(str));
 
 	// decide the sign
 	if (str_tmp[0] == '-' || str_tmp[0] == '+') {
 		if (str_tmp[0] == '-') {
 			sgn = -1.0;
 		}
-		strasign(tmp, str_tmp, 1, strlen(str_tmp));
-		strasign(str_tmp, tmp, 0, strlen(tmp));
+		gaussian_strasign(tmp, str_tmp, 1, strlen(str_tmp));
+		gaussian_strasign(str_tmp, tmp, 0, strlen(tmp));
 	}
 
 	// decide where it is sci form
-	if (strlocate(str_tmp, 'e', 1) != -1 || strlocate(str_tmp, 'E', 1) != -1) {
-		n = strlocate(str_tmp, 'e', 1);
+	if (gaussian_strlocate(str_tmp, 'e', 1) != -1 || gaussian_strlocate(str_tmp, 'E', 1) != -1) {
+		n = gaussian_strlocate(str_tmp, 'e', 1);
 		if (n == -1) {
-			n = strlocate(str_tmp, 'E', 1);
+			n = gaussian_strlocate(str_tmp, 'E', 1);
 		}
-		strasign(tmp2, str_tmp, n + 1, strlen(str)); // exponential part
-		strasign(tmp1, str_tmp, 0, n - 1);           // digits part
+		gaussian_strasign(tmp2, str_tmp, n + 1, strlen(str)); // exponential part
+		gaussian_strasign(tmp1, str_tmp, 0, n - 1);           // digits part
 	}
 	else {
-		strasign(tmp1, str_tmp, 0, strlen(str_tmp)); // digits part
+		gaussian_strasign(tmp1, str_tmp, 0, strlen(str_tmp)); // digits part
 	}
 	// decide whether it has fraction
-	n = strlocate(tmp1, '.', 1);
+	n = gaussian_strlocate(tmp1, '.', 1);
 	if (n != -1) {
-		strasign(tmp, tmp1, 0, n - 1);
+		gaussian_strasign(tmp, tmp1, 0, n - 1);
 		m = strlen(tmp);
 		for (i = 0; i < m; i++) {
 			value1 = value1 + (double)((int)tmp[i] - 48) * pow(10.0, (double)(m - i - 1));
 		}
 		m = strlen(tmp1);
-		strasign(tmp, tmp1, n + 1, m);
+		gaussian_strasign(tmp, tmp1, n + 1, m);
 		m = strlen(tmp);
 		for (i = 0; i < m; i++) {
 			value2 = value2 + (double)((int)tmp[i] - 48) * pow(10.0, (double)(-i - 1));
@@ -190,8 +194,8 @@ double str2double(char *str) {
 		}
 	}
 
-	if (strlocate(str_tmp, 'e', 1) != -1 || strlocate(str_tmp, 'E', 1) != -1) {
-		value = value * pow(10.0, str2double(tmp2));
+	if (gaussian_strlocate(str_tmp, 'e', 1) != -1 || gaussian_strlocate(str_tmp, 'E', 1) != -1) {
+		value = value * pow(10.0, gaussian_str2double(tmp2));
 	}
 
 	return (value * sgn);

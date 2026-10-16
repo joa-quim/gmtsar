@@ -20,34 +20,21 @@ void read_orb(FILE *, struct SAT_ORB *);
 void write_orb(FILE *, struct SAT_ORB *);
 void polyfit(double *, double *, double *, int *, int *);
 
-int main(int argc, char **argv) {
+int gmtsar_extend_orbit_run(const char *file_in, const char *file_out, double frac) {
 	struct SAT_ORB *orb;
 	struct SAT_ORB *orb_out;
 	FILE *infile, *outfile;
 	int nd_in, nd_add, nd_out;
 	int n, k;
 	double *pt, *px, *py, *pz, *ppt, *ppx, *ppvx, *ppy, *ppvy, *ppz, *ppvz;
-	double frac, idsec;
+	double idsec;
 
-	void extrapolate_poly(double *, double *, double *, double *, double *, int, int, int);
+	void extend_extrapolate_poly(double *, double *, double *, double *, double *, int, int, int);
 	int Nodr;
 
-	if ((argc != 4)) {
-		fprintf(stderr, "\n");
-		fprintf(stderr, "Usage: extend_orbit file_in.LED file_out.LED frac\n");
-		fprintf(stderr, "    orig.LED   - original LED file \n");
-		fprintf(stderr, "    extend.LED - extended LED file \n");
-		fprintf(stderr, "    frac       - fraction of frame length to add to each "
-		                "end (e.g. 0.25) \n");
-		fprintf(stderr, "\n");
-		return (0);
-	}
-
-	frac = atof(argv[3]);
-
 	/*  get the orbit data */
-	if ((infile = fopen(argv[1], "r")) == NULL)
-		die("Can't open ", argv[1]);
+	if ((infile = fopen(file_in, "r")) == NULL)
+		die("Can't open ", (char *)file_in);
 	orb = (struct SAT_ORB *)malloc(sizeof(struct SAT_ORB));
 	orb_out = (struct SAT_ORB *)malloc(sizeof(struct SAT_ORB));
 	read_orb(infile, orb);
@@ -85,9 +72,9 @@ int main(int argc, char **argv) {
 
 	/* extrapolate the orbit into the longer structure */
 	Nodr = 4;
-	extrapolate_poly(pt, px, ppt, ppx, ppvx, nd_in, nd_add, Nodr);
-	extrapolate_poly(pt, py, ppt, ppy, ppvy, nd_in, nd_add, Nodr);
-	extrapolate_poly(pt, pz, ppt, ppz, ppvz, nd_in, nd_add, Nodr);
+	extend_extrapolate_poly(pt, px, ppt, ppx, ppvx, nd_in, nd_add, Nodr);
+	extend_extrapolate_poly(pt, py, ppt, ppy, ppvy, nd_in, nd_add, Nodr);
+	extend_extrapolate_poly(pt, pz, ppt, ppz, ppvz, nd_in, nd_add, Nodr);
 	for (n = 0; n < nd_add; n++) {
 		orb_out->points[n].pt = ppt[n];
 		orb_out->points[nd_out - n - 1].pt = ppt[2 * nd_add - n - 1];
@@ -119,21 +106,35 @@ int main(int argc, char **argv) {
 	}
 
 	/* write the extrapolated LED file */
-	if ((outfile = fopen(argv[2], "w")) == NULL)
-		die("Can't open ", argv[2]);
+	if ((outfile = fopen(file_out, "w")) == NULL)
+		die("Can't open ", (char *)file_out);
 	write_orb(outfile, orb_out);
 
 	fclose(infile);
 	fclose(outfile);
-	exit(0);
+	return 0;
 }
 
-void extrapolate_poly(double *T, double *Y, double *TT, double *YY, double *DYY, int nd_in, int nd_add, int Nodr) {
+int gmtsar_extend_orbit(int argc, char **argv) {
+	if (argc != 4) {
+		fprintf(stderr, "\n");
+		fprintf(stderr, "Usage: extend_orbit file_in.LED file_out.LED frac\n");
+		fprintf(stderr, "    orig.LED   - original LED file \n");
+		fprintf(stderr, "    extend.LED - extended LED file \n");
+		fprintf(stderr, "    frac       - fraction of frame length to add to each "
+		                "end (e.g. 0.25) \n");
+		fprintf(stderr, "\n");
+		return (0);
+	}
+	return gmtsar_extend_orbit_run(argv[1], argv[2], atof(argv[3]));
+}
+
+void extend_extrapolate_poly(double *T, double *Y, double *TT, double *YY, double *DYY, int nd_in, int nd_add, int Nodr) {
 
 	int i;
 	double dt, mt, my, coef[6], t_tmp, dt_tmp, y_tmp, y_tmp1, y_tmp2;
-	double polyval(double, double *, int);
-	double sum_array(double *, int);
+	double extend_polyval(double, double *, int);
+	double extend_sum_array(double *, int);
 
 	dt_tmp = 0.2;
 
@@ -142,8 +143,8 @@ void extrapolate_poly(double *T, double *Y, double *TT, double *YY, double *DYY,
 		exit(0);
 	}
 
-	mt = sum_array(T, nd_in) / nd_in;
-	my = sum_array(Y, nd_in) / nd_in;
+	mt = extend_sum_array(T, nd_in) / nd_in;
+	my = extend_sum_array(Y, nd_in) / nd_in;
 	for (i = 0; i < nd_in; i++) {
 		T[i] = T[i] - mt;
 		Y[i] = Y[i] - my;
@@ -155,18 +156,18 @@ void extrapolate_poly(double *T, double *Y, double *TT, double *YY, double *DYY,
 	/* interpolate nd_add points in the front and at the back */
 	for (i = 0; i < nd_add; i++) {
 		t_tmp = T[0] - dt * (nd_add - i);
-		y_tmp = polyval(t_tmp, coef, Nodr);
-		y_tmp1 = polyval(t_tmp - dt_tmp, coef, Nodr);
-		y_tmp2 = polyval(t_tmp + dt_tmp, coef, Nodr);
+		y_tmp = extend_polyval(t_tmp, coef, Nodr);
+		y_tmp1 = extend_polyval(t_tmp - dt_tmp, coef, Nodr);
+		y_tmp2 = extend_polyval(t_tmp + dt_tmp, coef, Nodr);
 
 		TT[i] = t_tmp + mt;
 		YY[i] = y_tmp + my;
 		DYY[i] = (y_tmp2 - y_tmp1) / 2 / dt_tmp;
 
 		t_tmp = T[nd_in - 1] + dt * (i + 1);
-		y_tmp = polyval(t_tmp, coef, Nodr);
-		y_tmp1 = polyval(t_tmp - dt_tmp, coef, Nodr);
-		y_tmp2 = polyval(t_tmp + dt_tmp, coef, Nodr);
+		y_tmp = extend_polyval(t_tmp, coef, Nodr);
+		y_tmp1 = extend_polyval(t_tmp - dt_tmp, coef, Nodr);
+		y_tmp2 = extend_polyval(t_tmp + dt_tmp, coef, Nodr);
 
 		TT[nd_add + i] = t_tmp + mt;
 		YY[nd_add + i] = y_tmp + my;
@@ -179,7 +180,7 @@ void extrapolate_poly(double *T, double *Y, double *TT, double *YY, double *DYY,
 	}
 }
 
-double polyval(double T, double *C, int Nodr) {
+double extend_polyval(double T, double *C, int Nodr) {
 
 	int j;
 	double y_tmp;
@@ -192,7 +193,7 @@ double polyval(double T, double *C, int Nodr) {
 	return (y_tmp);
 }
 
-double sum_array(double *a, int num_elements) {
+double extend_sum_array(double *a, int num_elements) {
 
 	int i;
 	double sum = 0;

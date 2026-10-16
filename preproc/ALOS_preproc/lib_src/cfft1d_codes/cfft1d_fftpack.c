@@ -14,7 +14,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void die(char *, char *);
+void ALOS_die(char *, char *);
 void cffti(int, float *);
 void cfftf(int, fcomplex *, float *);
 void cfftb(int, fcomplex *, float *);
@@ -35,7 +35,7 @@ void cfft1d_(int *np, fcomplex *c, int *dir) {
 		if (nold != 0)
 			free((char *)work);
 		if ((work = (float *)malloc((4 * n + 30) * sizeof(float))) == NULL)
-			die("Sorry, can't allocate mem", "");
+			ALOS_die("Sorry, can't allocate mem", "");
 
 		cffti(n, work);
 

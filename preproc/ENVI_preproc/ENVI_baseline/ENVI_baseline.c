@@ -1,3 +1,14 @@
+#define USAGE ENVI_baseline_USAGE
+#define endpoint_distance ENVI_baseline_endpoint_distance
+#define find_alpha_degrees ENVI_baseline_find_alpha_degrees
+#define find_distance ENVI_baseline_find_distance
+#define find_parallel_perp_baseline ENVI_baseline_find_parallel_perp_baseline
+#define find_unit_vectors ENVI_baseline_find_unit_vectors
+#define get_sign ENVI_baseline_get_sign
+#define parse_command_line ENVI_baseline_parse_command_line
+#define read_input_file ENVI_baseline_read_input_file
+#define write_bperp ENVI_baseline_write_bperp
+#define write_prm_baseline ENVI_baseline_write_prm_baseline
 /*******************************************************************************
  * Compute the interferometric baseline between reference and repeat           *
  * images.  Also estimates the crude offset for image matching.                *
@@ -43,7 +54,7 @@ void read_all_ENVI_ldr(struct PRM *, struct ALOS_ORB *, int);
 void read_ENVI_orb(FILE *, struct PRM *, struct ALOS_ORB *);
 void ENVI_llt2rat_sub(char *, double *, double *);
 
-int main(int argc, char **argv) {
+int gmtsar_ENVI_baseline_run(const char *master_prm, const char *aligned_prm, const char *listfile) {
 	int i;
 	int input_flag, nfiles;
 	double fs0 = 0.;
@@ -53,14 +64,25 @@ int main(int argc, char **argv) {
 	char **filename;
 	FILE *prmfile;
 
-	if (argc < 3)
-		die(USAGE, "");
-
 	verbose = 0;
-	input_flag = 0;
 
-	/* read command line */
-	parse_command_line(argv, &nfiles, &input_flag);
+	/* count the files: either a 2-file pair, or every entry in a list file */
+	if (listfile) {
+		char tmp[132];
+		FILE *inputfile;
+
+		input_flag = 1;
+		nfiles = 0;
+		if ((inputfile = fopen(listfile, "r")) == NULL)
+			die("Can't open ", (char *)listfile);
+		while (fscanf(inputfile, " %s ", tmp) != EOF)
+			nfiles++;
+		fclose(inputfile);
+	}
+	else {
+		input_flag = 0;
+		nfiles = 2;
+	}
 
 	filename = malloc(nfiles * sizeof(char *));
 	for (i = 0; i < nfiles; i++)
@@ -69,11 +91,13 @@ int main(int argc, char **argv) {
 	r = malloc(nfiles * sizeof(struct PRM));
 
 	if (input_flag == 1)
-		read_input_file(argv[2], nfiles, filename);
+		read_input_file((char *)listfile, nfiles, filename);
+	else {
+		strcpy(filename[0], master_prm);
+		strcpy(filename[1], aligned_prm);
+	}
 
 	for (i = 0; i < nfiles; i++) {
-		if (input_flag == 0)
-			strcpy(filename[i], argv[i + 1]);
 		if ((prmfile = fopen(filename[i], "r")) == NULL)
 			die("Can't open prmfile ", filename[i]);
 
@@ -96,6 +120,14 @@ int main(int argc, char **argv) {
 	ENVI_baseline(r, orb, nfiles, input_flag, filename, fs0);
 
 	return (EXIT_SUCCESS);
+}
+
+int gmtsar_ENVI_baseline(int argc, char **argv) {
+	if (argc < 3)
+		die(USAGE, "");
+	if (strncmp(argv[1], "-input", 6) == 0)
+		return gmtsar_ENVI_baseline_run(NULL, NULL, argv[2]);
+	return gmtsar_ENVI_baseline_run(argv[1], argv[2], NULL);
 }
 /*---------------------------------------------------------------------------*/
 /* Get time info and find the orbit */

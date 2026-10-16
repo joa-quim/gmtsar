@@ -9,16 +9,16 @@
 #include "image_sio.h"
 #include "lib_functions.h"
 /*
-int is_big_endian_(void);
-int is_big_endian__(void);
-void die (char *, char *);
+int ALOS_is_big_endian_(void);
+int ALOS_is_big_endian__(void);
+void ALOS_die (char *, char *);
 void cross3_(double *, double *, double *);
-void    get_seconds(struct PRM, double *, double *);
+void    ALOS_get_seconds(struct PRM, double *, double *);
 */
 /*---------------------------------------------------------------*/
 /* check endian of machine 	*/
 /* 1 if big; -1 if little	*/
-int is_big_endian_() {
+int ALOS_is_big_endian_() {
 	union {
 		int64_t l;
 		char c[sizeof(int64_t)];
@@ -26,12 +26,12 @@ int is_big_endian_() {
 	u.l = 1;
 	return (u.c[sizeof(int64_t) - 1] == 1 ? 1 : -1);
 }
-int is_big_endian__() { return is_big_endian_(); }
+int ALOS_is_big_endian__() { return ALOS_is_big_endian_(); }
 /*---------------------------------------------------------------*/
 /*---------------------------------------------------------------*/
 /* write out error message and exit 				*/
 /* use two strings to allow more complicated error messages 	*/
-void die(char *s1, char *s2) {
+void ALOS_die(char *s1, char *s2) {
 	fprintf(stderr, " %s %s \n", s1, s2);
 	exit(1);
 }
@@ -52,7 +52,7 @@ void cross3_(double *a, double *b, double *c)
 /*---------------------------------------------------------------*/
 /*---------------------------------------------------------------------------*/
 /* find seconds		*/
-void get_seconds(struct PRM p, double *start, double *end) {
+void ALOS_get_seconds(struct PRM p, double *start, double *end) {
 	int m;
 	double doy;
 	double n_secs_day;

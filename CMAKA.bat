@@ -27,12 +27,15 @@ where nmake >nul 2>nul || (
 	-DCMAKE_INSTALL_PREFIX="%ROOT%\compileds\WIN64" ^
 	-DGMT_LIBRARY=C:/progs_cygw/GMTdev/gmt5/compileds/gmt6/VC14_64/lib/gmt.lib ^
 	-DGMT_INCLUDE_DIR=C:/progs_cygw/GMTdev/gmt5/compileds/gmt6/VC14_64/include/gmt ^
+	-DGDAL_INCLUDE_DIR=C:/programs/compa_libs/f3d-superbuild/build/install/include ^
 	-DTIFF_LIBRARY=C:/programs/compa_libs/tiff-4.1.0/compileds/VC14_64/lib/libtiff_i.lib ^
 	-DTIFF_INCLUDE_DIR=C:/programs/compa_libs/tiff-4.1.0/compileds/VC14_64/include ^
 	-DLAPACK_LIBRARIES=C:/programs/compa_libs/lapack-3.5.0/compileds/lib/liblapack.lib ^
 	-DGETOPT_LIB=C:/programs/compa_libs/getopt/compileds/VC14_64/lib/getopt.lib ^
 	-DGETOPT_INC=C:/programs/compa_libs/getopt/compileds/VC14_64/include ^
-	-DFFTW3F_LIBRARY=C:/programs/compa_libs/fftw-3.3.4/compileds/VC14_64/lib/libfftwf-3.3.lib || exit /b 1
+	-DFFTW3F_LIBRARY=C:/programs/compa_libs/fftw-3.3.4/compileds/VC14_64/lib/libfftwf-3.3.lib ^
+	-DHDF5_INCLUDE_DIR=C:/programs/compa_libs/hdf5-1.10.5/compileds/VC14_64/include ^
+	-DHDF5_LIBRARY=C:/programs/compa_libs/hdf5-1.10.5/compileds/VC14_64/lib/hdf5.lib || exit /b 1
 
 "%CMAKE_EXE%" --build "%BUILD%" --target install --parallel || exit /b 1
 endlocal

@@ -11,6 +11,13 @@
  *                                                                         *
  ***************************************************************************/
 
+#define USAGE gmtsar_make_slc_csk_USAGE
+#define pop_prm_hdf5 gmtsar_make_slc_csk_pop_prm_hdf5
+#define pop_led_hdf5 gmtsar_make_slc_csk_pop_led_hdf5
+#define write_orb gmtsar_make_slc_csk_write_orb
+#define write_slc_hdf5 gmtsar_make_slc_csk_write_slc_hdf5
+#define hdf5_read gmtsar_make_slc_csk_hdf5_read
+
 #include "PRM.h"
 #include "gmtsar.h"
 #include "hdf5.h"
@@ -39,40 +46,27 @@ char *USAGE = "\n\nUsage: make_slc_csk name_of_input_file name_output [SLC_facto
               "\nOutput: CSK_20090412.SLC CSK_20090412.PRM CSK_20090412.LED\n"
               "\nDefault SLC_factor is 1.0.\n";
 
-int main(int argc, char **argv) {
+int gmtsar_make_slc_csk_run(const char *input_file, const char *output_stem, double SLC_factor) {
 
 	FILE *OUTPUT_PRM, *OUTPUT_SLC, *OUTPUT_LED;
 	char tmp_str[200];
 	struct PRM prm;
-    double SLC_factor = 1.0;
 	// tree *xml_tree;
 	state_vector sv[200];
 	int n;
 
 	hid_t file;
 
-	// fprintf(stderr,"Hahahaha...\n");
-
-	if (argc < 3)
-		die(USAGE, "");
-	if (argc == 4) {
-        SLC_factor = atof(argv[3]);
-        printf("Setting SLC_factor to %.6f\n",SLC_factor);
-    }
-	// generate the xml tree
-	// if ((INPUT_FILE = fopen(argv[1],"r")) == NULL) die("Couldn't open xml file:
-	// \n",argv[1]);
-
-	if ((file = H5Fopen(argv[1], H5F_ACC_RDONLY, H5P_DEFAULT)) < 0)
-		die("Couldn't open HDF5 file: \n", argv[1]);
+	if ((file = H5Fopen(input_file, H5F_ACC_RDONLY, H5P_DEFAULT)) < 0)
+		die("Couldn't open HDF5 file: \n", (char *)input_file);
 
 	// initiate the prm
 	null_sio_struct(&prm);
 
 	// generate the PRM file
-	pop_prm_hdf5(&prm, file, argv[2]);
+	pop_prm_hdf5(&prm, file, (char *)output_stem);
 
-	strcpy(tmp_str, argv[2]);
+	strcpy(tmp_str, output_stem);
 	strcat(tmp_str, ".PRM");
 	if ((OUTPUT_PRM = fopen(tmp_str, "w")) == NULL)
 		die("Couldn't open prm file: \n", tmp_str);
@@ -82,7 +76,7 @@ int main(int argc, char **argv) {
 	// generate the LED file
 	n = pop_led_hdf5(file, sv);
 
-	strcpy(tmp_str, argv[2]);
+	strcpy(tmp_str, output_stem);
 	strcat(tmp_str, ".LED");
 	if ((OUTPUT_LED = fopen(tmp_str, "w")) == NULL)
 		die("Couldn't open led file: \n", tmp_str);
@@ -90,7 +84,7 @@ int main(int argc, char **argv) {
 	fclose(OUTPUT_LED);
 
 	// generate the SLC file
-	strcpy(tmp_str, argv[2]);
+	strcpy(tmp_str, output_stem);
 	strcat(tmp_str, ".SLC");
 	if ((OUTPUT_SLC = fopen(tmp_str, "wb")) == NULL)
 		die("Couldn't open tiff file: \n", tmp_str);
@@ -98,9 +92,19 @@ int main(int argc, char **argv) {
 	write_slc_hdf5(file, OUTPUT_SLC, SLC_factor);
 	fclose(OUTPUT_SLC);
 
-	// TIFFClose(TIFF_FILE);
-	// fclose(OUTPUT_SLC);
 	H5Fclose(file);
+	return EXIT_SUCCESS;
+}
+
+int gmtsar_make_slc_csk(int argc, char **argv) {
+	double SLC_factor = 1.0;
+	if (argc < 3)
+		die(USAGE, "");
+	if (argc == 4) {
+		SLC_factor = atof(argv[3]);
+		printf("Setting SLC_factor to %.6f\n", SLC_factor);
+	}
+	return gmtsar_make_slc_csk_run(argv[1], argv[2], SLC_factor);
 }
 
 int write_slc_hdf5(hid_t input, FILE *slc, double SLC_factor) {

@@ -1,3 +1,4 @@
+#define USAGE calc_dop_orb_envi_USAGE
 /*******************************************************************************
  * Load the PRM file and calculate doppler centroid			       *
  *******************************************************************************/
@@ -8,27 +9,16 @@
 void read_ENVI_orb(FILE *, struct PRM *, struct ALOS_ORB *);
 void ENVI_ldr_orbit(struct ALOS_ORB *, struct PRM *);
 
-int main(int argc, char **argv) {
+int gmtsar_calc_dop_orb_envi_run(const char *prmfile_name, const char *outfile_name, double re, int have_doppler,
+                                 double doppler_centroid) {
 	struct PRM *prm;
 	struct ALOS_ORB *orb;
 	FILE *prmfile, *ldrfile, *outfile;
-	double re;
 
-	if ((argc > 5) || (argc < 4)) {
-		fprintf(stderr, "\n");
-		fprintf(stderr, "Usage: calc_dop_orb_envi  PRM  output  earth_radius  "
-		                "[doppler_centroid]\n");
-		fprintf(stderr, "\n");
-		return (0);
-	}
-
-	if ((prmfile = fopen(argv[1], "r")) == NULL)
-		die("Can't open ", argv[1]);
-	fprintf(stderr, "Successfully opened %s \n", argv[1]);
+	if ((prmfile = fopen(prmfile_name, "r")) == NULL)
+		die("Can't open ", (char *)prmfile_name);
+	fprintf(stderr, "Successfully opened %s \n", prmfile_name);
 	prm = malloc(sizeof(struct PRM));
-
-	/* read earth radius */
-	re = atof(argv[3]);
 
 	/* get the PRM parameters */
 	get_sio_struct(prmfile, prm);
@@ -46,8 +36,8 @@ int main(int argc, char **argv) {
 
 	/* write it all out */
 
-	if ((outfile = fopen(argv[2], "w")) == NULL)
-		die("Can't open ", argv[2]);
+	if ((outfile = fopen(outfile_name, "w")) == NULL)
+		die("Can't open ", (char *)outfile_name);
 	fprintf(outfile, "SC_vel                  = %lf \n", prm->vel);
 
 	if (re == 0) {
@@ -63,18 +53,28 @@ int main(int argc, char **argv) {
 		fprintf(outfile, "SC_height_end           = %lf \n", prm->ht_end + prm->RE - re);
 	}
 	else
-		die("Wrong input earth radius", argv[3]);
+		die("Wrong input earth radius", "");
 
 	/* Calculate doppler centroid */
-	if (argc == 4) {
+	if (!have_doppler) {
 		calc_dop(prm);
 		fprintf(outfile, "fd1                     = %lf\n", prm->fd1);
 	}
-	if (argc == 5)
-		fprintf(outfile, "fd1                     = %lf\n", atof(argv[4]));
+	else
+		fprintf(outfile, "fd1                     = %lf\n", doppler_centroid);
 
 	fclose(prmfile);
 	fclose(ldrfile);
 	fclose(outfile);
-	exit(0);
+	return EXIT_SUCCESS;
+}
+
+int gmtsar_calc_dop_orb_envi(int argc, char **argv) {
+	if ((argc > 5) || (argc < 4)) {
+		fprintf(stderr, "\nUsage: calc_dop_orb_envi  PRM  output  earth_radius  [doppler_centroid]\n\n");
+		return EXIT_FAILURE;
+	}
+	if (argc == 5)
+		return gmtsar_calc_dop_orb_envi_run(argv[1], argv[2], atof(argv[3]), 1, atof(argv[4]));
+	return gmtsar_calc_dop_orb_envi_run(argv[1], argv[2], atof(argv[3]), 0, 0.0);
 }

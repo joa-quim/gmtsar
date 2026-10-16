@@ -14,7 +14,7 @@
 #include "image_sio.h"
 #include "lib_functions.h"
 
-void hermite_c(double *x, double *y, double *z, int nmax, int nval, double xp, double *yp, int *ir) {
+void ALOS_hermite_c(double *x, double *y, double *z, int nmax, int nval, double xp, double *yp, int *ir) {
 	/*
 
 	  interpolation by a polynomial using nval out of nmax given data points

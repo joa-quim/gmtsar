@@ -56,7 +56,7 @@ int write_roi(char *imagery, FILE *ldrfile, struct PRM prm, struct ALOS_ORB orb,
 
 	/* find size of raw input file  - this is a pain */
 	if ((datafile = fopen(imagery, "r")) == NULL)
-		die("error opening ", imagery);
+		ALOS_die("error opening ", imagery);
 
 	/* find data file size */
 	size = get_file_size(datafile);
@@ -113,7 +113,7 @@ int write_roi(char *imagery, FILE *ldrfile, struct PRM prm, struct ALOS_ORB orb,
 	// open output file
 	sprintf(foutname, "tmp.%s.raw.rsc", date);
 	if ((rsc = fopen(foutname, "w")) == NULL)
-		die("error opening tmp_raw.rsc", "");
+		ALOS_die("error opening tmp_raw.rsc", "");
 
 	fprintf(rsc, "FIRST_FRAME                              %d\n", first_frame);
 	fprintf(rsc, "FIRST_FRAME_SCENE_CENTER_TIME            %s\n", ctime);
@@ -240,7 +240,7 @@ int write_roi_orbit(struct ALOS_ORB orb, char *date) {
 
 	sprintf(fname, "hdr_data_points_%s.rsc", date);
 	if ((orbit_rsc = fopen(fname, "w")) == NULL)
-		die("error opening ", fname);
+		ALOS_die("error opening ", fname);
 
 	for (i = 0; i < orb.nd; i++) {
 		fprintf(orbit_rsc, "%-6.0lf", orb.sec + (i * orb.dsec));

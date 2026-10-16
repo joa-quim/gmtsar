@@ -14,7 +14,7 @@
 */
 
 /***************************************************************************/
-void put_sio_struct(struct PRM prm, FILE *OUTFILE) {
+void ALOS_put_sio_struct(struct PRM prm, FILE *OUTFILE) {
 
 	/* set by set_ALOS_defaults */
 	if (prm.num_valid_az != NULL_INT)

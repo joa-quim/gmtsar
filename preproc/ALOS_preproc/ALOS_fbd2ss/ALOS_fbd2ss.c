@@ -1,3 +1,5 @@
+#define USAGE ALOS_fbd2ss_USAGE
+#define settable ALOS_fbd2ss_settable
 /***************************************************************************
  * ALOS_fbd_ss reads a raw FBD-HH file and zeroes all the lines            *
  * corresponding to a SW4 scansar file                                     *
@@ -46,40 +48,34 @@ char *USAGE = "\nALOS_fbd2ss FBD.PRM SW4.PRM ashift ntot a_stretch_a \n\n"
               "FBD_PRF)/FBD_PRF  \n\n"
               "  EXAMPLE: ALOS_fbd2ss FBD.PRM SW4.PRM -1046 1684 0.010972 \n\n";
 
-int main(int argc, char **argv) {
+int gmtsar_ALOS_fbd2ss_run(const char *fbd_prm, const char *sw4_prm, int ashift, int ntot0, double a_stretch_a) {
 	FILE *prmfile, *datafile, *prmout, *dataout;
 	unsigned char *indata;
 	int j, k, headsize;
 
-	/*  set these three numbers and then recompile */
 	/*  ashift is the ashift from fitoffset this fbd file should be the aligned */
 	/*  nburst is 355 for SW4 */
 	/*  ntot is the total number of lines between bursts scaled by the ratio of
 	 * the fbd_PRF/SW4_PRF */
-	int ibufsize, ashift = 652, nburst0 = 355, nburst, ntot0 = 1684, ntot;
+	int ibufsize, nburst0 = 355, nburst, ntot;
 	int necho, IQ_mean;
 	struct PRM r;
-
-	if (argc < 6)
-		die(USAGE, "");
 
 	/* flags defined in global_flags.h */
 	verbose = 0;
 	debug = 0;
 
 	/* fill the struct with default parameters */
-	null_sio_struct(&r);
+	ALOS_null_sio_struct(&r);
 
 	/* open input PRM file and read the parameters */
-	if ((prmfile = fopen(argv[1], "r")) == NULL)
-		die("Can't open ", argv[1]);
-	get_sio_struct(prmfile, &r);
+	if ((prmfile = fopen(fbd_prm, "r")) == NULL)
+		ALOS_die("Can't open ", (char *)fbd_prm);
+	ALOS_get_sio_struct(prmfile, &r);
 	IQ_mean = (int)(r.xmi - 15.5);
 
-	/* get the remaining parameters from the command line */
-	ashift = atoi(argv[3]);
-	ntot0 = atoi(argv[4]);
-	ntot = (int)ntot0 * (1. + atof(argv[5]));
+	/* compute ntot from the remaining parameters */
+	ntot = (int)ntot0 * (1. + a_stretch_a);
 
 	/*   increase the  burst length to ensure complete overlap and shift the
 	 * ashift back by 1/4 burst */
@@ -90,19 +86,19 @@ int main(int argc, char **argv) {
 
 	/* open input raw data file */
 	if ((datafile = fopen(r.input_file, "rb")) == NULL)
-		die("Can't open ", r.input_file);
+		ALOS_die("Can't open ", r.input_file);
 
 	/* open output PRM file	*/
-	if ((prmout = fopen(argv[2], "w")) == NULL)
-		die("Can't open ", argv[2]);
+	if ((prmout = fopen(sw4_prm, "w")) == NULL)
+		ALOS_die("Can't open ", (char *)sw4_prm);
 
 	/* assemble the output filename and open for writing */
-	sscanf(argv[2], "%s", r.input_file);
-	r.input_file[strlen(argv[2]) - 4] = 0;
+	sscanf(sw4_prm, "%s", r.input_file);
+	r.input_file[strlen(sw4_prm) - 4] = 0;
 	strcat(r.input_file, ".raw");
 	/* open output file for scansar	 image */
 	if ((dataout = fopen(r.input_file, "wb")) == NULL)
-		die("Can't open ", r.input_file);
+		ALOS_die("Can't open ", r.input_file);
 
 	/* compute the sizes for the input and output buffers and allocate the memory
 	 */
@@ -131,12 +127,19 @@ int main(int argc, char **argv) {
 		fprintf(stderr, " %d %d %d %d %f %f \n", r.chirp_ext, r.good_bytes, r.bytes_per_line, r.num_rng_bins, r.fs,
 		        r.chirp_slope);
 	/*  write the output PRM file */
-	if ((prmout = fopen(argv[2], "w")) == NULL)
-		die("can't open prfile", argv[2]);
-	put_sio_struct(r, prmout);
+	if ((prmout = fopen(sw4_prm, "w")) == NULL)
+		ALOS_die("can't open prfile", (char *)sw4_prm);
+	ALOS_put_sio_struct(r, prmout);
 
 	fclose(prmfile);
 	fclose(prmout);
 	fclose(datafile);
 	fclose(dataout);
+	return EXIT_SUCCESS;
+}
+
+int gmtsar_ALOS_fbd2ss(int argc, char **argv) {
+	if (argc < 6)
+		ALOS_die(USAGE, "");
+	return gmtsar_ALOS_fbd2ss_run(argv[1], argv[2], atoi(argv[3]), atoi(argv[4]), atof(argv[5]));
 }

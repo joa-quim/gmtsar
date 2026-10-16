@@ -1,3 +1,7 @@
+#define USAGE SAT_llt2rat_USAGE
+#define dist SAT_llt2rat_dist
+#define calorb_alos SAT_llt2rat_calorb_alos
+#define goldop SAT_llt2rat_goldop
 /*	$Id$	*/
 /****************************************************************************
  *  Program to project a longitude, latitude, and topography
@@ -86,10 +90,9 @@ EXTERN_MSC void set_prm_defaults(struct PRM *);
 EXTERN_MSC void interpolate_SAT_orbit_slow(struct SAT_ORB *orb, double time, double *, double *, double *, int *);
 EXTERN_MSC void polyfit(double *, double *, double *, int *, int *);
 
-int main(int argc, char **argv) {
+int gmtsar_SAT_llt2rat_run(const char *prmfile, int precise, int otype) {
 
 	FILE *fprm1 = NULL;
-	int otype;
 	double rln, rlt, rht, dr, t1, t11, t2, tm;
 	double ts, rng0;
 	double xp[3];
@@ -103,7 +106,7 @@ int main(int argc, char **argv) {
 	double time[20], rng[20], d[3]; /* arrays used for polynomial refinement of min range */
     double vec1[3], vec2[3], vec0[3], det = 1.0;
 	int ir, k, ntt = 10, nc = 3;    /* size of arrays used for polynomial refinement */
-	int j, nrec, precise = 0;
+	int j, nrec;
 	int goldop();
 	int stai, endi, midi, lookdir;
 	double **orb_pos = NULL;
@@ -121,33 +124,9 @@ int main(int argc, char **argv) {
 	//_set_fmode(_O_BINARY);
 #endif
 
-	/* Make sure usage is correct and files can be opened  */
-
-	if (argc < 3 || argc > 4) {
-		fprintf(stderr, "%s\n", USAGE);
-		exit(-1);
-	}
-	precise = atoi(argv[2]);
-
-	/* otype:    1 -- ascii; 2 -- single precision binary; 3 -- double precision
-	 * binary    */
-
-	otype = 1;
-	if (argc == 4) {
-		if (!strcmp(argv[3], "-bos"))
-			otype = 2;
-		else if (!strcmp(argv[3], "-bod"))
-			otype = 3;
-		else {
-			fprintf(stderr, " %s *** option not recognized ***\n\n", argv[2]);
-			fprintf(stderr, "%s", USAGE);
-			exit(1);
-		}
-	}
-
 	/*  open and read the parameter file */
 
-	if ((fprm1 = fopen(argv[1], "r")) == NULL) {
+	if ((fprm1 = fopen(prmfile, "r")) == NULL) {
 		fprintf(stderr, "couldn't open master.PRM \n");
 		fprintf(stderr, "%s\n", USAGE);
 		exit(-1);
@@ -333,6 +312,27 @@ int main(int argc, char **argv) {
 	free(orb_pos);
 	free(orb);
 	return (0);
+}
+
+int gmtsar_SAT_llt2rat(int argc, char **argv) {
+	int otype = 1;
+
+	if (argc < 3 || argc > 4) {
+		fprintf(stderr, "%s\n", USAGE);
+		exit(-1);
+	}
+	if (argc == 4) {
+		if (!strcmp(argv[3], "-bos"))
+			otype = 2;
+		else if (!strcmp(argv[3], "-bod"))
+			otype = 3;
+		else {
+			fprintf(stderr, " %s *** option not recognized ***\n\n", argv[2]);
+			fprintf(stderr, "%s", USAGE);
+			exit(1);
+		}
+	}
+	return gmtsar_SAT_llt2rat_run(argv[1], atoi(argv[2]), otype);
 }
 
 /*    subfunctions    */

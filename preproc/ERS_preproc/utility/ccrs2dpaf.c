@@ -1,36 +1,30 @@
+#define USAGE ccrs2dpaf_USAGE
 /* program to transform CCRS format to DPAF format of ERS data
  method: CCRS has 12060 bytes per line. DPAF has 11644. Read 12060 bytes from
  CCRS file and print 11644 bytes to new file */
 
 #include "../include/soi.h"
+#include <stdlib.h>
 #include <string.h>
 
-main(argc, argv) int argc;
-char *argv[];
-{
-	char *ifile, *ofile; /* input file and output file*/
-	FILE *fopen(), *fpi, *fpo;
+int gmtsar_ccrs2dpaf_run(const char *ifile, const char *ofile) {
+	FILE *fpi, *fpo;
 	unsigned char *indata;
 	int ccrs_length = 12060, dpaf_length = 11644;
 	int n;
 
-	if (argc < 3) {
-		fprintf(stderr, "Usage: %s ccrs_raw out_file \n", argv[0]);
-		exit(-1);
-	}
-
-	if ((fpi = fopen(argv[1], "rb")) == NULL) {
-		fprintf(stderr, "Can't open file %s \n", argv[1]);
+	if ((fpi = fopen(ifile, "rb")) == NULL) {
+		fprintf(stderr, "Can't open file %s \n", ifile);
 		exit(-1);
 	}
 
 	if ((n = fseek(fpi, ccrs_length, 0)) != 0) {
-		perror(argv[0]);
+		perror(ifile);
 		exit(-1);
 	}
 
-	if ((fpo = fopen(argv[2], "wb")) == NULL) {
-		fprintf(stderr, "Can't open output file %s \n", argv[2]);
+	if ((fpo = fopen(ofile, "wb")) == NULL) {
+		fprintf(stderr, "Can't open output file %s \n", ofile);
 		exit(-1);
 	}
 
@@ -50,4 +44,13 @@ char *argv[];
 
 	fclose(fpi);
 	fclose(fpo);
+	return EXIT_SUCCESS;
+}
+
+int gmtsar_ccrs2dpaf(int argc, char **argv) {
+	if (argc < 3) {
+		fprintf(stderr, "Usage: %s ccrs_raw out_file \n", argv[0]);
+		return EXIT_FAILURE;
+	}
+	return gmtsar_ccrs2dpaf_run(argv[1], argv[2]);
 }

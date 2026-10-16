@@ -14,13 +14,13 @@
 
 #include "gmt.h"
 #include "gmtsar.h"
+#include "gmtsar_commands.h"
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 #ifdef _WIN32
 #include "mman.h"
-#include "mman.c"
 #else
 #include <sys/mman.h>
 #endif
@@ -30,14 +30,11 @@ int write_column_slc(short *, short *, int, int, int);
 int read_column_slc(short *, short *, int, int, int, int);
 fcomplex fmean(short *, int);
 
-char *USAGE = "\nUSAGE: split_aperture prm_file\n\n"
+static const char *split_aperture_usage = "\nUSAGE: split_aperture prm_file\n\n"
               "   program used to split azimuth spectrum.\n\n"
               "   SLCs are bandpassed output is SLCF (forward) SLCB (backward)\n\n";
 
-int main(int argc, char **argv) {
-    if (argc != 2)
-        die("",USAGE);
-    
+int gmtsar_split_aperture_run(void *API, int argc, char **argv) {
     FILE *SLC, *SLC_F, *SLC_B;
     struct PRM p1;
     int nl,num_rng_bins,i,j,fin, fout_f, fout_b, nffti;
@@ -46,12 +43,8 @@ int main(int argc, char **argv) {
     short *in, *out_f, *out_b;
     fcomplex *fbuf, *fbuf_f, *fbuf_b,fm;
     size_t st_size;
-    void *API = NULL;
     double f_f=0.0, f_b=0.0, w_f=0.0, w_b=0.0, prf;
-    
-    if ((API = GMT_Create_Session(argv[0], 0U, 0U, NULL)) == NULL)
-        return EXIT_FAILURE;
-    
+
     // read in PRM file
     get_prm(&p1,argv[1]);
     nl = p1.num_valid_az * p1.num_patches;
@@ -164,8 +157,20 @@ int main(int argc, char **argv) {
     free(buf);free(buf_b);free(buf_f);
     free(fbuf);free(fbuf_b);free(fbuf_f);
     close(fin);close(fout_b);close(fout_f);
-    
-    return(1);
+
+    return(EXIT_SUCCESS);
+}
+
+int gmtsar_split_aperture(int argc, char **argv) {
+    void *API;
+    int status;
+    if (argc != 2)
+        die("", (char *)split_aperture_usage);
+    if ((API = GMT_Create_Session(argv[0], 0U, 0U, NULL)) == NULL)
+        return EXIT_FAILURE;
+    status = gmtsar_split_aperture_run(API, argc, argv);
+    if (GMT_Destroy_Session(API) && status == EXIT_SUCCESS) status = EXIT_FAILURE;
+    return status;
 }
 
 int read_column_slc(short *slc, short *buf, int col, int nl, int num_rng_bins, int nffti) {
@@ -217,7 +222,5 @@ fcomplex fmean(short *c, int N) {
     
     return(m);
 }
-
-
 
 

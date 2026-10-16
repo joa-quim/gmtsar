@@ -23,8 +23,9 @@
 
 #include "gmtsar.h"
 #include "lib_functions.h"
+#include "gmtsar_commands.h"
 
-char *USAGE = "conv [GMTSAR] - 2-D image convolution\n\n"
+static const char *conv_usage = "conv [GMTSAR] - 2-D image convolution\n\n"
               "Usage: conv idec jdec filter_file input output \n"
               "   idec           - row decimation factor \n"
               "   jdec           - column decimation factor \n"
@@ -138,7 +139,7 @@ int read_SLC_float(float *cf2, int xdim, FILE *f_input, int yarr, float *buffer,
 	return (EXIT_SUCCESS);
 }
 
-int main(int argc, char **argv) {
+int gmtsar_conv_run(void *API, int argc, char **argv) {
 	int idec, jdec;
 	int iout, jout;
 	int i, j, ic, jc, norm, ic0, ic1;
@@ -156,16 +157,11 @@ int main(int argc, char **argv) {
 	float filtin, filtdat, rnorm, rnormax, anormax;
 	FILE *f_filter = NULL, *f_input = NULL;
 	struct PRM p;
-	void *API = NULL;            /* GMT control structure */
 	struct GMT_GRID *Out = NULL; /* For the output grid */
 	struct GMT_GRID *In = NULL;  /* Grid structure containing ->header and ->data */
 
 	if (argc < 6)
-		die("\n", USAGE);
-
-	/* Begin: Initializing new GMT session */
-	if ((API = GMT_Create_Session(argv[0], 0U, 0U, NULL)) == NULL)
-		return EXIT_FAILURE;
+		die("\n", (char *)conv_usage);
 
 	ibuff = 512;
 	verbose = 0;
@@ -371,8 +367,14 @@ int main(int argc, char **argv) {
 		die("Failed to write output grid", "");
 	}
 
-	if (GMT_Destroy_Session(API))
-		return EXIT_FAILURE; /* Remove the GMT machinery */
-
 	return (EXIT_SUCCESS);
+}
+
+int gmtsar_conv(int argc, char **argv) {
+	void *API = GMT_Create_Session(argv[0], 0U, 0U, NULL);
+	int status;
+	if (!API) return EXIT_FAILURE;
+	status = gmtsar_conv_run(API, argc, argv);
+	if (GMT_Destroy_Session(API) && status == EXIT_SUCCESS) status = EXIT_FAILURE;
+	return status;
 }

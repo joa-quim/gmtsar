@@ -1,3 +1,8 @@
+#define USAGE read_data_file_dpaf_USAGE
+#define calc_pri read_data_file_dpaf_calc_pri
+#define calc_swst read_data_file_dpaf_calc_swst
+#define is_big_endian_ read_data_file_dpaf_is_big_endian_
+#define is_big_endian__ read_data_file_dpaf_is_big_endian__
 /* program to read sample window start time,
 pulse repetition interval, and count lines
 and image format counter
@@ -33,9 +38,7 @@ in CEOS SAR data file
 int is_big_endian_(void);
 int is_big_endian__(void);
 
-int main(argc, argv) int argc;
-char *argv[];
-{
+int gmtsar_read_data_file_dpaf_run(const char *datafile) {
 
 	char *data, logfilename[255];
 	// int	file_size,year;
@@ -80,12 +83,7 @@ char *argv[];
 
 	endian = is_big_endian_();
 
-	if (argc < 2) {
-		fprintf(stderr, "Usage: %s datafile\n", argv[0]);
-		exit(1);
-	}
-
-	indata = fopen(argv[1], "r");
+	indata = fopen(datafile, "r");
 
 	strcpy(logfilename, "dataheader.log");
 	logfile = fopen(logfilename, "w");
@@ -204,6 +202,15 @@ char *argv[];
 			iwrite = 1;
 		}
 	}
+	return EXIT_SUCCESS;
+}
+
+int gmtsar_read_data_file_dpaf(int argc, char **argv) {
+	if (argc < 2) {
+		fprintf(stderr, "Usage: %s datafile\n", argv[0]);
+		return EXIT_FAILURE;
+	}
+	return gmtsar_read_data_file_dpaf_run(argv[1]);
 }
 /* these are taken verbatim from fix_line */
 double calc_pri(info) struct lineparam info;

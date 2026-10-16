@@ -1,0 +1,13 @@
+#define get_files ALOS_pre_process_get_files
+#define parse_ALOS_commands ALOS_pre_process_parse_ALOS_commands
+#define get_clock ALOS_pre_process_get_clock
+#define print_params ALOS_pre_process_print_params
+#define settable ALOS_pre_process_settable
+#define assign_sardata_params ALOS_pre_process_assign_sardata_params
+#define check_shift ALOS_pre_process_check_shift
+#define fill_shift_data ALOS_pre_process_fill_shift_data
+#define handle_prf_change ALOS_pre_process_handle_prf_change
+#define read_sardata_info ALOS_pre_process_read_sardata_info
+#define reset_params ALOS_pre_process_reset_params
+#define set_file_position ALOS_pre_process_set_file_position
+#define swap_ALOS_data_info ALOS_pre_process_swap_ALOS_data_info
