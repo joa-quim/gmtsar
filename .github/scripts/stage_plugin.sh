@@ -17,6 +17,11 @@ lib=$(find "$build/gmtsar" -maxdepth 1 -type f \( -name gmtsar.so -o -name gmtsa
 
 mkdir -p "$stage/lib" "$stage/share/gmtsar/filters" "$stage/share/gmtsar/snaphu/config"
 cp "$lib" "$stage/lib/"
+# macOS: the library's own install name must not be the build directory's absolute path.
+if [[ $(uname -s) == Darwin ]]; then
+	install_name_tool -id "@rpath/$(basename "$lib")" "$stage/lib/$(basename "$lib")"
+	otool -D "$stage/lib/$(basename "$lib")"
+fi
 cp "$src"/gmtsar/filters/[bfgsxy]* "$stage/share/gmtsar/filters/"
 cp "$src"/gmtsar/csh/snaphu.conf.* "$stage/share/gmtsar/snaphu/config/"
 cp "$src/preproc/ERS_preproc/scripts/virgin.PRM" "$src/preproc/ENVI_preproc/scripts/virgin_envisat.PRM" \

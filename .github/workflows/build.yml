@@ -316,8 +316,8 @@ jobs:
             EXTRA=(-DCMAKE_SHARED_LINKER_FLAGS="-Wl,-rpath-link,$JLL_LIBDIRS")
           else
             RPATH='@loader_path'
-            # Install name @rpath/gmtsar.dylib: never the build directory's absolute path.
-            EXTRA=(-DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 -DCMAKE_INSTALL_NAME_DIR=@rpath)
+            # (the install name is set to @rpath/gmtsar.dylib when staging: stage_plugin.sh)
+            EXTRA=(-DCMAKE_OSX_DEPLOYMENT_TARGET=11.0)
           fi
           export PKG_CONFIG_LIBDIR="$RUNNER_TEMP/pc" PKG_CONFIG_PATH=
           cmake -S . -B build-plugin -G Ninja -C "$RUNNER_TEMP/jll_cache.cmake" \
