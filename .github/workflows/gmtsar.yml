@@ -8,7 +8,7 @@
 # The dataset (1.66 GB) is downloaded once and kept in the Actions cache; it is saved even when the
 # test fails, so a failing run does not download it again.
 #
-# GMT must be 6.6 or newer (.github/scripts/check_gmt_version.sh): conda-forge on Linux, Homebrew on macOS.
+# GMT must be 6.6 or newer (checked before the build): conda-forge on Linux, Homebrew on macOS.
 
 name: GMTSAR
 
@@ -58,7 +58,7 @@ jobs:
     # The install RPATH lets the plugin, loaded by that gmt, find the libraries gmt itself does not load.
     - name: Compile GMTSAR
       run: |
-        bash .github/scripts/check_gmt_version.sh
+        v=$(gmt --version); awk -v v="$v" 'BEGIN { split(v, n, "."); exit !(n[1] > 6 || (n[1] == 6 && n[2] >= 6)) }' || { echo "GMT $v found; GMTSAR needs GMT 6.6 or newer" >&2; exit 1; }; echo "GMT $v"
         P="$CONDA_PREFIX"
         cmake -S . -B build-ci -G Ninja           -DCMAKE_BUILD_TYPE=Release           -DCMAKE_INSTALL_PREFIX="$PWD/inst"           -DCMAKE_INSTALL_RPATH="$P/lib"           -DCMAKE_PREFIX_PATH="$P"           -DGMT_INCLUDE_DIR="$P/include/gmt"           -DGMT_LIBRARY="$P/lib/libgmt.so"           -DGDAL_INCLUDE_DIR="$P/include"           -DTIFF_INCLUDE_DIR="$P/include"           -DTIFF_LIBRARY="$P/lib/libtiff.so"           -DLAPACK_LIBRARIES="$P/lib/libopenblas.so"           -DHDF5_INCLUDE_DIR="$P/include"           -DHDF5_LIBRARY="$P/lib/libhdf5.so"
         cmake --build build-ci --parallel
@@ -103,7 +103,7 @@ jobs:
     # LAPACK comes from Apple's Accelerate framework (FindLAPACK).
     - name: Compile GMTSAR
       run: |
-        bash .github/scripts/check_gmt_version.sh
+        v=$(gmt --version); awk -v v="$v" 'BEGIN { split(v, n, "."); exit !(n[1] > 6 || (n[1] == 6 && n[2] >= 6)) }' || { echo "GMT $v found; GMTSAR needs GMT 6.6 or newer" >&2; exit 1; }; echo "GMT $v"
         cmake -S . -B build-ci -G Ninja \
           -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_INSTALL_PREFIX="$PWD/inst" \

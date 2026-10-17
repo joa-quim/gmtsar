@@ -4,8 +4,8 @@
 #
 # gmtsar.yml (the S1A processing test) is separate.
 # GMT must be 6.6 or newer everywhere: the Windows and Linux dependencies come from conda-forge
-# (gmt>=6.6; Ubuntu's own gmt package is older), macOS's from Homebrew (checked by
-# .github/scripts/check_gmt_version.sh), the plugins' from GMT_jll (checked in jll_cache.jl).
+# (gmt>=6.6; Ubuntu's own gmt package is older), macOS's from Homebrew (checked
+# after brew install), the plugins' from GMT_jll (checked in jll_cache.jl).
 # cmake/ConfigUser.cmake is not used in CI.
 
 name: Build
@@ -208,7 +208,7 @@ jobs:
 
       - name: Configure
         run: |
-          bash .github/scripts/check_gmt_version.sh
+          v=$(gmt --version); awk -v v="$v" 'BEGIN { split(v, n, "."); exit !(n[1] > 6 || (n[1] == 6 && n[2] >= 6)) }' || { echo "GMT $v found; GMTSAR needs GMT 6.6 or newer" >&2; exit 1; }; echo "GMT $v"
           P="$CONDA_PREFIX"
           cmake -S . -B build-ci -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
@@ -259,7 +259,7 @@ jobs:
       # LAPACK comes from Apple's Accelerate framework (FindLAPACK).
       - name: Configure
         run: |
-          bash .github/scripts/check_gmt_version.sh
+          v=$(gmt --version); awk -v v="$v" 'BEGIN { split(v, n, "."); exit !(n[1] > 6 || (n[1] == 6 && n[2] >= 6)) }' || { echo "GMT $v found; GMTSAR needs GMT 6.6 or newer" >&2; exit 1; }; echo "GMT $v"
           cmake -S . -B build-ci -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_PREFIX_PATH="$(brew --prefix)" \
