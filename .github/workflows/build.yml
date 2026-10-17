@@ -1,6 +1,6 @@
-# Build GMTSAR with CMake on Windows (MSVC), Linux (GCC) and macOS (Clang), and build, test and
-# (on request) publish the GMTSAR GMT plugin that InteractiveGMT installs from
-# Geophysics > GMTSAR > Install as plugin.
+# Build GMTSAR with CMake on Windows (MSVC), Linux (GCC) and macOS (Clang), build and test the
+# GMTSAR GMT plugin that InteractiveGMT installs from Geophysics > GMTSAR > Install as plugin, and
+# publish all of them to the gmtsar-latest release (the release job, at the end).
 #
 # gmtsar.yml (the S1A processing test) is separate.
 # GMT must be 6.6 or newer everywhere: the Windows and Linux dependencies come from conda-forge
@@ -15,11 +15,6 @@ on:
     branches: [master]
   pull_request:
   workflow_dispatch:
-    inputs:
-      publish:
-        description: 'Upload the InteractiveGMT plugin archives to the gmtsar-latest release'
-        type: boolean
-        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -175,7 +170,7 @@ jobs:
       - name: Upload package
         uses: actions/upload-artifact@v4
         with:
-          name: gmtsar-windows-x64
+          name: gmtsar-programs-windows-x64
           path: gmtsar-install
           if-no-files-found: error
 
@@ -234,13 +229,13 @@ jobs:
       - name: Package
         run: |
           DESTDIR="$PWD/stage" cmake --install build-ci
-          tar -czf gmtsar-linux-x64.tar.gz -C stage/usr/local .
+          tar -czf gmtsar-programs-linux-x64.tar.gz -C stage/usr/local .
 
       - name: Upload package
         uses: actions/upload-artifact@v4
         with:
-          name: gmtsar-linux-x64
-          path: gmtsar-linux-x64.tar.gz
+          name: gmtsar-programs-linux-x64
+          path: gmtsar-programs-linux-x64.tar.gz
           if-no-files-found: error
 
   macos:
@@ -276,13 +271,13 @@ jobs:
       - name: Package
         run: |
           DESTDIR="$PWD/stage" cmake --install build-ci
-          tar -czf gmtsar-macos-arm64.tar.gz -C stage/usr/local .
+          tar -czf gmtsar-programs-macos-arm64.tar.gz -C stage/usr/local .
 
       - name: Upload package
         uses: actions/upload-artifact@v4
         with:
-          name: gmtsar-macos-arm64
-          path: gmtsar-macos-arm64.tar.gz
+          name: gmtsar-programs-macos-arm64
+          path: gmtsar-programs-macos-arm64.tar.gz
           if-no-files-found: error
 
   # The GMTSAR GMT plugin (gmtsar.so / gmtsar.dylib) for InteractiveGMT, on Linux and macOS. It is
@@ -299,8 +294,6 @@ jobs:
   plugin:
     name: GMT plugin for InteractiveGMT (${{ matrix.name }})
     runs-on: ${{ matrix.os }}
-    permissions:
-      contents: write        # needed only by the publish step
     strategy:
       fail-fast: false
       matrix:
@@ -388,22 +381,6 @@ jobs:
           julia --project="$RUNNER_TEMP/jllenv" "$script" setup "$lib"
           julia --project="$RUNNER_TEMP/jllenv" "$script" run "$probe/gmtsar/lib"
 
-      # Manual runs only, and only when the run asks for it. One fixed tag whose files are replaced
-      # in place (--clobber), never a new tag per build.
-      - name: Publish to the gmtsar-latest release
-        if: github.event_name == 'workflow_dispatch' && inputs.publish
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPO: ${{ github.repository }}
-        run: |
-          set -euo pipefail
-          # The platform jobs can race to create it: a failed create is fine if it now exists.
-          gh release view gmtsar-latest -R "$REPO" >/dev/null 2>&1 || \
-            gh release create gmtsar-latest -R "$REPO" --prerelease \
-              --title "GMTSAR GMT plugin for InteractiveGMT (rolling)" \
-              --notes "GMTSAR GMT supplement for Linux, macOS and Windows, built against GMT_jll." || \
-            gh release view gmtsar-latest -R "$REPO" >/dev/null
-          gh release upload gmtsar-latest "gmtsar-${{ matrix.name }}.tar.gz" -R "$REPO" --clobber
 
   # The same plugin for InteractiveGMT on Windows, for a GMT.jl that runs GMT_jll's GMT (GMT.isJLL).
   # GMT_jll is built by BinaryBuilder with MinGW-w64 against msvcrt.dll, and grids and other memory
@@ -417,8 +394,6 @@ jobs:
   plugin-windows:
     name: GMT plugin for InteractiveGMT (windows-x86_64)
     runs-on: windows-latest
-    permissions:
-      contents: write        # needed only by the publish step
 
     steps:
       - uses: actions/checkout@v4
@@ -497,17 +472,45 @@ jobs:
           julia --project="$env" "$script" setup "$lib"
           julia --project="$env" "$script" run "$(cygpath -w "$probe/gmtsar/lib")"
 
-      - name: Publish to the gmtsar-latest release
-        if: github.event_name == 'workflow_dispatch' && inputs.publish
-        shell: bash
+  # Every package above, once all the jobs have passed (the plugins after their smoke tests), goes to
+  # the rolling gmtsar-latest release on pushes to master and manual runs: one fixed tag whose files
+  # are replaced in place (--clobber), never a new tag per build. The plugins keep the names
+  # InteractiveGMT downloads (gmtsar-<platform>.tar.gz); the standalone programs are gmtsar-programs-*.
+  release:
+    name: Publish to the gmtsar-latest release
+    needs: [windows, linux, macos, plugin, plugin-windows]
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+
+      # The Windows programs artifact is a folder (gmtsar-install), zipped here; the others are
+      # tarballs already.
+      - name: Collect the files
+        run: |
+          set -euo pipefail
+          mkdir out
+          (cd dist/gmtsar-programs-windows-x64 && zip -qr ../../out/gmtsar-programs-windows-x64.zip .)
+          find dist -name '*.tar.gz' -exec cp {} out/ ';'
+          ls -l out
+          test "$(ls out | wc -l)" -eq 7
+
+      - name: Publish
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
-          gh release view gmtsar-latest -R "$REPO" >/dev/null 2>&1 || \
-            gh release create gmtsar-latest -R "$REPO" --prerelease \
-              --title "GMTSAR GMT plugin for InteractiveGMT (rolling)" \
-              --notes "GMTSAR GMT supplement for Linux, macOS and Windows, built against GMT_jll." || \
-            gh release view gmtsar-latest -R "$REPO" >/dev/null
-          gh release upload gmtsar-latest gmtsar-windows-x86_64.tar.gz -R "$REPO" --clobber
+          notes="GMTSAR built from master, commit ${{ github.sha }}.
+
+          - gmtsar-<platform>.tar.gz: the GMTSAR GMT plugin for InteractiveGMT, built against GMT_jll.
+          - gmtsar-programs-*: the standalone programs, scripts and share files; they need GMT 6.6 or newer."
+          gh release view gmtsar-latest -R "$REPO" >/dev/null 2>&1 ||
+            gh release create gmtsar-latest -R "$REPO" --prerelease --title "GMTSAR (rolling build)" --notes "$notes"
+          gh release upload gmtsar-latest out/* -R "$REPO" --clobber
+          gh release edit gmtsar-latest -R "$REPO" --notes "$notes"
