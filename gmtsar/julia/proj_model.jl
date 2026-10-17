@@ -64,7 +64,7 @@ function main(argv::Vector{String})
 
     int = strip(read(`gmt grdinfo -I $ve`, String))
     run(`gmt set FORMAT_GEO_OUT D`)
-    run(pipeline(`gmt grd2xyz $dem -fg`, `$(SAT)_look $prm -bos`, stdout="look.xyz"))
+    run(pipeline(pipeline(`gmt grd2xyz $dem -fg`, `$(SAT)_look $prm -bos`), stdout="look.xyz"))
 
     rdem1a = strip(read(`gmt grdinfo -I- $dem`, String))
     rdem1b = strip(read(`gmt grdinfo -I- $dem`, String))
@@ -103,4 +103,4 @@ function main(argv::Vector{String})
     rm("tmpvu.grd"; force=true)
 end
 
-main(ARGS)
+main(filter(!isempty, ARGS))   # csh drops empty (unset) arguments

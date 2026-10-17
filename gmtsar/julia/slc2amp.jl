@@ -9,8 +9,10 @@
 #
 # define the filters
 #
+include(joinpath(@__DIR__, "gmtsar_common.jl"))   # script-to-script calls
+
 function main(argv::Vector{String})
-    sharedir = strip(read(`gmtsar_sharedir.csh`, String))
+    sharedir = strip(read(`$GMTSAR_JULIA $(gmtsar_script("gmtsar_sharedir"))`, String))
     fil1 = "$sharedir/filters/gauss5x3"
     fil2 = "$sharedir/filters/gauss9x5"
     #
@@ -36,7 +38,7 @@ function main(argv::Vector{String})
     if (occursin("PRM", argv[1]) || occursin("prm", argv[1])) && occursin("grd", argv[3])
         println(" range decimation is:", " ", argv[2])
         outarg = "$(argv[3])=bf"
-        run(`conv 4 $(argv[2]) $fil1 $(argv[1]) $outarg`)
+        run(`gmt conv -X4 -Y$(argv[2]) -C$fil1 -I$(argv[1]) -G$outarg`)
     else
         println("slc2amp.csh")
         println("wrong filename")
@@ -49,4 +51,4 @@ function main(argv::Vector{String})
     run(`gmt grdmath $outarg 1 MUL = $(argv[3])`)
 end
 
-main(ARGS)
+main(filter(!isempty, ARGS))   # csh drops empty (unset) arguments

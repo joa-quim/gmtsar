@@ -7,11 +7,13 @@
 # Script for merging 3 subswaths TOPS interferograms and then unwrap and geocode.
 #
 
+include(joinpath(@__DIR__, "gmtsar_common.jl"))   # script-to-script calls
+
 """grep PATTERN file | awk '{print \$3}'  -- first matching line's 3rd whitespace field, "" if none"""
 function grep_field(file::AbstractString, pattern::AbstractString)
-    for line in eachline(file)
+    for line in readlines(file)
         if occursin(pattern, line)
-            return split(line)[3]
+            return get(split(line), 3, "")
         end
     end
     return ""
@@ -20,9 +22,9 @@ end
 """grep PATTERN file | tail -1 | awk '{print \$3}'  -- last matching line's 3rd whitespace field, "" if none"""
 function grep_field_last(file::AbstractString, pattern::AbstractString)
     result = ""
-    for line in eachline(file)
+    for line in readlines(file)
         if occursin(pattern, line)
-            result = split(line)[3]
+            result = get(split(line), 3, "")
         end
     end
     return result
@@ -32,9 +34,9 @@ end
 function grep_glob_field_first(pattern::AbstractString, suffix::AbstractString)
     files = sort(filter(f -> endswith(f, suffix), readdir(".")))
     for f in files
-        for line in eachline(f)
+        for line in readlines(f)
             if occursin(pattern, line)
-                return split(line)[3]
+                return get(split(line), 3, "")
             end
         end
     end
@@ -199,7 +201,7 @@ function main(argv::Vector{String})
             n31 = string(trunc(Int, parse(Float64, x03) / parse(Float64, incx)))
             ovl23 = string(trunc(Int, (parse(Float64, rng2) - (parse(Float64, near3) - parse(Float64, near2)) / (299792458.0 / parse(Float64, fs) / 2)) / parse(Float64, incx)))
             n2 = string(trunc(Int, (parse(Float64, ovl23) - parse(Float64, n22) - parse(Float64, n31)) / 2 + parse(Float64, n22)))
-            if parse(Int, n2) == 0
+            if n2 == "0"
                 println("WARNING: Stitching positions estimated to be zero")
                 println("Check merged grids carefully")
                 n1 = ""
@@ -229,7 +231,7 @@ function main(argv::Vector{String})
 
     iono = grep_field(configfile, "correct_iono")
     skip_iono = grep_field(configfile, "iono_skip_est")
-    if (parse(Int, iono) != 0) & (parse(Int, skip_iono) == 0)
+    if (iono != "0") & (skip_iono == "0")
         if !isfile("ph_iono_orig.grd")
             println("Need ph_iono_orig.grd to correct ionosphere ...")
         else
@@ -252,7 +254,7 @@ function main(argv::Vector{String})
         rshift = grep_field_last("$(stem).PRM", "rshift")
         run(`update_PRM $(stem).PRM rshift 0`)
         open("trans.dat", "w") do io
-            run(pipeline(`gmt grd2xyz --FORMAT_FLOAT_OUT=%lf dem.grd -s`, `SAT_llt2rat $(stem).PRM 1 -bod`, stdout=io))
+            run(pipeline(pipeline(`gmt grd2xyz --FORMAT_FLOAT_OUT=%lf dem.grd -s`, `SAT_llt2rat $(stem).PRM 1 -bod`), stdout=io))
         end
         # Set rshift back for other usage
         run(`update_PRM $(stem).PRM rshift $rshift`)
@@ -273,19 +275,19 @@ function main(argv::Vector{String})
         region_cut = cut_c(gi_out, 3, 20)
     end
     if parse(Float64, threshold_snaphu) != 0
-        if parse(Int, mask_water) == 1 || parse(Int, switch_land) == 1
+        if mask_water == "1" || switch_land == "1"
             if !isfile("landmask_ra.grd")
-                run(`landmask.csh $region_cut`)
+                run(`$GMTSAR_JULIA $(gmtsar_script("landmask")) $region_cut`)
             end
         end
 
         println()
         println("SNAPHU.CSH - START")
         println("threshold_snaphu: $threshold_snaphu")
-        if parse(Int, near_interp) == 1
-            run(`snaphu_interp.csh $threshold_snaphu $defomax $region_cut`)
+        if near_interp == "1"
+            run(`$GMTSAR_JULIA $(gmtsar_script("snaphu_interp")) $threshold_snaphu $defomax $region_cut`)
         else
-            run(`snaphu.csh $threshold_snaphu $defomax $region_cut`)
+            run(`$GMTSAR_JULIA $(gmtsar_script("snaphu")) $threshold_snaphu $defomax $region_cut`)
         end
         println("SNAPHU.CSH - END")
     else
@@ -300,11 +302,11 @@ function main(argv::Vector{String})
     if parse(Float64, threshold_geocode) != 0
         println()
         println("GEOCODE-START")
-        run(`proj_ra2ll.csh trans.dat phasefilt.grd phasefilt_ll.grd`)
+        run(`$GMTSAR_JULIA $(gmtsar_script("proj_ra2ll")) trans.dat phasefilt.grd phasefilt_ll.grd`)
         run(`gmt grdmath corr.grd $threshold_geocode GE 0 NAN mask.grd MUL = mask2.grd`)
         run(`gmt grdmath phasefilt.grd mask2.grd MUL = phasefilt_mask.grd`)
-        run(`proj_ra2ll.csh trans.dat phasefilt_mask.grd phasefilt_mask_ll.grd`)
-        run(`proj_ra2ll.csh trans.dat corr.grd corr_ll.grd`)
+        run(`$GMTSAR_JULIA $(gmtsar_script("proj_ra2ll")) trans.dat phasefilt_mask.grd phasefilt_mask_ll.grd`)
+        run(`$GMTSAR_JULIA $(gmtsar_script("proj_ra2ll")) trans.dat corr.grd corr_ll.grd`)
         open("phase.cpt", "w") do io
             run(pipeline(`gmt makecpt -Crainbow -T-3.15/3.15/0.05 -Z`, stdout=io))
         end
@@ -312,30 +314,30 @@ function main(argv::Vector{String})
         open("corr.cpt", "w") do io
             run(pipeline(`gmt makecpt -Cgray -T0/$BT/0.05 -Z -M --COLOR_NAN=red`, stdout=io))
         end
-        run(`grd2kml.csh phasefilt_ll phase.cpt`)
-        run(`grd2kml.csh phasefilt_mask_ll phase.cpt`)
-        run(`grd2kml.csh corr_ll corr.cpt`)
+        run(`$GMTSAR_JULIA $(gmtsar_script("grd2kml")) phasefilt_ll phase.cpt`)
+        run(`$GMTSAR_JULIA $(gmtsar_script("grd2kml")) phasefilt_mask_ll phase.cpt`)
+        run(`$GMTSAR_JULIA $(gmtsar_script("grd2kml")) corr_ll corr.cpt`)
 
         if isfile("unwrap.grd")
             run(`gmt grdmath unwrap.grd mask2.grd MUL = unwrap_mask.grd`)
             wavel = grep_glob_field_first("wavelength", ".PRM")
             run(`gmt grdmath unwrap_mask.grd $wavel MUL -79.58 MUL = los.grd`)
-            run(`proj_ra2ll.csh trans.dat unwrap.grd unwrap_ll.grd`)
-            run(`proj_ra2ll.csh trans.dat unwrap_mask.grd unwrap_mask_ll.grd`)
-            run(`proj_ra2ll.csh trans.dat los.grd los_ll.grd`)
+            run(`$GMTSAR_JULIA $(gmtsar_script("proj_ra2ll")) trans.dat unwrap.grd unwrap_ll.grd`)
+            run(`$GMTSAR_JULIA $(gmtsar_script("proj_ra2ll")) trans.dat unwrap_mask.grd unwrap_mask_ll.grd`)
+            run(`$GMTSAR_JULIA $(gmtsar_script("proj_ra2ll")) trans.dat los.grd los_ll.grd`)
             BT = cmd_field(`gmt grdinfo -C unwrap.grd`, 7)
             BL = cmd_field(`gmt grdinfo -C unwrap.grd`, 6)
             open("unwrap.cpt", "w") do io
                 run(pipeline(`gmt makecpt -T$BL/$BT/0.5 -Z`, stdout=io))
             end
-            run(`grd2kml.csh unwrap_mask_ll unwrap.cpt`)
-            run(`grd2kml.csh unwrap_ll unwrap.cpt`)
+            run(`$GMTSAR_JULIA $(gmtsar_script("grd2kml")) unwrap_mask_ll unwrap.cpt`)
+            run(`$GMTSAR_JULIA $(gmtsar_script("grd2kml")) unwrap_ll unwrap.cpt`)
             BT = cmd_field(`gmt grdinfo -C los.grd`, 7)
             BL = cmd_field(`gmt grdinfo -C los.grd`, 6)
             open("los.cpt", "w") do io
                 run(pipeline(`gmt makecpt -T$BL/$BT/2 -Z`, stdout=io))
             end
-            run(`grd2kml.csh los_ll los.cpt`)
+            run(`$GMTSAR_JULIA $(gmtsar_script("grd2kml")) los_ll los.cpt`)
         end
 
         println("GEOCODE END")
@@ -351,4 +353,4 @@ function main(argv::Vector{String})
     end
 end
 
-main(ARGS)
+main(filter(!isempty, ARGS))   # csh drops empty (unset) arguments

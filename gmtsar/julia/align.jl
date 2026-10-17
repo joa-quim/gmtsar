@@ -10,11 +10,13 @@
 # unset noclobber
 #
 
+include(joinpath(@__DIR__, "gmtsar_common.jl"))   # script-to-script calls
+
 """grep PATTERN file | awk '{print \$3}'  -- first matching line's 3rd whitespace field"""
 function grep_field(file::AbstractString, pattern::AbstractString)
-    for line in eachline(file)
+    for line in readlines(file)
         if occursin(pattern, line)
-            return split(line)[3]
+            return get(split(line), 3, "")
         end
     end
     error("pattern not found: $pattern in $file")
@@ -30,7 +32,7 @@ function grep_field_cmd(cmd::Cmd, pattern::AbstractString)
     out = read(cmd, String)
     for line in split(out, '\n')
         if occursin(pattern, line)
-            return split(line)[3]
+            return get(split(line), 3, "")
         end
     end
     error("pattern not found: $pattern in output of $cmd")
@@ -72,7 +74,7 @@ function main(argv::Vector{String})
     #
     if !isfile("$master.SLC")
         println("focussing master")
-        run(`sarp.csh $master.PRM`)
+        run(`$GMTSAR_JULIA $(gmtsar_script("sarp")) $master.PRM`)
     else
         run(`update_PRM $master.PRM SLC_file $master.SLC`)
     end
@@ -90,7 +92,7 @@ function main(argv::Vector{String})
     end
     println("align.csh")
     println("focusing aligned")
-    run(`sarp.csh $aligned.PRM`)
+    run(`$GMTSAR_JULIA $(gmtsar_script("sarp")) $aligned.PRM`)
     #
     # get the starting alignment parameters and run xcorr
     #
@@ -122,7 +124,7 @@ function main(argv::Vector{String})
     mv("$aligned.PRM", "junk.PRM"; force=true)
     cp("$master.PRM0", "$master.PRM"; force=true)
     open("$aligned.PRM", "w") do io
-        for line in eachline("junk.PRM")
+        for line in readlines("junk.PRM")
             if !occursin("shift", line)
                 println(io, line)
             end
@@ -132,7 +134,7 @@ function main(argv::Vector{String})
     # put in the alignment parameters
     #
     open("$aligned.PRM", "a") do io
-        run(pipeline(`fitoffset.csh 3 3 freq_xcorr.dat 18`, stdout=io))
+        run(pipeline(`$GMTSAR_JULIA $(gmtsar_script("fitoffset")) 3 3 freq_xcorr.dat 18`, stdout=io))
     end
     mv("freq_xcorr.dat", "xcorr_$(master)_$(aligned).dat0"; force=true)
     #
@@ -140,7 +142,7 @@ function main(argv::Vector{String})
     #
     println("align.csh")
     println("refocus aligned")
-    run(`sarp.csh $aligned.PRM`)
+    run(`$GMTSAR_JULIA $(gmtsar_script("sarp")) $aligned.PRM`)
     #
     for f in readdir(".")
         if endswith(f, "SLC0")
@@ -155,4 +157,4 @@ function main(argv::Vector{String})
     #done
 end
 
-main(ARGS)
+main(filter(!isempty, ARGS))   # csh drops empty (unset) arguments

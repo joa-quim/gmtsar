@@ -8,11 +8,13 @@
 # alias rm 'rm -f'
 # unset noclobber
 
+include(joinpath(@__DIR__, "gmtsar_common.jl"))   # script-to-script calls
+
 """grep PATTERN file | awk '{print \$3}'  -- first matching line's 3rd field, or "" if no match (mirrors csh set-from-empty-backquote)"""
 function grep_field_opt(file::AbstractString, pattern::AbstractString)
-    for line in eachline(file)
+    for line in readlines(file)
         if occursin(pattern, line)
-            return split(line)[3]
+            return get(split(line), 3, "")
         end
     end
     return ""
@@ -134,11 +136,11 @@ function main(argv::Vector{String})
                 #
                 # clean up
                 #
-                run(`cleanup.csh topo`)
+                run(`$GMTSAR_JULIA $(gmtsar_script("cleanup")) topo`)
                 #
                 # make topo_ra
                 #
-                if parse(Int, topo_phase) == 1
+                if topo_phase == "1"
                     println(" ")
                     println("DEM2TOPOPHASE.CSH - START")
                     println("USER SHOULD PROVIDE DEM FILE")
@@ -149,7 +151,7 @@ function main(argv::Vector{String})
                         end
                         if isfile(joinpath("..", "..", "topo", "dem.grd"))
                             symlink(joinpath("..", "..", "topo", "dem.grd"), "dem.grd")
-                            run(`dem2topo_ra_ALOS2.csh master.PRM dem.grd`)
+                            run(`$GMTSAR_JULIA $(gmtsar_script("dem2topo_ra_ALOS2")) master.PRM dem.grd`)
                         else
                             println("no DEM file found: ", " dem.grd")
                             exit(1)
@@ -159,7 +161,7 @@ function main(argv::Vector{String})
                     #
                     # shift topo_ra
                     #
-                    if parse(Int, shift_topo) == 1
+                    if shift_topo == "1"
                         println(" ")
                         println("OFFSET_TOPO - START")
                         cd("SLC") do
@@ -175,13 +177,13 @@ function main(argv::Vector{String})
                                         println("processing ALOS FBD data")
                                         rng = 1
                                     end
-                                    run(`slc2amp.csh IMG-HH-$master-F$subswath.PRM $rng amp-$master.grd`)
+                                    run(`$GMTSAR_JULIA $(gmtsar_script("slc2amp")) IMG-HH-$master-F$subswath.PRM $rng amp-$master.grd`)
                                 else
                                     println("Undefined rng_samp_rate in the master PRM file")
                                     exit(1)
                                 end
                             elseif SAT == "ERS" || SAT == "ENVI"
-                                run(`slc2amp.csh $master.PRM 1 amp-$master.grd`)
+                                run(`$GMTSAR_JULIA $(gmtsar_script("slc2amp")) $master.PRM 1 amp-$master.grd`)
                             end
                         end
                         cd("topo") do
@@ -189,14 +191,14 @@ function main(argv::Vector{String})
                             run(`offset_topo amp-$master.grd topo_ra.grd 0 0 7 topo_shift.grd`)
                         end
                         println("OFFSET_TOPO - END")
-                    elseif parse(Int, shift_topo) == 0
+                    elseif shift_topo == "0"
                         println("NO TOPOPHASE SHIFT ")
                     else
                         println("Wrong paramter: shift_topo ", shift_topo)
                         exit(1)
                     end
 
-                elseif parse(Int, topo_phase) == 0
+                elseif topo_phase == "0"
                     println("NO TOPOPHASE IS SUBSTRACTED")
                 else
                     println("Wrong paramter: topo_phase ", topo_phase)
@@ -249,19 +251,19 @@ function main(argv::Vector{String})
                                 cp(joinpath("..", "..", "SLC", "IMG-HH-$rep-F$subswath.PRM"), "IMG-HH-$rep-F$subswath.PRM"; force=true)
 
                                 if SAT == "ALOS"
-                                    if parse(Int, topo_phase) == 1
-                                        if parse(Int, shift_topo) == 1
+                                    if topo_phase == "1"
+                                        if shift_topo == "1"
                                             symlink(joinpath("..", "..", "topo", "topo_shift.grd"), "topo_shift.grd")
-                                            run(`intf.csh IMG-HH-$ref-F$subswath.PRM IMG-HH-$rep-F$subswath.PRM -topo topo_shift.grd`)
-                                            run(`filter.csh IMG-HH-$ref-F$subswath.PRM IMG-HH-$rep-F$subswath.PRM $filter $dec $range_dec $azimuth_dec`)
+                                            run(`$GMTSAR_JULIA $(gmtsar_script("intf")) IMG-HH-$ref-F$subswath.PRM IMG-HH-$rep-F$subswath.PRM -topo topo_shift.grd`)
+                                            run(`$GMTSAR_JULIA $(gmtsar_script("filter")) IMG-HH-$ref-F$subswath.PRM IMG-HH-$rep-F$subswath.PRM $filter $dec $range_dec $azimuth_dec`)
                                         else
                                             symlink(joinpath("..", "..", "topo", "topo_ra.grd"), "topo_ra.grd")
-                                            run(`intf.csh IMG-HH-$ref-F$subswath.PRM IMG-HH-$rep-F$subswath.PRM -topo topo_ra.grd`)
-                                            run(`filter.csh IMG-HH-$ref-F$subswath.PRM IMG-HH-$rep-F$subswath.PRM $filter $dec $range_dec $azimuth_dec`)
+                                            run(`$GMTSAR_JULIA $(gmtsar_script("intf")) IMG-HH-$ref-F$subswath.PRM IMG-HH-$rep-F$subswath.PRM -topo topo_ra.grd`)
+                                            run(`$GMTSAR_JULIA $(gmtsar_script("filter")) IMG-HH-$ref-F$subswath.PRM IMG-HH-$rep-F$subswath.PRM $filter $dec $range_dec $azimuth_dec`)
                                         end
                                     else
-                                        run(`intf.csh IMG-HH-$ref-F$subswath.PRM IMG-HH-$rep-F$subswath.PRM`)
-                                        run(`filter.csh IMG-HH-$ref-F$subswath.PRM IMG-HH-$rep-F$subswath.PRM $filter $dec $range_dec $azimuth_dec`)
+                                        run(`$GMTSAR_JULIA $(gmtsar_script("intf")) IMG-HH-$ref-F$subswath.PRM IMG-HH-$rep-F$subswath.PRM`)
+                                        run(`$GMTSAR_JULIA $(gmtsar_script("filter")) IMG-HH-$ref-F$subswath.PRM IMG-HH-$rep-F$subswath.PRM $filter $dec $range_dec $azimuth_dec`)
                                     end
                                 end
                                 println("INTF.CSH, FILTER.CSH - END")
@@ -279,10 +281,10 @@ function main(argv::Vector{String})
                                 end
 
                                 if parse(Float64, threshold_snaphu) != 0
-                                    if parse(Int, mask_water) == 1 || parse(Int, switch_land) == 1
+                                    if mask_water == "1" || switch_land == "1"
                                         cd(joinpath("..", "..", "topo")) do
                                             if !isfile("landmask_ra.grd")
-                                                run(`landmask_ALOS2.csh $region_cut`)
+                                                run(`$GMTSAR_JULIA $(gmtsar_script("landmask_ALOS2")) $region_cut`)
                                             end
                                         end
                                         symlink(joinpath("..", "..", "topo", "landmask_ra.grd"), "landmask_ra.grd")
@@ -291,10 +293,10 @@ function main(argv::Vector{String})
                                     println("")
                                     println("SNAPHU.CSH - START")
                                     println("threshold_snaphu: $threshold_snaphu")
-                                    if parse(Int, near_interp) == 1
-                                        run(`snaphu_interp.csh $threshold_snaphu $defomax $region_cut`)
+                                    if near_interp == "1"
+                                        run(`$GMTSAR_JULIA $(gmtsar_script("snaphu_interp")) $threshold_snaphu $defomax $region_cut`)
                                     else
-                                        run(`snaphu.csh $threshold_snaphu $defomax $region_cut`)
+                                        run(`$GMTSAR_JULIA $(gmtsar_script("snaphu")) $threshold_snaphu $defomax $region_cut`)
                                     end
                                     println("SNAPHU.CSH - END")
 
@@ -307,11 +309,11 @@ function main(argv::Vector{String})
                                 println("GEOCODE.CSH - START")
                                 rm("raln.grd"; force=true)
                                 rm("ralt.grd"; force=true)
-                                if parse(Int, topo_phase) == 1
+                                if topo_phase == "1"
                                     rm("trans.dat"; force=true)
                                     symlink(joinpath("..", "..", "topo", "trans.dat"), "trans.dat")
                                     println("threshold_geocode: $threshold_geocode")
-                                    run(`geocode.csh $threshold_geocode`)
+                                    run(`$GMTSAR_JULIA $(gmtsar_script("geocode")) $threshold_geocode`)
                                 else
                                     println("topo_ra is needed to geocode")
                                     exit(1)
@@ -331,4 +333,4 @@ function main(argv::Vector{String})
     println("")
 end
 
-main(ARGS)
+main(filter(!isempty, ARGS))   # csh drops empty (unset) arguments

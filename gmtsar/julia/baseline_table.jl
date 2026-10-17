@@ -17,12 +17,20 @@ using Dates
 
 """grep PATTERN file | awk '{print \$3}'  -- first matching line's 3rd whitespace field"""
 function grep_field(file::AbstractString, pattern::AbstractString)
-    for line in eachline(file)
+    for line in readlines(file)
         if occursin(pattern, line)
-            return split(line)[3]
+            return get(split(line), 3, "")
         end
     end
     error("pattern not found: $pattern in $file")
+end
+
+"""grep PATTERN file | awk '{print \$3}' where no match is not an error: nothing then"""
+function grep_field_or_empty(file::AbstractString, pattern::AbstractString)
+    for line in readlines(file)
+        occursin(pattern, line) && return get(split(line), 3, "")
+    end
+    return nothing
 end
 
 """cut -cSTART-END / awk substr(\$1,start,len)  -- 1-indexed substring"""
@@ -69,19 +77,19 @@ function main(argv::Vector{String})
     #
     local YDAY
     if SSC == "1" || SSC == "2"
-        run(pipeline(`SAT_baseline $(argv[1]) $(argv[2])`, stdout="temp"))
+        run(pipeline(`gmt SAT_baseline -A$(argv[1]) -B$(argv[2])`, stdout="temp"))
         t0 = mktime_utc(1992)
         YR = div(T0, 1000)
         t1 = mktime_utc(YR)
         YDAY = trunc(Int, (t1 - t0) / 86400.0 + 0.5) + DAY - 1
     elseif SSC == "4" || SSC == "6"
-        run(pipeline(`SAT_baseline $(argv[1]) $(argv[2])`, stdout="temp"))
+        run(pipeline(`gmt SAT_baseline -A$(argv[1]) -B$(argv[2])`, stdout="temp"))
         t0 = mktime_utc(1992)
         YR = div(T0, 1000)
         t1 = mktime_utc(YR)
         YDAY = trunc(Int, (t1 - t0) / 86400.0 + 0.5) + DAY - 1
     elseif SSC == "5"
-        run(pipeline(`SAT_baseline $(argv[1]) $(argv[2])`, stdout="temp"))
+        run(pipeline(`gmt SAT_baseline -A$(argv[1]) -B$(argv[2])`, stdout="temp"))
         YR1 = div(T0, 1000)
         local t0
         if YR1 < 2013
@@ -93,7 +101,7 @@ function main(argv::Vector{String})
         t1 = mktime_utc(YR)
         YDAY = trunc(Int, (t1 - t0) / 86400.0 + 0.5) + DAY - 1
     else
-        run(pipeline(`SAT_baseline $(argv[1]) $(argv[2])`, stdout="temp"))
+        run(pipeline(`gmt SAT_baseline -A$(argv[1]) -B$(argv[2])`, stdout="temp"))
         local t0
         if SSC == "7" || SSC == "8"
             t0 = mktime_utc(2007)
@@ -113,8 +121,10 @@ function main(argv::Vector{String})
     #
     BPL = grep_field("temp", "B_parallel")
     BPR = grep_field("temp", "B_perpendicular")
-    XS = grep_field("temp", "xshift")
-    YS = grep_field("temp", "yshift")
+    # SAT_baseline prints no xshift/yshift: the csh's `grep xshift temp | awk` then gives an empty
+    # value, and so does this (grep_field would fail).
+    XS = something(grep_field_or_empty("temp", "xshift"), "")
+    YS = something(grep_field_or_empty("temp", "yshift"), "")
     NM = grep_field(argv[2], "SC_identity")
     local ORB
     if SSC == "5"
@@ -156,4 +166,4 @@ function main(argv::Vector{String})
     rm("temp"; force=true)
 end
 
-main(ARGS)
+main(filter(!isempty, ARGS))   # csh drops empty (unset) arguments

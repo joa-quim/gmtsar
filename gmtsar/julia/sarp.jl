@@ -31,7 +31,7 @@ function main(argv::Vector{String})
     #   update the PRM file
     #
     open("tmp.PRM", "w") do io
-        for line in eachline(argv[1])
+        for line in readlines(argv[1])
             if !occursin("SLC_file", line) && !occursin("dtype", line)
                 println(io, line)
             end
@@ -55,9 +55,9 @@ function main(argv::Vector{String})
     #   put in dfact into PRM file
     #
     dfact = nothing
-    for line in eachline("tmp_sarp")
+    for line in readlines("tmp_sarp")
         if occursin("I2SCALE", line)
-            dfact = split(line)[2]
+            dfact = get(split(line), 2, "")
             break
         end
     end
@@ -65,4 +65,4 @@ function main(argv::Vector{String})
     rm("tmp_sarp"; force=true)
 end
 
-main(ARGS)
+main(filter(!isempty, ARGS))   # csh drops empty (unset) arguments

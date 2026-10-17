@@ -80,4 +80,4 @@ function main(argv::Vector{String})
     exit(0)
 end
 
-main(ARGS)
+main(filter(!isempty, ARGS))   # csh drops empty (unset) arguments

@@ -16,6 +16,8 @@
 # alias rm 'rm -f'
 # unset noclobber
 
+include(joinpath(@__DIR__, "gmtsar_common.jl"))   # script-to-script calls
+
 using Printf
 
 """awk substr(\$1,start,len)  -- 1-indexed substring, same convention as awk"""
@@ -23,9 +25,9 @@ substr(s::AbstractString, start::Int, len::Int) = s[start:(start + len - 1)]
 
 """grep PATTERN file | awk '{print \$3}'  -- first matching line's 3rd whitespace field"""
 function grep_field(file::AbstractString, pattern::AbstractString)
-    for line in eachline(file)
+    for line in readlines(file)
         if occursin(pattern, line)
-            return split(line)[3]
+            return get(split(line), 3, "")
         end
     end
     error("pattern not found: $pattern in $file")
@@ -33,9 +35,9 @@ end
 
 """grep PATTERN file | awk '{print \$3}'  -- same, but "" (not an error) when there is no match"""
 function grep_field_opt(file::AbstractString, pattern::AbstractString)
-    for line in eachline(file)
+    for line in readlines(file)
         if occursin(pattern, line)
-            return split(line)[3]
+            return get(split(line), 3, "")
         end
     end
     return ""
@@ -115,8 +117,8 @@ function main(argv::Vector{String})
   rng_samp_rate_m = grep_field_int("IMG-HH-$master.PRM", "rng_samp_rate")
   npatch = grep_field("IMG-HH-$master.PRM", "num_patch")
 
-  run(pipeline(`baseline_table.csh IMG-HH-$master.PRM IMG-HH-$master.PRM`, stdout="baseline_table.dat"))
-  run(pipeline(`baseline_table.csh IMG-HH-$master.PRM IMG-HH-$master.PRM GMT`, stdout="table.gmt"))
+  run(pipeline(`$GMTSAR_JULIA $(gmtsar_script("baseline_table")) IMG-HH-$master.PRM IMG-HH-$master.PRM`, stdout="baseline_table.dat"))
+  run(pipeline(`$GMTSAR_JULIA $(gmtsar_script("baseline_table")) IMG-HH-$master.PRM IMG-HH-$master.PRM GMT`, stdout="table.gmt"))
 #
 # loop and unpack the aligned image using the same earth radius and near range as the master image
 #
@@ -136,26 +138,26 @@ function main(argv::Vector{String})
 # check the range sampling rate of the aligned images and do conversion if necessary
 #
     rng_samp_rate_s = grep_field_int("IMG-HH-$aligned.PRM", "rng_samp_rate")
-    t = @sprintf("%1.1f\n", rng_samp_rate_m / rng_samp_rate_s)
+    t = strip(@sprintf("%1.1f\n", rng_samp_rate_m / rng_samp_rate_s))
     t = strip(t)
     if t == "1.0"
       println("The range sampling rate for master and aligned images are: " * string(rng_samp_rate_m))
 #
       open("baseline_table.dat", "a") do io
-        run(pipeline(`baseline_table.csh IMG-HH-$master.PRM IMG-HH-$aligned.PRM`, stdout=io))
+        run(pipeline(`$GMTSAR_JULIA $(gmtsar_script("baseline_table")) IMG-HH-$master.PRM IMG-HH-$aligned.PRM`, stdout=io))
       end
       open("table.gmt", "a") do io
-        run(pipeline(`baseline_table.csh IMG-HH-$master.PRM IMG-HH-$aligned.PRM GMT`, stdout=io))
+        run(pipeline(`$GMTSAR_JULIA $(gmtsar_script("baseline_table")) IMG-HH-$master.PRM IMG-HH-$aligned.PRM GMT`, stdout=io))
       end
     elseif t == "2.0"
       println("Convert the aligned image from FBD to FBS mode")
       run(`ALOS_fbd2fbs_SLC IMG-HH-$aligned.PRM IMG-HH-$(aligned)_FBS.PRM`)
 #
       open("baseline_table.dat", "a") do io
-        run(pipeline(`baseline_table.csh IMG-HH-$master.PRM IMG-HH-$(aligned)_FBS.PRM`, stdout=io))
+        run(pipeline(`$GMTSAR_JULIA $(gmtsar_script("baseline_table")) IMG-HH-$master.PRM IMG-HH-$(aligned)_FBS.PRM`, stdout=io))
       end
       open("table.gmt", "a") do io
-        run(pipeline(`baseline_table.csh IMG-HH-$master.PRM IMG-HH-$(aligned)_FBS.PRM GMT`, stdout=io))
+        run(pipeline(`$GMTSAR_JULIA $(gmtsar_script("baseline_table")) IMG-HH-$master.PRM IMG-HH-$(aligned)_FBS.PRM GMT`, stdout=io))
       end
       println("Overwriting the old aligned image")
       mv("IMG-HH-$(aligned)_FBS.PRM", "IMG-HH-$aligned.PRM"; force=true)
@@ -178,7 +180,7 @@ function main(argv::Vector{String})
 #
 
   open("text", "w") do io
-    for line in eachline("table.gmt")
+    for line in readlines("table.gmt")
       w = split(line)
       year = 2006.5 + (parse(Float64, w[1]) - 181) / 365.25
       println(io, "$(@sprintf("%.6g", year)) $(w[2]) $(w[7])")
@@ -195,7 +197,7 @@ function main(argv::Vector{String})
 # set region = `minmax text -C | awk '{print $1-0.5, $2+0.5, -1200, 1200}'`
   run(pipeline(`gmt pstext text -JX8.8i/6.8i -R$(region[1])/$(region[2])/$(region[3])/$(region[4]) -D0.2/0.2 -X1.5i -Y1i -K -N -F+f8,Helvetica+j5`, stdout="stacktable_all.ps"))
   open("text2", "w") do io
-    for line in eachline("text")
+    for line in readlines("text")
       w = split(line)
       println(io, "$(w[1]) $(w[2])")
     end
@@ -216,4 +218,4 @@ function main(argv::Vector{String})
   rm("text2"; force=true)
 end
 
-main(ARGS)
+main(filter(!isempty, ARGS))   # csh drops empty (unset) arguments

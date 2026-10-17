@@ -82,4 +82,4 @@ function main(argv::Vector{String})
     rm("rap"; force=true)
 end
 
-main(ARGS)
+main(filter(!isempty, ARGS))   # csh drops empty (unset) arguments

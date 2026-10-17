@@ -4,6 +4,8 @@
 # make a landmask
 
 #
+include(joinpath(@__DIR__, "gmtsar_common.jl"))   # script-to-script calls
+
 function main(argv::Vector{String})
     if length(argv) != 1
         println("")
@@ -30,7 +32,7 @@ function main(argv::Vector{String})
     grdinfo_Ineg = split(strip(read(`gmt grdinfo -I- dem.grd`, String)))
     grdinfo_I = split(strip(read(`gmt grdinfo -I dem.grd`, String)))
     run(`gmt grdlandmask -Glandmask.grd $grdinfo_Ineg $grdinfo_I $V -NNaN/1 -Df`)
-    run(`proj_ll2ra.csh trans.dat landmask.grd landmask_ra.grd`)
+    run(`$GMTSAR_JULIA $(gmtsar_script("proj_ll2ra")) trans.dat landmask.grd landmask_ra.grd`)
     # if the landmask region is smaller than the region_cut pad with NaN
     run(pipeline(`gmt grd2xyz landmask_ra.grd -bo`, stdout="landmask_ra.xyz"))
     grdinfo_I2 = split(strip(read(`gmt grdinfo -I landmask_ra.grd`, String)))
@@ -47,4 +49,4 @@ function main(argv::Vector{String})
     #
 end
 
-main(ARGS)
+main(filter(!isempty, ARGS))   # csh drops empty (unset) arguments

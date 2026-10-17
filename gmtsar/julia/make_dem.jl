@@ -4,6 +4,8 @@
 #
 # Script to create DEM for GMTSAR, relative to WGS84 ellipsoid
 #
+include(joinpath(@__DIR__, "gmtsar_common.jl"))   # script-to-script calls
+
 function main(argv::Vector{String})
     if length(argv) != 4 && length(argv) != 5
         println("")
@@ -31,7 +33,7 @@ function main(argv::Vector{String})
     #
     # need to set this for the distribution
     #
-    sharedir = strip(read(`gmtsar_sharedir.csh`, String))
+    sharedir = strip(read(`$GMTSAR_JULIA $(gmtsar_script("gmtsar_sharedir"))`, String))
     #
     # get srtm data
     #
@@ -59,4 +61,4 @@ function main(argv::Vector{String})
     println("")
 end
 
-main(ARGS)
+main(filter(!isempty, ARGS))   # csh drops empty (unset) arguments

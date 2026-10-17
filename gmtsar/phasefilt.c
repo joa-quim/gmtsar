@@ -510,7 +510,9 @@ int gmtsar_phasefilt_run(void *API, int argc, char **argv) {
 		free((void *)diff);
 	}
 
-	if (GMT_Destroy_Data(API, &RE) || GMT_Destroy_Data(API, &IM) || GMT_Destroy_Data(API, &T))
+	/* RE and IM were already freed by phasefilt_read_data(); destroying them again fails and
+	 * made the program exit with an error after writing every output. */
+	if (GMT_Destroy_Data(API, &T))
 		return EXIT_FAILURE;
 
 	free((void *)patch0);

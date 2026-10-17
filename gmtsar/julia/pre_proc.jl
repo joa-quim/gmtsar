@@ -9,13 +9,15 @@
 # alias rm 'rm -f'
 # unset noclobber
 
+include(joinpath(@__DIR__, "gmtsar_common.jl"))   # script-to-script calls
+
 using Printf
 
 """grep PATTERN file | awk '{print \$3}'  -- first matching line's 3rd whitespace field"""
 function grep_field(file::AbstractString, pattern::AbstractString)
-    for line in eachline(file)
+    for line in readlines(file)
         if occursin(pattern, line)
-            return split(line)[3]
+            return get(split(line), 3, "")
         end
     end
     error("pattern not found: $pattern in $file")
@@ -179,7 +181,7 @@ function main(argv::Vector{String})
         if skip_master_n == 0 || skip_master_n == 1
             rng_samp_rate_m = grep_field_int("IMG-HH-$master.PRM", "rng_samp_rate")
             rng_samp_rate_s = grep_field_int("IMG-HH-$aligned.PRM", "rng_samp_rate")
-            t = @sprintf("%1.1f", rng_samp_rate_m / rng_samp_rate_s)
+            t = strip(@sprintf("%1.1f", rng_samp_rate_m / rng_samp_rate_s))
 
             if t == "1.0"
                 println("The range sampling rate for master and aligned images are: ", rng_samp_rate_m)
@@ -382,7 +384,7 @@ function main(argv::Vector{String})
         if skip_master_n == 0 || skip_master_n == 1
             rng_samp_rate_m = grep_field_int("IMG-$master.PRM", "rng_samp_rate")
             rng_samp_rate_s = grep_field_int("IMG-$aligned.PRM", "rng_samp_rate")
-            t = @sprintf("%1.1f", rng_samp_rate_m / rng_samp_rate_s)
+            t = strip(@sprintf("%1.1f", rng_samp_rate_m / rng_samp_rate_s))
             if t == "1.0"
                 println("The range sampling rate for master and aligned images are: ", rng_samp_rate_m)
             elseif t == "2.0"
@@ -649,22 +651,22 @@ function main(argv::Vector{String})
 
         if parse(Float64, ESD_mode) == 0
             if skip_master_n == 0
-                run(`align_tops.csh $master $master.EOF $aligned $aligned.EOF dem.grd`)
+                run(`$GMTSAR_JULIA $(gmtsar_script("align_tops")) $master $master.EOF $aligned $aligned.EOF dem.grd`)
             elseif skip_master_n == 1
-                run(`align_tops.csh $master 0 $aligned $aligned.EOF dem.grd`)
+                run(`$GMTSAR_JULIA $(gmtsar_script("align_tops")) $master 0 $aligned $aligned.EOF dem.grd`)
             elseif skip_master_n == 2
-                run(`align_tops.csh $master $master.EOF $aligned 0 dem.grd`)
+                run(`$GMTSAR_JULIA $(gmtsar_script("align_tops")) $master $master.EOF $aligned 0 dem.grd`)
             else
                 println("[ERROR]: Wrong skip_master parameter used for TOPS data, please check")
                 exit(1)
             end
         else
             if skip_master_n == 0
-                run(`align_tops_esd.csh $master $master.EOF $aligned $aligned.EOF dem.grd $ESD_mode`)
+                run(`$GMTSAR_JULIA $(gmtsar_script("align_tops_esd")) $master $master.EOF $aligned $aligned.EOF dem.grd $ESD_mode`)
             elseif skip_master_n == 1
-                run(`align_tops_esd.csh $master 0 $aligned $aligned.EOF dem.grd $ESD_mode`)
+                run(`$GMTSAR_JULIA $(gmtsar_script("align_tops_esd")) $master 0 $aligned $aligned.EOF dem.grd $ESD_mode`)
             elseif skip_master_n == 2
-                run(`align_tops_esd.csh $master $master.EOF $aligned 0 dem.grd $ESD_mode`)
+                run(`$GMTSAR_JULIA $(gmtsar_script("align_tops_esd")) $master $master.EOF $aligned 0 dem.grd $ESD_mode`)
             else
                 println("[ERROR]: Wrong skip_master parameter used for TOPS data, please check")
                 exit(1)
@@ -678,4 +680,4 @@ function main(argv::Vector{String})
     #
 end
 
-main(ARGS)
+main(filter(!isempty, ARGS))   # csh drops empty (unset) arguments

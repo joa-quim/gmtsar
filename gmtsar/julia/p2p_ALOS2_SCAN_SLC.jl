@@ -17,6 +17,8 @@
 # Add options to do subswaths
 #
 
+include(joinpath(@__DIR__, "gmtsar_common.jl"))   # script-to-script calls
+
 using Printf
 
 # alias rm 'rm -f'
@@ -24,9 +26,9 @@ using Printf
 
 """grep PATTERN file | awk '{print \$3}'  -- first matching line's 3rd whitespace field"""
 function grep_field(file::AbstractString, pattern::AbstractString)
-    for line in eachline(file)
+    for line in readlines(file)
         if occursin(pattern, line)
-            return split(line)[3]
+            return get(split(line), 3, "")
         end
     end
     error("pattern not found: $pattern in $file")
@@ -34,9 +36,9 @@ end
 
 """grep PATTERN file | awk '{print \$3}'  -- first matching line's 3rd field, or "" if not found"""
 function grep_field_opt(file::AbstractString, pattern::AbstractString)
-    for line in eachline(file)
+    for line in readlines(file)
         if occursin(pattern, line)
-            return split(line)[3]
+            return get(split(line), 3, "")
         end
     end
     return ""
@@ -143,10 +145,10 @@ function main(argv::Vector{String})
     aligned_led = substr(argv[2], 8, length(argv[2]) - 7)
 
     local ref, rep
-    if parse(Int, switch_master) == 0
+    if switch_master == "0"
         ref = master
         rep = aligned
-    elseif parse(Int, switch_master) == 1
+    elseif switch_master == "1"
         ref = aligned
         rep = master
     else
@@ -166,7 +168,7 @@ function main(argv::Vector{String})
     # 1 - start from preprocess #
     #############################
 
-    if parse(Int, stage) == 1
+    if stage == "1"
         #
         # first clean up
         #
@@ -224,7 +226,7 @@ function main(argv::Vector{String})
         # clean up
         #
         cd(subswath)
-        run(`cleanup.csh SLC`)
+        run(`$GMTSAR_JULIA $(gmtsar_script("cleanup")) SLC`)
         #
         # align SLC images
         #
@@ -241,7 +243,7 @@ function main(argv::Vector{String})
         # if images do not match, convert the FBD image to FBS
         rng_samp_rate_m = grep_field_int("IMG-$master-$subswath.PRM", "rng_samp_rate")
         rng_samp_rate_s = grep_field_int("IMG-$aligned-$subswath.PRM", "rng_samp_rate")
-        t = @sprintf("%1.1f", rng_samp_rate_m / rng_samp_rate_s)
+        t = strip(@sprintf("%1.1f", rng_samp_rate_m / rng_samp_rate_s))
         if t == "1.0"
             println("The range sampling rate for master and aligned images are: $rng_samp_rate_m")
         elseif t == "2.0"
@@ -274,13 +276,13 @@ function main(argv::Vector{String})
         run(`xcorr IMG-$master-$subswath.PRM IMG-$aligned-$subswath.PRM -xsearch 32 -ysearch 256 -nx 32 -ny 128`)
 
         open("tmp.dat", "w") do io
-            for line in eachline("freq_xcorr.dat")
+            for line in readlines("freq_xcorr.dat")
                 w = split(line)
                 println(io, w[4])
             end
         end
         tmp_vals = Float64[]
-        for line in eachline("tmp.dat")
+        for line in readlines("tmp.dat")
             push!(tmp_vals, parse(Float64, strip(line)))
         end
         sorted_vals = sort(tmp_vals)
@@ -289,7 +291,7 @@ function main(argv::Vector{String})
         amax = amedian + 3
         amin = amedian - 3
         open("tmp2.dat", "w") do io
-            for line in eachline("freq_xcorr.dat")
+            for line in readlines("freq_xcorr.dat")
                 w = split(line)
                 v4 = parse(Float64, w[4])
                 if v4 > amin && v4 < amax
@@ -299,7 +301,7 @@ function main(argv::Vector{String})
         end
 
         open("IMG-$aligned-$subswath.PRM", "a") do io
-            run(pipeline(`fitoffset.csh 2 3 tmp2.dat 10`, stdout=io))
+            run(pipeline(`$GMTSAR_JULIA $(gmtsar_script("fitoffset")) 2 3 tmp2.dat 10`, stdout=io))
         end
         run(`resamp IMG-$master-$subswath.PRM IMG-$aligned-$subswath.PRM IMG-$aligned-$subswath.PRMresamp IMG-$aligned-$subswath.SLCresamp 4`)
         rm("IMG-$aligned-$subswath.SLC"; force=true)
@@ -319,11 +321,11 @@ function main(argv::Vector{String})
         # clean up
         #
         cd(subswath)
-        run(`cleanup.csh topo`)
+        run(`$GMTSAR_JULIA $(gmtsar_script("cleanup")) topo`)
         #
         # make topo_ra if there is dem.grd
         #
-        if parse(Int, topo_phase) == 1
+        if topo_phase == "1"
             println(" ")
             println("DEM2TOPO_RA.CSH - START")
             println("USER SHOULD PROVIDE DEM FILE")
@@ -333,7 +335,7 @@ function main(argv::Vector{String})
 
             if isfile("../../topo/dem.grd")
                 symlink("../../topo/dem.grd", "dem.grd")
-                run(`dem2topo_ra.csh master.PRM dem.grd`)
+                run(`$GMTSAR_JULIA $(gmtsar_script("dem2topo_ra")) master.PRM dem.grd`)
             else
                 println("no DEM file found:  dem.grd")
                 exit(1)
@@ -343,25 +345,25 @@ function main(argv::Vector{String})
             #
             # shift topo_ra
             #
-            if parse(Int, shift_topo) == 1
+            if shift_topo == "1"
                 println(" ")
                 println("OFFSET_TOPO - START")
                 cd("SLC")
-                run(`slc2amp.csh IMG-$master-$subswath.PRM 2 amp-$master.grd`)
+                run(`$GMTSAR_JULIA $(gmtsar_script("slc2amp")) IMG-$master-$subswath.PRM 2 amp-$master.grd`)
                 cd("..")
                 cd("topo")
                 symlink("../SLC/amp-$master.grd", "amp-$master.grd")
                 run(`offset_topo amp-$master.grd topo_ra.grd 0 0 7 topo_shift.grd`)
                 cd("..")
                 println("OFFSET_TOPO - END")
-            elseif parse(Int, shift_topo) == 0
+            elseif shift_topo == "0"
                 println("NO TOPO_RA SHIFT ")
             else
                 println("Wrong paramter: shift_topo $shift_topo")
                 exit(1)
             end
 
-        elseif parse(Int, topo_phase) == 0
+        elseif topo_phase == "0"
             println("NO TOPO_RA IS SUBSTRACTED")
         else
             println("Wrong paramter: topo_phase $topo_phase")
@@ -379,7 +381,7 @@ function main(argv::Vector{String})
         # clean up
         #
         cd(subswath)
-        run(`cleanup.csh intf`)
+        run(`$GMTSAR_JULIA $(gmtsar_script("cleanup")) intf`)
         #
         # make and filter interferograms
         #
@@ -396,19 +398,19 @@ function main(argv::Vector{String})
         symlink("../../SLC/IMG-$rep-$subswath.SLC", "IMG-$rep-$subswath.SLC")
         cp("../../SLC/IMG-$ref-$subswath.PRM", "IMG-$ref-$subswath.PRM"; force=true)
         cp("../../SLC/IMG-$rep-$subswath.PRM", "IMG-$rep-$subswath.PRM"; force=true)
-        if parse(Int, topo_phase) == 1
-            if parse(Int, shift_topo) == 1
+        if topo_phase == "1"
+            if shift_topo == "1"
                 symlink("../../topo/topo_shift.grd", "topo_shift.grd")
-                run(`intf.csh IMG-$ref-$subswath.PRM IMG-$rep-$subswath.PRM -topo topo_shift.grd`)
-                run(`filter.csh IMG-$ref-$subswath.PRM IMG-$rep-$subswath.PRM $filter $dec`)
+                run(`$GMTSAR_JULIA $(gmtsar_script("intf")) IMG-$ref-$subswath.PRM IMG-$rep-$subswath.PRM -topo topo_shift.grd`)
+                run(`$GMTSAR_JULIA $(gmtsar_script("filter")) IMG-$ref-$subswath.PRM IMG-$rep-$subswath.PRM $filter $dec`)
             else
                 symlink("../../topo/topo_ra.grd", "topo_ra.grd")
-                run(`intf.csh IMG-$ref-$subswath.PRM IMG-$rep-$subswath.PRM -topo topo_ra.grd`)
-                run(`filter.csh IMG-$ref-$subswath.PRM IMG-$rep-$subswath.PRM $filter $dec`)
+                run(`$GMTSAR_JULIA $(gmtsar_script("intf")) IMG-$ref-$subswath.PRM IMG-$rep-$subswath.PRM -topo topo_ra.grd`)
+                run(`$GMTSAR_JULIA $(gmtsar_script("filter")) IMG-$ref-$subswath.PRM IMG-$rep-$subswath.PRM $filter $dec`)
             end
         else
-            run(`intf.csh IMG-$ref-$subswath.PRM IMG-$rep-$subswath.PRM`)
-            run(`filter.csh IMG-$ref-$subswath.PRM IMG-$rep-$subswath.PRM $filter $dec`)
+            run(`$GMTSAR_JULIA $(gmtsar_script("intf")) IMG-$ref-$subswath.PRM IMG-$rep-$subswath.PRM`)
+            run(`$GMTSAR_JULIA $(gmtsar_script("filter")) IMG-$ref-$subswath.PRM IMG-$rep-$subswath.PRM $filter $dec`)
         end
         cd("../..")
         println("INTF.CSH, FILTER.CSH - END")
@@ -435,10 +437,10 @@ function main(argv::Vector{String})
             #
             # landmask
             #
-            if parse(Int, mask_water) == 1 || parse(Int, switch_land) == 1
+            if mask_water == "1" || switch_land == "1"
                 cd("../../topo")
                 if !isfile("landmask_ra.grd")
-                    run(`landmask.csh $region_cut`)
+                    run(`$GMTSAR_JULIA $(gmtsar_script("landmask")) $region_cut`)
                 end
                 cd("../intf")
                 cd("$(ref_id)_$(rep_id)")
@@ -449,10 +451,10 @@ function main(argv::Vector{String})
             println("SNAPHU.CSH - START")
             println("threshold_snaphu: $threshold_snaphu")
 
-            if parse(Int, near_interp) == 1
-                run(`snaphu_interp.csh $threshold_snaphu $defomax $region_cut`)
+            if near_interp == "1"
+                run(`$GMTSAR_JULIA $(gmtsar_script("snaphu_interp")) $threshold_snaphu $defomax $region_cut`)
             else
-                run(`snaphu.csh $threshold_snaphu $defomax $region_cut`)
+                run(`$GMTSAR_JULIA $(gmtsar_script("snaphu")) $threshold_snaphu $defomax $region_cut`)
             end
 
             println("SNAPHU.CSH - END")
@@ -477,11 +479,11 @@ function main(argv::Vector{String})
         println("GEOCODE.CSH - START")
         rm("raln.grd"; force=true)
         rm("ralt.grd"; force=true)
-        if parse(Int, topo_phase) == 1
+        if topo_phase == "1"
             rm("trans.dat"; force=true)
             symlink("../../topo/trans.dat", "trans.dat")
             println("threshold_geocode: $threshold_geocode")
-            run(`geocode.csh $threshold_geocode`)
+            run(`$GMTSAR_JULIA $(gmtsar_script("geocode")) $threshold_geocode`)
         else
             println("topo_ra is needed to geocode")
             exit(1)
@@ -493,4 +495,4 @@ function main(argv::Vector{String})
     # end
 end
 
-main(ARGS)
+main(filter(!isempty, ARGS))   # csh drops empty (unset) arguments

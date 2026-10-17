@@ -47,7 +47,7 @@ gmt("gmtset GMT_CUSTOM_LIBS $GMTSAR_DLL")
 """grep KEY file | awk '{print \$3}'  (config file: `key = value` or `key value`)"""
 function cfg_get(file::AbstractString, key::AbstractString)
     isfile(file) || error("no configure file: $file")
-    for line in eachline(file)
+    for line in readlines(file)
         w = split(line)
         if !isempty(w) && w[1] == key
             return length(w) >= 3 ? w[3] : ""
@@ -61,7 +61,7 @@ cfg_str(file, key, default::AbstractString="") = (v = cfg_get(file, key); isempt
 
 """grep KEY prm_file | awk '{print \$3}'  (PRM file: `key = value` lines)"""
 function prm_get(file::AbstractString, key::AbstractString)
-    for line in eachline(file)
+    for line in readlines(file)
         w = split(line)
         if !isempty(w) && w[1] == key
             return w[3]
@@ -138,7 +138,7 @@ function dem2topo_ra(prm::AbstractString, dem::AbstractString; mode::Int=0, tens
     xyz = gmt("grd2xyz --FORMAT_FLOAT_OUT=%lf $dem -s")
     precise = (SC == 10 || SC == 11) ? 1 : 0
     gmt("write trans.dat", xyz)  # SAT_llt2rat has THIS_MODULE_KEYS="" (PRM/stdin-stdout tool) -- run via stdin/stdout redirection below
-    run(pipeline(`cmd /c type trans.dat`, `gmt SAT_llt2rat -A$prm -P$precise -S -bod`, stdout="trans.dat.tmp"))
+    run(pipeline(pipeline(`cmd /c type trans.dat`, `gmt SAT_llt2rat -A$prm -P$precise -S -bod`), stdout="trans.dat.tmp"))
     mv("trans.dat.tmp", "trans.dat"; force=true)
 
     # use an azimuth spacing of 2 for low PRF data such as S1 TOPS

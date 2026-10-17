@@ -105,9 +105,9 @@ function main(argv::Vector{String})
         end
         run(`gmt grdgradient $name.grd -Nt.9 -A0. -G$name.grad.grd`)
         tmp = split(strip(read(`gmt grdinfo -C -L2 $name.grd`, String)))
-        limitU = @sprintf("%5.1f", parse(Float64, tmp[7]))
-        limitL = @sprintf("%5.1f", parse(Float64, tmp[6]))
-        std = @sprintf("%5.1f", parse(Float64, tmp[13]))
+        limitU = strip(@sprintf("%5.1f", parse(Float64, tmp[7])))
+        limitL = strip(@sprintf("%5.1f", parse(Float64, tmp[6])))
+        std = strip(@sprintf("%5.1f", parse(Float64, tmp[13])))
         run(pipeline(`gmt makecpt -Cseis -I -Z -T$limitL/$limitU/0.1 -D`, stdout="$name.cpt"))
         boundinfo = split(strip(read(`gmt grdinfo $name.grd -C`, String)))
         boundR = @sprintf("%.6g", (parse(Float64, boundinfo[3]) - parse(Float64, boundinfo[2])) / 4)
@@ -123,4 +123,4 @@ function main(argv::Vector{String})
     end
 end
 
-main(ARGS)
+main(filter(!isempty, ARGS))   # csh drops empty (unset) arguments

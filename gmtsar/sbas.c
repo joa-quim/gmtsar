@@ -152,7 +152,7 @@ int gmtsar_sbas_run(void *API, int argc, char **argv) {
 	int64_t *atm_rank, n_atm = 0, kk;
 	float *sfs;
 	size_t mm_size;
-	int ftmp_phi = 0, fphi = 0, fvar = 0;
+	int ftmp_phi = -1, fphi = -1, fvar = -1;	/* opened only with -mmap; -1 = not open */
 
 	if (argc < 7)
 		die("\n", (char *)sbas_usage);
@@ -446,9 +446,11 @@ int gmtsar_sbas_run(void *API, int argc, char **argv) {
 
 	fclose(infile);
 	fclose(datefile);
-	close(fphi);
-	close(fvar);
-	close(ftmp_phi);
+	/* Only the files -mmap opened: closing descriptor 0 (stdin) three times, as this did without
+	 * -mmap, makes the MSVC runtime abort the program (invalid parameter, 0xC0000409). */
+	if (fphi >= 0) close(fphi);
+	if (fvar >= 0) close(fvar);
+	if (ftmp_phi >= 0) close(ftmp_phi);
 
 	return (EXIT_SUCCESS);
 }

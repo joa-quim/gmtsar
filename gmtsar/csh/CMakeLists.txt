@@ -1,4 +1,6 @@
-configure_file (gmtsar_sharedir.csh.in gmtsar_sharedir.csh)
+# gmtsar_sharedir.csh.in holds the autoconf @prefix@ placeholder
+set(prefix "${CMAKE_INSTALL_PREFIX}")
+configure_file(gmtsar_sharedir.csh.in gmtsar_sharedir.csh @ONLY)
 
 install (PROGRAMS align.csh align_ALOS2_SCAN.csh align_ALOS_SLC.csh align_batch.csh align_batch_ALOS2_SCAN.csh
 	align_batch_ALOS_SLC.csh align_tops.csh align_tops_esd.csh baseline_table.csh

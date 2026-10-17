@@ -7,15 +7,17 @@
 # alias rm 'rm -f'
 # unset noclobber
 #
+include(joinpath(@__DIR__, "gmtsar_common.jl"))   # script-to-script calls
+
 using Printf
 
 """grep PATTERN *.SUFFIX | awk '{print(\$3)}' | head -1  -- first matching line (sorted glob), 3rd field"""
 function grep_field_glob(pattern::AbstractString, suffix::AbstractString)
     files = sort(filter(f -> endswith(f, suffix), readdir(".")))
     for f in files
-        for line in eachline(f)
+        for line in readlines(f)
             if occursin(pattern, line)
-                return split(line)[3]
+                return get(split(line), 3, "")
             end
         end
     end
@@ -106,8 +108,8 @@ function main(argv::Vector{String})
         run(`gmt grdmath unwrap_mask.grd $wavel MUL -79.58 MUL = los.grd`)
         run(`gmt grdgradient los.grd -Nt.9 -A0. -Glos_grad.grd`)
         tmp_fields = split(strip(read(`gmt grdinfo -C -L2 los.grd`, String)))
-        limitU = @sprintf("%5.1f", parse(Float64, tmp_fields[12]) + parse(Float64, tmp_fields[13]) * 2)
-        limitL = @sprintf("%5.1f", parse(Float64, tmp_fields[12]) - parse(Float64, tmp_fields[13]) * 2)
+        limitU = strip(@sprintf("%5.1f", parse(Float64, tmp_fields[12]) + parse(Float64, tmp_fields[13]) * 2))
+        limitL = strip(@sprintf("%5.1f", parse(Float64, tmp_fields[12]) - parse(Float64, tmp_fields[13]) * 2))
         run(pipeline(`gmt makecpt -Cpolar -Z -T$limitL/$limitU/1 -D`, stdout="los.cpt"))
         run(pipeline(`gmt grdimage los.grd -Ilos_grad.grd -Clos.cpt -Bxaf+lRange -Byaf+lAzimuth -BWSen -JX6.5i -X1.3i -Y3i -P -K`, stdout="los.ps"))
         open("los.ps", "a") do io
@@ -123,45 +125,45 @@ function main(argv::Vector{String})
     println("geocode.csh")
     println("project correlation, phase, unwrapped and amplitude back to lon lat coordinates")
     maker = basename(PROGRAM_FILE)
-    today_words = split(strip(read(`date`, String)))
+    today_words = split(Libc.strftime("%a %b %d %H:%M:%S %Z %Y", time()))   # `date`, without the date program
     remarked = join(vcat(["by", get(ENV, "USER", ""), "on"], today_words, ["with", maker]), " ")
     println("remarked is $remarked")
 
     pwdt = basename(pwd())
 
-    run(`proj_ra2ll.csh trans.dat corr.grd corr_ll.grd`)
+    run(`$GMTSAR_JULIA $(gmtsar_script("proj_ra2ll")) trans.dat corr.grd corr_ll.grd`)
     darg = "-D//dimensionless/1///$pwdt geocoded correlation/$remarked"
     run(`gmt grdedit $darg corr_ll.grd`)
     #proj_ra2ll.csh trans.dat phase.grd       phase_ll.grd          ; gmt grdedit -D//"radians"/1///"$PWD:t wrapped phase"/"$remarked"                   phase_ll.grd
-    run(`proj_ra2ll.csh trans.dat phasefilt.grd phasefilt_ll.grd`)
+    run(`$GMTSAR_JULIA $(gmtsar_script("proj_ra2ll")) trans.dat phasefilt.grd phasefilt_ll.grd`)
     darg = "-D//radians/1///$pwdt wrapped phase after filtering/$remarked"
     run(`gmt grdedit $darg phasefilt_ll.grd`)
-    run(`proj_ra2ll.csh trans.dat phase_mask.grd phase_mask_ll.grd`)
+    run(`$GMTSAR_JULIA $(gmtsar_script("proj_ra2ll")) trans.dat phase_mask.grd phase_mask_ll.grd`)
     darg = "-D//radians/1///$pwdt wrapped phase after masking/$remarked"
     run(`gmt grdedit $darg phase_mask_ll.grd`)
-    run(`proj_ra2ll.csh trans.dat display_amp.grd display_amp_ll.grd`)
+    run(`$GMTSAR_JULIA $(gmtsar_script("proj_ra2ll")) trans.dat display_amp.grd display_amp_ll.grd`)
     darg = "-D//dimensionless/1///PWD:t amplitude/$remarked"
     run(`gmt grdedit $darg display_amp_ll.grd`)
     if isfile("xphase_mask.grd")
-        run(`proj_ra2ll.csh trans.dat xphase_mask.grd xphase_mask_ll.grd`)
+        run(`$GMTSAR_JULIA $(gmtsar_script("proj_ra2ll")) trans.dat xphase_mask.grd xphase_mask_ll.grd`)
         darg = "-D//radians/1///$pwdt xphase/$remarked"
         run(`gmt grdedit $darg xphase_mask_ll.grd`)
-        run(`proj_ra2ll.csh trans.dat yphase_mask.grd yphase_mask_ll.grd`)
+        run(`$GMTSAR_JULIA $(gmtsar_script("proj_ra2ll")) trans.dat yphase_mask.grd yphase_mask_ll.grd`)
         darg = "-D//radians/1///$pwdt yphase/$remarked"
         run(`gmt grdedit $darg yphase_mask_ll.grd`)
     end
     if isfile("unwrap_mask.grd")
-        run(`proj_ra2ll.csh trans.dat unwrap_mask.grd unwrap_mask_ll.grd`)
+        run(`$GMTSAR_JULIA $(gmtsar_script("proj_ra2ll")) trans.dat unwrap_mask.grd unwrap_mask_ll.grd`)
         darg = "-D//radians/1///PWD:t unwrapped, masked phase/$remarked"
         run(`gmt grdedit $darg unwrap_mask_ll.grd`)
     end
     if isfile("unwrap.grd")
-        run(`proj_ra2ll.csh trans.dat unwrap.grd unwrap_ll.grd`)
+        run(`$GMTSAR_JULIA $(gmtsar_script("proj_ra2ll")) trans.dat unwrap.grd unwrap_ll.grd`)
         darg = "-D//radians/1///PWD:t unwrapped phase/$remarked"
         run(`gmt grdedit $darg unwrap_ll.grd`)
     end
     if isfile("phasefilt_mask.grd")
-        run(`proj_ra2ll.csh trans.dat phasefilt_mask.grd phasefilt_mask_ll.grd`)
+        run(`$GMTSAR_JULIA $(gmtsar_script("proj_ra2ll")) trans.dat phasefilt_mask.grd phasefilt_mask_ll.grd`)
         darg = "-D//phase in radians/1///PWD:t wrapped phase masked filtered/$remarked"
         run(`gmt grdedit $darg phasefilt_mask_ll.grd`)
     end
@@ -170,19 +172,19 @@ function main(argv::Vector{String})
     #
     println("geocode.csh")
     println("make the KML files for Google Earth")
-    run(`grd2kml.csh display_amp_ll display_amp.cpt`)
-    run(`grd2kml.csh corr_ll corr.cpt`)
-    run(`grd2kml.csh phase_mask_ll phase.cpt`)
-    run(`grd2kml.csh phasefilt_mask_ll phase.cpt`)
+    run(`$GMTSAR_JULIA $(gmtsar_script("grd2kml")) display_amp_ll display_amp.cpt`)
+    run(`$GMTSAR_JULIA $(gmtsar_script("grd2kml")) corr_ll corr.cpt`)
+    run(`$GMTSAR_JULIA $(gmtsar_script("grd2kml")) phase_mask_ll phase.cpt`)
+    run(`$GMTSAR_JULIA $(gmtsar_script("grd2kml")) phasefilt_mask_ll phase.cpt`)
     if isfile("xphase_mask_ll.grd")
-        run(`grd2kml.csh xphase_mask_ll xphase.cpt`)
-        run(`grd2kml.csh yphase_mask_ll yphase.cpt`)
+        run(`$GMTSAR_JULIA $(gmtsar_script("grd2kml")) xphase_mask_ll xphase.cpt`)
+        run(`$GMTSAR_JULIA $(gmtsar_script("grd2kml")) yphase_mask_ll yphase.cpt`)
     end
     if isfile("unwrap_mask_ll.grd")
-        run(`grd2kml.csh unwrap_mask_ll unwrap.cpt`)
+        run(`$GMTSAR_JULIA $(gmtsar_script("grd2kml")) unwrap_mask_ll unwrap.cpt`)
     end
     if isfile("phasefilt_mask_ll.grd")
-        run(`grd2kml.csh phasefilt_mask_ll phase.cpt`)
+        run(`$GMTSAR_JULIA $(gmtsar_script("grd2kml")) phasefilt_mask_ll phase.cpt`)
     end
     if isfile("unwrap_mask_ll.grd")
         # constant is negative to make LOS = -1 * range change
@@ -190,8 +192,8 @@ function main(argv::Vector{String})
         run(`gmt grdmath unwrap_mask_ll.grd $wavel MUL -79.58 MUL = los_ll.grd`)
         darg = "-D//mm/1///$pwdt LOS displacement/equals negative range"
         run(`gmt grdedit $darg los_ll.grd`)
-        run(`grd2kml.csh los_ll los.cpt`)
+        run(`$GMTSAR_JULIA $(gmtsar_script("grd2kml")) los_ll los.cpt`)
     end
 end
 
-main(ARGS)
+main(filter(!isempty, ARGS))   # csh drops empty (unset) arguments

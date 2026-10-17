@@ -12,13 +12,15 @@
 #
 #
 # alias rm 'rm -f'
+include(joinpath(@__DIR__, "gmtsar_common.jl"))   # script-to-script calls
+
 using Printf
 
 """grep PATTERN file | awk '{print \$3}'  -- first matching line's 3rd whitespace field, "" if none"""
 function grep_field(file::AbstractString, pattern::AbstractString)
-    for line in eachline(file)
+    for line in readlines(file)
         if occursin(pattern, line)
-            return split(line)[3]
+            return get(split(line), 3, "")
         end
     end
     return ""
@@ -28,9 +30,9 @@ end
 function grep_field_glob_int(pattern::AbstractString, suffix::AbstractString)
     files = sort(filter(f -> endswith(f, suffix), readdir(".")))
     for f in files
-        for line in eachline(f)
+        for line in readlines(f)
             if occursin(pattern, line)
-                return trunc(Int, parse(Float64, split(line)[3]))
+                return trunc(Int, parse(Float64, get(split(line), 3, "")))
             end
         end
     end
@@ -72,7 +74,7 @@ function main(argv::Vector{String})
     #
     # define filter and decimation variables
     #
-    sharedir = strip(read(`gmtsar_sharedir.csh`, String))
+    sharedir = strip(read(`$GMTSAR_JULIA $(gmtsar_script("gmtsar_sharedir"))`, String))
     filter3 = "$sharedir/filters/fill.3x3"
     filter4 = "$sharedir/filters/xdir"
     filter5 = "$sharedir/filters/ydir"
@@ -144,12 +146,12 @@ function main(argv::Vector{String})
             rm(f; force=true, recursive=true)
         end
     end
-    run(pipeline(`make_gaussian_filter $(argv[1]) $dec_rng $az_lks $(argv[3])`, stdout="ijdec"))
+    run(pipeline(`gmt make_gaussian_filter -A$(argv[1]) -X$dec_rng -Y$az_lks -W$(argv[3])`, stdout="ijdec"))
     filter2 = "gauss_$(argv[3])"
     decval = parse(Float64, dec)
     idec_words = String[]
     jdec_words = String[]
-    for line in eachline("ijdec")
+    for line in readlines("ijdec")
         w = split(line)
         push!(idec_words, awk_num(decval * parse(Float64, w[1])))
         push!(jdec_words, awk_num(decval * parse(Float64, w[2])))
@@ -166,35 +168,35 @@ function main(argv::Vector{String})
     # filter the two amplitude images
     #
     println("making amplitudes...")
-    run(`conv $az_lks $dec_rng $filter1 $(argv[1]) amp1_tmp.grd=bf`)
-    run(`conv $idec $jdec $filter2 amp1_tmp.grd=bf amp1.grd`)
+    run(`gmt conv -X$az_lks -Y$dec_rng -C$filter1 -I$(argv[1]) -Gamp1_tmp.grd=bf`)
+    run(`gmt conv -X$idec -Y$jdec -C$filter2 -Iamp1_tmp.grd=bf -Gamp1.grd`)
     rm("amp1_tmp.grd"; force=true)
-    run(`conv $az_lks $dec_rng $filter1 $(argv[2]) amp2_tmp.grd=bf`)
-    run(`conv $idec $jdec $filter2 amp2_tmp.grd=bf amp2.grd`)
+    run(`gmt conv -X$az_lks -Y$dec_rng -C$filter1 -I$(argv[2]) -Gamp2_tmp.grd=bf`)
+    run(`gmt conv -X$idec -Y$jdec -C$filter2 -Iamp2_tmp.grd=bf -Gamp2.grd`)
     rm("amp2_tmp.grd"; force=true)
     #
     # filter the real and imaginary parts of the interferogram
     #
     println("filtering interferogram...")
-    run(`conv $az_lks $dec_rng $filter1 real.grd=bf real_tmp.grd=bf`)
-    run(`conv $idec $jdec $filter2 real_tmp.grd=bf realfilt.grd`)
-    run(`conv $az_lks $dec_rng $filter1 imag.grd=bf imag_tmp.grd=bf`)
-    run(`conv $idec $jdec $filter2 imag_tmp.grd=bf imagfilt.grd`)
+    run(`gmt conv -X$az_lks -Y$dec_rng -C$filter1 -Ireal.grd=bf -Greal_tmp.grd=bf`)
+    run(`gmt conv -X$idec -Y$jdec -C$filter2 -Ireal_tmp.grd=bf -Grealfilt.grd`)
+    run(`gmt conv -X$az_lks -Y$dec_rng -C$filter1 -Iimag.grd=bf -Gimag_tmp.grd=bf`)
+    run(`gmt conv -X$idec -Y$jdec -C$filter2 -Iimag_tmp.grd=bf -Gimagfilt.grd`)
     #
     # also compute gradients and filter them the same way
     #
     if compute_phase_gradient != 0
         println("filtering for phase gradient . . ")
-        run(`conv 1 1 $filter4 real_tmp.grd xt.grd=bf`)
-        run(`conv 1 1 $filter5 real_tmp.grd yt.grd=bf`)
-        run(`conv $idec $jdec $filter2 xt.grd=bf xreal.grd`)
-        run(`conv $idec $jdec $filter2 yt.grd=bf yreal.grd`)
+        run(`gmt conv -X1 -Y1 -C$filter4 -Ireal_tmp.grd -Gxt.grd=bf`)
+        run(`gmt conv -X1 -Y1 -C$filter5 -Ireal_tmp.grd -Gyt.grd=bf`)
+        run(`gmt conv -X$idec -Y$jdec -C$filter2 -Ixt.grd=bf -Gxreal.grd`)
+        run(`gmt conv -X$idec -Y$jdec -C$filter2 -Iyt.grd=bf -Gyreal.grd`)
         rm("xt.grd"; force=true)
         rm("yt.grd"; force=true)
-        run(`conv 1 1 $filter4 imag_tmp.grd xt.grd=bf`)
-        run(`conv 1 1 $filter5 imag_tmp.grd yt.grd=bf`)
-        run(`conv $idec $jdec $filter2 xt.grd=bf ximag.grd`)
-        run(`conv $idec $jdec $filter2 yt.grd=bf yimag.grd`)
+        run(`gmt conv -X1 -Y1 -C$filter4 -Iimag_tmp.grd -Gxt.grd=bf`)
+        run(`gmt conv -X1 -Y1 -C$filter5 -Iimag_tmp.grd -Gyt.grd=bf`)
+        run(`gmt conv -X$idec -Y$jdec -C$filter2 -Ixt.grd=bf -Gximag.grd`)
+        run(`gmt conv -X$idec -Y$jdec -C$filter2 -Iyt.grd=bf -Gyimag.grd`)
         rm("xt.grd"; force=true)
         rm("yt.grd"; force=true)
     end
@@ -212,7 +214,7 @@ function main(argv::Vector{String})
     AMAX = ""
     for line in split(grdinfo_out, '\n')
         if occursin("stdev", line)
-            AMAX = awk_num(3 * parse(Float64, split(line)[5]))
+            AMAX = awk_num(3 * parse(Float64, get(split(line), 5, "")))
             break
         end
     end
@@ -233,7 +235,7 @@ function main(argv::Vector{String})
     run(`gmt grdmath amp1.grd amp2.grd MUL = tmp.grd`)
     run(`gmt grdmath tmp.grd $thresh GE 0 NAN = mask.grd`)
     run(`gmt grdmath amp.grd tmp.grd SQRT DIV mask.grd MUL FLIPUD = tmp2.grd=bf`)
-    run(`conv 1 1 $filter3 tmp2.grd=bf corr.grd`)
+    run(`gmt conv -X1 -Y1 -C$filter3 -Itmp2.grd=bf -Gcorr.grd`)
     run(pipeline(`gmt makecpt -T0./.8/0.1 -Cgray -Z -N`, stdout="corr.cpt"))
     open("corr.cpt", "a") do io
         println(io, "N  255   255   254")
@@ -268,7 +270,7 @@ function main(argv::Vector{String})
     #  make the Werner/Goldstein filtered phase
     #
     println("filtering phase...")
-    run(`phasefilt -imag imagfilt.grd -real realfilt.grd -amp1 amp1.grd -amp2 amp2.grd -psize 32`)
+    run(`gmt phasefilt -Bimagfilt.grd -Arealfilt.grd -Camp1.grd -Eamp2.grd -N32 -Gfiltphase.grd`)
     grdinfo_arg = strip(read(`gmt grdinfo mask.grd -I- --FORMAT_FLOAT_OUT=%.12lg`, String))
     run(`gmt grdedit filtphase.grd $grdinfo_arg`)
     run(`gmt grdmath filtphase.grd mask.grd MUL FLIPUD = phasefilt.grd`)
@@ -304,4 +306,4 @@ function main(argv::Vector{String})
     rm("yreal.grd"; force=true)
 end
 
-main(ARGS)
+main(filter(!isempty, ARGS))   # csh drops empty (unset) arguments

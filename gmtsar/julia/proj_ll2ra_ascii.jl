@@ -59,7 +59,7 @@ function main(argv::Vector{String})
     # get the range, azimuth, phase columns and grid
     #
     open(argv[3], "w") do io
-        for line in eachline("llpra")
+        for line in readlines("llpra")
             w = split(line)
             println(io, "$(w[4]) $(w[5]) $(w[3])")
         end
@@ -76,4 +76,4 @@ function main(argv::Vector{String})
     end
 end
 
-main(ARGS)
+main(filter(!isempty, ARGS))   # csh drops empty (unset) arguments

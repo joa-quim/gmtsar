@@ -2,8 +2,11 @@
 # (on request) publish the GMTSAR GMT plugin that InteractiveGMT installs from
 # Geophysics > GMTSAR > Install as plugin.
 #
-# gmtsar.yml (upstream's Autotools build plus the S1A processing test) is separate and unchanged.
-# The Windows dependencies come from conda-forge; cmake/ConfigUser.cmake is not used in CI.
+# gmtsar.yml (the S1A processing test) is separate.
+# GMT must be 6.6 or newer everywhere: the Windows and Linux dependencies come from conda-forge
+# (gmt>=6.6; Ubuntu's own gmt package is older), macOS's from Homebrew (checked by
+# .github/scripts/check_gmt_version.sh), the plugins' from GMT_jll (checked in jll_cache.jl).
+# cmake/ConfigUser.cmake is not used in CI.
 
 name: Build
 
@@ -37,7 +40,7 @@ jobs:
           init-shell: powershell
           cache-environment: true
           create-args: >-
-            gmt
+            gmt>=6.6
             libgdal
             libtiff
             hdf5
@@ -180,23 +183,44 @@ jobs:
     name: Linux (GCC, Ubuntu 24.04)
     runs-on: ubuntu-24.04
 
+    defaults:
+      run:
+        shell: bash -el {0}
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            cmake ninja-build \
-            gmt libgmt-dev libgdal-dev libnetcdf-dev libtiff-dev liblapack-dev libhdf5-dev
+      # GMT >= 6.6 from conda-forge: Ubuntu's own gmt package is older.
+      - name: Install dependencies (conda-forge)
+        uses: mamba-org/setup-micromamba@v2
+        with:
+          environment-name: gmtsardeps
+          init-shell: bash
+          cache-environment: true
+          create-args: >-
+            gmt>=6.6
+            libgdal
+            libtiff
+            hdf5
+            openblas
+            cmake
+            ninja
 
-      # Debian's HDF5 lives in its serial/ subdirectories, which CMake is not told about otherwise.
       - name: Configure
         run: |
+          bash .github/scripts/check_gmt_version.sh
+          P="$CONDA_PREFIX"
           cmake -S . -B build-ci -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
-            -DHDF5_INCLUDE_DIR=/usr/include/hdf5/serial \
-            -DHDF5_LIBRARY=/usr/lib/x86_64-linux-gnu/hdf5/serial/libhdf5.so
+            -DCMAKE_PREFIX_PATH="$P" \
+            -DGMT_INCLUDE_DIR="$P/include/gmt" \
+            -DGMT_LIBRARY="$P/lib/libgmt.so" \
+            -DGDAL_INCLUDE_DIR="$P/include" \
+            -DTIFF_INCLUDE_DIR="$P/include" \
+            -DTIFF_LIBRARY="$P/lib/libtiff.so" \
+            -DLAPACK_LIBRARIES="$P/lib/libopenblas.so" \
+            -DHDF5_INCLUDE_DIR="$P/include" \
+            -DHDF5_LIBRARY="$P/lib/libhdf5.so"
 
       - name: Build
         run: cmake --build build-ci --parallel -- -k 0
@@ -205,7 +229,8 @@ jobs:
         run: ctest --test-dir build-ci --output-on-failure
 
       # The binaries have /usr/local compiled in, so the package holds a /usr/local tree. A
-      # tarball keeps the executable bits that the artifact zip would drop.
+      # tarball keeps the executable bits that the artifact zip would drop. The binaries need a
+      # GMT 6.6 or newer (libgmt.so.6) and its libraries on the library path where they are used.
       - name: Package
         run: |
           DESTDIR="$PWD/stage" cmake --install build-ci
@@ -234,6 +259,7 @@ jobs:
       # LAPACK comes from Apple's Accelerate framework (FindLAPACK).
       - name: Configure
         run: |
+          bash .github/scripts/check_gmt_version.sh
           cmake -S . -B build-ci -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_PREFIX_PATH="$(brew --prefix)" \

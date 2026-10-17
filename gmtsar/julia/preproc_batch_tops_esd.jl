@@ -10,13 +10,15 @@
 
 # Xiaohua(Eric) Xu, Jan 19 2016
 #
+include(joinpath(@__DIR__, "gmtsar_common.jl"))   # script-to-script calls
+
 using Printf
 
 """grep PATTERN file | awk '{print \$3}'  -- first matching line's 3rd whitespace field"""
 function grep_field(file::AbstractString, pattern::AbstractString)
-    for line in eachline(file)
+    for line in readlines(file)
         if occursin(pattern, line)
-            return split(line)[3]
+            return get(split(line), 3, "")
         end
     end
     error("pattern not found: $pattern in $file")
@@ -24,9 +26,9 @@ end
 
 """grep PATTERN file | grep -v EXCLUDE | awk '{print \$3}'  -- first matching (excluding) line's 3rd field"""
 function grep_field_exclude(file::AbstractString, pattern::AbstractString, exclude::AbstractString)
-    for line in eachline(file)
+    for line in readlines(file)
         if occursin(pattern, line) && !occursin(exclude, line)
-            return split(line)[3]
+            return get(split(line), 3, "")
         end
     end
     error("pattern not found: $pattern (excluding $exclude) in $file")
@@ -37,7 +39,7 @@ function grep_field_cmd(cmd::Cmd, pattern::AbstractString)
     out = read(cmd, String)
     for line in split(out, '\n')
         if occursin(pattern, line)
-            return split(line)[3]
+            return get(split(line), 3, "")
         end
     end
     error("pattern not found: $pattern in output of $cmd")
@@ -143,7 +145,7 @@ function main(argv::Vector{String})
     rm_glob(f -> occursin(".PRM", f) || endswith(f, ".SLC") || endswith(f, ".LED") || occursin("tmp", f))
     isfile("baseline_table.dat") && rm("baseline_table.dat"; force=true)
     isfile("masterlist") && rm("masterlist"; force=true)
-    sharedir = strip(read(`gmtsar_sharedir.csh`, String))
+    sharedir = strip(read(`$GMTSAR_JULIA $(gmtsar_script("gmtsar_sharedir"))`, String))
 
     # loop over all the acquisitions
     for line in readlines(argv[1])
@@ -306,7 +308,7 @@ function main(argv::Vector{String})
                     rmax = parse(Float64, grep_field("$stem.PRM", "num_rng_bins"))
                     amax = parse(Float64, grep_field("$stem.PRM", "num_lines"))
                     open("offset.dat", "w") do io
-                        for line2 in eachline("tmp.dat")
+                        for line2 in readlines("tmp.dat")
                             w = split(line2)
                             v1 = parse(Float64, w[1]); v3 = parse(Float64, w[3])
                             if v1 > 0 && v1 < rmax && v3 > 0 && v3 < amax
@@ -317,7 +319,7 @@ function main(argv::Vector{String})
 
                     # prepare the offset parameters for the stitched image
                     open("par_tmp.dat", "a") do io
-                        for line2 in eachline("offset.dat")
+                        for line2 in readlines("offset.dat")
                             w = split(line2)
                             v1 = parse(Float64, w[1]); v2 = parse(Float64, w[2]); v3 = parse(Float64, w[3])
                             v4 = parse(Float64, w[4]); v5 = parse(Float64, w[5])
@@ -331,13 +333,13 @@ function main(argv::Vector{String})
 
                     # prepare the rshift and ashift look up table to be used by make_s1a_tops
                     open("r.xyz", "w") do io
-                        for line2 in eachline("offset.dat")
+                        for line2 in readlines("offset.dat")
                             w = split(line2)
                             @printf(io, "%.6f %.6f %.6f \n", parse(Float64, w[1]), parse(Float64, w[3]), parse(Float64, w[2]))
                         end
                     end
                     open("a.xyz", "w") do io
-                        for line2 in eachline("offset.dat")
+                        for line2 in readlines("offset.dat")
                             w = split(line2)
                             @printf(io, "%.6f %.6f %.6f \n", parse(Float64, w[1]), parse(Float64, w[3]), parse(Float64, w[4]))
                         end
@@ -362,7 +364,7 @@ function main(argv::Vector{String})
 
                     spec_sep = parse(Float64, grep_field("tmp", "spectral_spectrationXdta"))
                     open("tmp2", "w") do io
-                        for line2 in eachline("ddphase")
+                        for line2 in readlines("ddphase")
                             w = split(line2)
                             println(io, w[3])
                         end
@@ -372,7 +374,7 @@ function main(argv::Vector{String})
                         res_shift = median_awk("tmp2") / 2.0 / 3.141592653 / spec_sep
                         println("Updating azimuth shift with mapping the residual da ...(mapping $res_shift)")
                         open("test", "w") do io
-                            for line2 in eachline("ddphase")
+                            for line2 in readlines("ddphase")
                                 w = split(line2)
                                 println(io, "$(w[1]) $(w[2]) $(w[3])")
                             end
@@ -413,7 +415,7 @@ function main(argv::Vector{String})
 
                     # need to update shift parameter so stitch_tops will know how to stitch
                     open("$stem.PRM", "a") do io
-                        run(pipeline(`fitoffset.csh 3 3 offset.dat`, stdout=io))
+                        run(pipeline(`$GMTSAR_JULIA $(gmtsar_script("fitoffset")) 3 3 offset.dat`, stdout=io))
                     end
                     #fitoffset.csh 1 1 offset.dat >> $stem.PRM
 
@@ -459,7 +461,7 @@ function main(argv::Vector{String})
                 mv("$stem.SLCresamp", "$stem.SLC"; force=true)
 
                 open("$stem.PRM", "a") do io
-                    run(pipeline(`fitoffset.csh 3 3 par_tmp.dat`, stdout=io))
+                    run(pipeline(`$GMTSAR_JULIA $(gmtsar_script("fitoffset")) 3 3 par_tmp.dat`, stdout=io))
                 end
             end
 
@@ -485,17 +487,17 @@ function main(argv::Vector{String})
     end
     for prm_aligned in readlines("prmlist")
         open("baseline_table.dat", "a") do io
-            run(pipeline(`baseline_table.csh $mmaster.PRM $prm_aligned`, stdout=io))
+            run(pipeline(`$GMTSAR_JULIA $(gmtsar_script("baseline_table")) $mmaster.PRM $prm_aligned`, stdout=io))
         end
         open("table.gmt", "a") do io
-            run(pipeline(`baseline_table.csh $mmaster.PRM $prm_aligned GMT`, stdout=io))
+            run(pipeline(`$GMTSAR_JULIA $(gmtsar_script("baseline_table")) $mmaster.PRM $prm_aligned GMT`, stdout=io))
         end
     end
 
     # for mode 1, plot the time-baseline figure
     if mode == 1
         open("text", "w") do io
-            for line2 in eachline("table.gmt")
+            for line2 in readlines("table.gmt")
                 w = split(line2)
                 year = 2014 + parse(Float64, w[1]) / 365.25
                 println(io, "$(@sprintf("%.6g", year)) $(w[2]) $(w[7])")
@@ -510,7 +512,7 @@ function main(argv::Vector{String})
         ]
         run(pipeline(`gmt pstext text -JX8.8i/6.8i -R$(region[1])/$(region[2])/$(region[3])/$(region[4]) -D0.2/0.2 -X1.5i -Y1i -K -N -F+f8,Helvetica+j5`, stdout="baseline.ps"))
         open("text2", "w") do io
-            for line2 in eachline("text")
+            for line2 in readlines("text")
                 w = split(line2)
                 println(io, "$(w[1]) $(w[2])")
             end
@@ -532,4 +534,4 @@ function main(argv::Vector{String})
     end
 end
 
-main(ARGS)
+main(filter(!isempty, ARGS))   # csh drops empty (unset) arguments

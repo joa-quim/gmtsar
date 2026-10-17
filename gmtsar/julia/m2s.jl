@@ -22,4 +22,4 @@ function main(argv::Vector{String})
     println("$inc1 $inc2")
 end
 
-main(ARGS)
+main(filter(!isempty, ARGS))   # csh drops empty (unset) arguments

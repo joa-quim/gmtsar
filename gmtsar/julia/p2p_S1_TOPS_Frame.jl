@@ -10,6 +10,8 @@
 # alias rm 'rm -f'
 # unset noclobber
 #
+include(joinpath(@__DIR__, "gmtsar_common.jl"))   # script-to-script calls
+
 using Printf
 
 """awk 'substr(\$1,start,len)'  -- 1-indexed substring, same convention as awk"""
@@ -20,9 +22,9 @@ stem_prm_name(name::AbstractString) = "S1_" * substr(name, 16, 8) * "_" * substr
 
 """grep PATTERN file | awk '{print \$3}'  -- first matching line's 3rd whitespace field, "" if none"""
 function grep_field_opt(file::AbstractString, pattern::AbstractString)
-    for line in eachline(file)
+    for line in readlines(file)
         if occursin(pattern, line)
-            return split(line)[3]
+            return get(split(line), 3, "")
         end
     end
     return ""
@@ -107,9 +109,9 @@ end
 """merge_unwrap_geocode_tops.csh tmp.filelist CONFIG DET_STITCH  -- DET_STITCH omitted entirely when empty (csh disappearing-empty-arg behavior)"""
 function run_merge_unwrap(config::AbstractString, det_stitch::AbstractString)
     if det_stitch == ""
-        run(`merge_unwrap_geocode_tops.csh tmp.filelist $config`)
+        run(`$GMTSAR_JULIA $(gmtsar_script("merge_unwrap_geocode_tops")) tmp.filelist $config`)
     else
-        run(`merge_unwrap_geocode_tops.csh tmp.filelist $config $det_stitch`)
+        run(`$GMTSAR_JULIA $(gmtsar_script("merge_unwrap_geocode_tops")) tmp.filelist $config $det_stitch`)
     end
 end
 
@@ -226,22 +228,22 @@ function main(argv::Vector{String})
     #
     if seq == "0"
         cd("F1")
-        run(`p2p_processing.csh S1_TOPS $f1m $f1s $(argv[5])`)
+        run(`$GMTSAR_JULIA $(gmtsar_script("p2p_processing")) S1_TOPS $f1m $f1s $(argv[5])`)
         cd("../F2")
-        run(`p2p_processing.csh S1_TOPS $f2m $f2s $(argv[5])`)
+        run(`$GMTSAR_JULIA $(gmtsar_script("p2p_processing")) S1_TOPS $f2m $f2s $(argv[5])`)
         cd("../F3")
-        run(`p2p_processing.csh S1_TOPS $f3m $f3s $(argv[5])`)
+        run(`$GMTSAR_JULIA $(gmtsar_script("p2p_processing")) S1_TOPS $f3m $f3s $(argv[5])`)
         cd("..")
     elseif seq == "1"
         cd("F1")
         log1 = open("log", "w")
-        job1 = run(pipeline(`p2p_processing.csh S1_TOPS $f1m $f1s $(argv[5])`, stdout=log1, stderr=log1); wait=false)
+        job1 = run(pipeline(`$GMTSAR_JULIA $(gmtsar_script("p2p_processing")) S1_TOPS $f1m $f1s $(argv[5])`, stdout=log1, stderr=log1); wait=false)
         cd("../F2")
         log2 = open("log", "w")
-        job2 = run(pipeline(`p2p_processing.csh S1_TOPS $f2m $f2s $(argv[5])`, stdout=log2, stderr=log2); wait=false)
+        job2 = run(pipeline(`$GMTSAR_JULIA $(gmtsar_script("p2p_processing")) S1_TOPS $f2m $f2s $(argv[5])`, stdout=log2, stderr=log2); wait=false)
         cd("../F3")
         log3 = open("log", "w")
-        job3 = run(pipeline(`p2p_processing.csh S1_TOPS $f3m $f3s $(argv[5])`, stdout=log3, stderr=log3); wait=false)
+        job3 = run(pipeline(`$GMTSAR_JULIA $(gmtsar_script("p2p_processing")) S1_TOPS $f3m $f3s $(argv[5])`, stdout=log3, stderr=log3); wait=false)
         cd("..")
         wait(job1)
         wait(job2)
@@ -258,7 +260,7 @@ function main(argv::Vector{String})
     # merge_unwrap_geocode
     #
     #endif
-    if parse(Int, skip_master) != 2
+    if skip_master != "2"
         mkdir("merge")
         cd("merge")
         symlink("../topo/dem.grd", "dem.grd")
@@ -359,7 +361,7 @@ function main(argv::Vector{String})
             cp_glob("../../F1/SLC", "params")
             cd("../iono_correction")
 
-            run(`estimate_ionospheric_phase.csh ../intf_h ../intf_l ../intf_o ../../merge $iono_filt_rng $iono_filt_azi`)
+            run(`$GMTSAR_JULIA $(gmtsar_script("estimate_ionospheric_phase")) ../intf_h ../intf_l ../intf_o ../../merge $iono_filt_rng $iono_filt_azi`)
             cd("../../merge")
             symlink("../iono/iono_correction/ph_iono_orig.grd", "ph_iono_orig.grd")
             cp("../$(argv[5])", argv[5]; force=true)
@@ -378,4 +380,4 @@ function main(argv::Vector{String})
     end
 end
 
-main(ARGS)
+main(filter(!isempty, ARGS))   # csh drops empty (unset) arguments

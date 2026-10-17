@@ -26,7 +26,7 @@ function main(argv::Vector{String})
     #
     if argv[2] != "clock_start" && argv[2] != "clock_stop"
         open("junk2.PRM", "w") do io
-            for line in eachline("junk.PRM")
+            for line in readlines("junk.PRM")
                 if !occursin(argv[2], line)
                     println(io, line)
                 end
@@ -35,14 +35,14 @@ function main(argv::Vector{String})
     else
         if argv[2] == "clock_start"
             tmptime = nothing
-            for line in eachline("junk.PRM")
+            for line in readlines("junk.PRM")
                 if occursin("SC_clock_start", line)
-                    tmptime = split(line)[3]
+                    tmptime = get(split(line), 3, "")
                     break
                 end
             end
             open("junk2.PRM", "w") do io
-                for line in eachline("junk.PRM")
+                for line in readlines("junk.PRM")
                     if !occursin(argv[2], line)
                         println(io, line)
                     end
@@ -53,14 +53,14 @@ function main(argv::Vector{String})
             end
         else
             tmptime = nothing
-            for line in eachline("junk.PRM")
+            for line in readlines("junk.PRM")
                 if occursin("SC_clock_stop", line)
-                    tmptime = split(line)[3]
+                    tmptime = get(split(line), 3, "")
                     break
                 end
             end
             open("junk2.PRM", "w") do io
-                for line in eachline("junk.PRM")
+                for line in readlines("junk.PRM")
                     if !occursin(argv[2], line)
                         println(io, line)
                     end
@@ -82,4 +82,4 @@ function main(argv::Vector{String})
     rm("junk.PRM"; force=true)
 end
 
-main(ARGS)
+main(filter(!isempty, ARGS))   # csh drops empty (unset) arguments

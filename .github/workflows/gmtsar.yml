@@ -1,5 +1,14 @@
-# This workflow will install Python dependencies, run tests and lint with a single version of Python
-# For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
+# The Sentinel-1 stack test of GMTSAR (S1A_Stack_CPGF_T173), on Linux and macOS.
+#
+# GMTSAR is built with CMake and installed, and gmtsar/tests/s1a_stack_T173.jl runs the dataset's
+# README_prep/proc/sbas steps from the Julia scripts (gmtsar/julia), with every GMTSAR step a module
+# of the gmtsar GMT plugin just built (`gmt make_s1a_tops ...`, `gmt sbas ...`), loaded through
+# GMT_CUSTOM_LIBS. The same command runs the test locally (see the header of that file).
+#
+# The dataset (1.66 GB) is downloaded once and kept in the Actions cache; it is saved even when the
+# test fails, so a failing run does not download it again.
+#
+# GMT must be 6.6 or newer (.github/scripts/check_gmt_version.sh): conda-forge on Linux, Homebrew on macOS.
 
 name: GMTSAR
 
@@ -8,9 +17,14 @@ on:
     branches: [ "master" ]
   pull_request:
     branches: [ "master" ]
+  workflow_dispatch:
 
 permissions:
   contents: read
+
+env:
+  DATASET: S1A_Stack_CPGF_T173.tar.gz
+  DATASET_KEY: S1A_Stack_CPGF_T173.tar.gz-v1
 
 jobs:
   S1A_Stack_CPGF_T173_Linux:
@@ -18,52 +32,58 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ["ubuntu-22.04", "ubuntu-24.04"]
+        os: ["ubuntu-24.04"]
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 150
+    defaults:
+      run:
+        shell: bash -el {0}
     steps:
-    - uses: actions/checkout@v3
-    - name: Install system dependencies
-      run: |
-        uname -a
-        # prepare system
-        sudo apt update
-        # https://github.com/gmtsar/gmtsar/wiki/GMTSAR-Wiki-Page
-        sudo apt install -y csh subversion autoconf libtiff5-dev libhdf5-dev wget
-        sudo apt install -y liblapack-dev
-        sudo apt install -y gfortran
-        sudo apt install -y g++
-        sudo apt install -y libgmt-dev
-        sudo apt install -y gmt-dcw gmt-gshhg
-        # gmt-gshhg-full should be installed automatically (it is required to use GMTSAR landmask)
-        sudo apt install -y gmt ghostscript
-        # add missed package
-        sudo apt install -y make
+    - uses: actions/checkout@v4
+    # GMT >= 6.6 from conda-forge: Ubuntu's own gmt package is older.
+    - name: Install system dependencies (conda-forge)
+      uses: mamba-org/setup-micromamba@v2
+      with:
+        environment-name: gmtsardeps
+        init-shell: bash
+        cache-environment: true
+        create-args: >-
+          gmt>=6.6
+          libgdal
+          libtiff
+          hdf5
+          openblas
+          cmake
+          ninja
+    # The install RPATH lets the plugin, loaded by that gmt, find the libraries gmt itself does not load.
     - name: Compile GMTSAR
       run: |
-        autoconf
-        ./configure --with-orbits-dir=/tmp CFLAGS='-z muldefs' LDFLAGS='-z muldefs'
-        make
-        make install
-        # check installation
-        export PATH=$PATH:/home/runner/work/gmtsar/gmtsar/bin
-        echo "Start gmtsar_sharedir.csh"
-        gmtsar_sharedir.csh
-    - name: Cache dataset
-      uses: actions/cache@v3
+        bash .github/scripts/check_gmt_version.sh
+        P="$CONDA_PREFIX"
+        cmake -S . -B build-ci -G Ninja           -DCMAKE_BUILD_TYPE=Release           -DCMAKE_INSTALL_PREFIX="$PWD/inst"           -DCMAKE_INSTALL_RPATH="$P/lib"           -DCMAKE_PREFIX_PATH="$P"           -DGMT_INCLUDE_DIR="$P/include/gmt"           -DGMT_LIBRARY="$P/lib/libgmt.so"           -DGDAL_INCLUDE_DIR="$P/include"           -DTIFF_INCLUDE_DIR="$P/include"           -DTIFF_LIBRARY="$P/lib/libtiff.so"           -DLAPACK_LIBRARIES="$P/lib/libopenblas.so"           -DHDF5_INCLUDE_DIR="$P/include"           -DHDF5_LIBRARY="$P/lib/libhdf5.so"
+        cmake --build build-ci --parallel
+        ctest --test-dir build-ci --output-on-failure
+        cmake --install build-ci
+        inst/bin/gmtsar_sharedir.csh
+    - uses: julia-actions/setup-julia@v2
       with:
-        path: S1A_Stack_CPGF_T173.tar.gz
-        key: S1A_Stack_CPGF_T173.tar.gz
-        restore-keys: S1A_Stack_CPGF_T173
-    - name: Download dataset
-      run: |
-        wget -c http://topex.ucsd.edu/gmtsar/tar/S1A_Stack_CPGF_T173.tar.gz
-        tar xvzf S1A_Stack_CPGF_T173.tar.gz -C .
+        version: '1'
+    - name: Restore dataset
+      id: dataset
+      uses: actions/cache/restore@v4
+      with:
+        path: S1A_data/${{ env.DATASET }}
+        key: ${{ env.DATASET_KEY }}
     - name: Run test
       run: |
-        export PATH=$PATH:/home/runner/work/gmtsar/gmtsar/bin
-        ./README_prep.txt
-        ./README_proc.txt
-        ./README_sbas.txt
+        julia --startup-file=no gmtsar/tests/s1a_stack_T173.jl \
+          --share "$PWD/inst/share/gmtsar" --plugin "$PWD/inst/lib/gmtsar.so" --data "$PWD/S1A_data"
+    - name: Save dataset
+      if: always() && steps.dataset.outputs.cache-hit != 'true' && hashFiles(format('S1A_data/{0}', env.DATASET)) != ''
+      uses: actions/cache/save@v4
+      with:
+        path: S1A_data/${{ env.DATASET }}
+        key: ${{ env.DATASET_KEY }}
 
   S1A_Stack_CPGF_T173_MacOS:
 
@@ -72,36 +92,44 @@ jobs:
       matrix:
         os: ["macos-14", "macos-15"]
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 150
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Install system dependencies
-      run: |
-        uname -a
-        # prepare system
-        brew install wget libtiff hdf5 gmt ghostscript autoconf
+      env:
+        HOMEBREW_NO_AUTO_UPDATE: 1
+        HOMEBREW_NO_INSTALL_CLEANUP: 1
+      run: brew install cmake ninja gmt gdal netcdf libtiff hdf5 ghostscript
+    # LAPACK comes from Apple's Accelerate framework (FindLAPACK).
     - name: Compile GMTSAR
       run: |
-        autoconf
-        ./configure --with-orbits-dir=/tmp
-        make
-        make install
-        # check installation
-        export PATH=$PATH:/Users/runner/work/gmtsar/gmtsar/bin
-        echo "Start gmtsar_sharedir.csh"
-        gmtsar_sharedir.csh
-    - name: Cache dataset
-      uses: actions/cache@v3
+        bash .github/scripts/check_gmt_version.sh
+        cmake -S . -B build-ci -G Ninja \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_INSTALL_PREFIX="$PWD/inst" \
+          -DCMAKE_PREFIX_PATH="$(brew --prefix)" \
+          -DHDF5_INCLUDE_DIR="$(brew --prefix hdf5)/include" \
+          -DHDF5_LIBRARY="$(brew --prefix hdf5)/lib/libhdf5.dylib"
+        cmake --build build-ci --parallel
+        ctest --test-dir build-ci --output-on-failure
+        cmake --install build-ci
+        inst/bin/gmtsar_sharedir.csh
+    - uses: julia-actions/setup-julia@v2
       with:
-        path: S1A_Stack_CPGF_T173.tar.gz
-        key: S1A_Stack_CPGF_T173.tar.gz
-        restore-keys: S1A_Stack_CPGF_T173
-    - name: Download dataset
-      run: |
-        wget -c http://topex.ucsd.edu/gmtsar/tar/S1A_Stack_CPGF_T173.tar.gz
-        tar xvzf S1A_Stack_CPGF_T173.tar.gz -C .
+        version: '1'
+    - name: Restore dataset
+      id: dataset
+      uses: actions/cache/restore@v4
+      with:
+        path: S1A_data/${{ env.DATASET }}
+        key: ${{ env.DATASET_KEY }}
     - name: Run test
       run: |
-        export PATH=$PATH:/Users/runner/work/gmtsar/gmtsar/bin
-        ./README_prep.txt
-        ./README_proc.txt
-        ./README_sbas.txt
+        julia --startup-file=no gmtsar/tests/s1a_stack_T173.jl \
+          --share "$PWD/inst/share/gmtsar" --plugin "$PWD/inst/lib/gmtsar.dylib" --data "$PWD/S1A_data"
+    - name: Save dataset
+      if: always() && steps.dataset.outputs.cache-hit != 'true' && hashFiles(format('S1A_data/{0}', env.DATASET)) != ''
+      uses: actions/cache/save@v4
+      with:
+        path: S1A_data/${{ env.DATASET }}
+        key: ${{ env.DATASET_KEY }}

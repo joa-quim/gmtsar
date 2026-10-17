@@ -16,13 +16,15 @@
 # alias rm 'rm -f'
 # unset noclobber
 #
+include(joinpath(@__DIR__, "gmtsar_common.jl"))   # script-to-script calls
+
 using Printf
 
 """grep PATTERN file | awk '{print \$3}'  -- first matching line's 3rd whitespace field"""
 function grep_field(file::AbstractString, pattern::AbstractString)
-    for line in eachline(file)
+    for line in readlines(file)
         if occursin(pattern, line)
-            return split(line)[3]
+            return get(split(line), 3, "")
         end
     end
     error("pattern not found: $pattern in $file")
@@ -30,9 +32,9 @@ end
 
 """grep PATTERN file | grep -v EXCLUDE | awk '{print \$3}'  -- first matching (excluding) line's 3rd field"""
 function grep_field_exclude(file::AbstractString, pattern::AbstractString, exclude::AbstractString)
-    for line in eachline(file)
+    for line in readlines(file)
         if occursin(pattern, line) && !occursin(exclude, line)
-            return split(line)[3]
+            return get(split(line), 3, "")
         end
     end
     error("pattern not found: $pattern (excluding $exclude) in $file")
@@ -43,7 +45,7 @@ function grep_field_cmd(cmd::Cmd, pattern::AbstractString)
     out = read(cmd, String)
     for line in split(out, '\n')
         if occursin(pattern, line)
-            return split(line)[3]
+            return get(split(line), 3, "")
         end
     end
     error("pattern not found: $pattern in output of $cmd")
@@ -295,13 +297,13 @@ function main(argv::Vector{String})
         #  extract the range and azimuth data
         #
         open("r.xyz", "w") do io
-            for line in eachline("offset.dat")
+            for line in readlines("offset.dat")
                 w = split(line)
                 @printf(io, "%.6f %.6f %.6f \n", parse(Float64, w[1]), parse(Float64, w[3]), parse(Float64, w[2]))
             end
         end
         open("a.xyz", "w") do io
-            for line in eachline("offset.dat")
+            for line in readlines("offset.dat")
                 w = split(line)
                 @printf(io, "%.6f %.6f %.6f \n", parse(Float64, w[1]), parse(Float64, w[3]), parse(Float64, w[4]))
             end
@@ -329,7 +331,7 @@ function main(argv::Vector{String})
         end
         run(`make_s1a_tops $sxml $stiff $spre 2 r.grd a.grd`)
         println("Running Spectral Diversity...")
-        sharedir = strip(read(`gmtsar_sharedir.csh`, String))
+        sharedir = strip(read(`$GMTSAR_JULIA $(gmtsar_script("gmtsar_sharedir"))`, String))
         if tmp_da > -1000 && tmp_da < 1000
             run(pipeline(`spectral_diversity $mpre $spre 0 $sharedir/filters/gauss25x7`, stdout="tmp"))
         else
@@ -338,7 +340,7 @@ function main(argv::Vector{String})
 
         spec_sep = parse(Float64, grep_field("tmp", "spectral_spectrationXdta"))
         open("tmp2", "w") do io
-            for line in eachline("ddphase")
+            for line in readlines("ddphase")
                 w = split(line)
                 println(io, w[3])
             end
@@ -348,7 +350,7 @@ function main(argv::Vector{String})
             res_shift = median_awk("tmp2") / 2.0 / 3.141592653 / spec_sep
             println("Updating azimuth shift with mapping the residual da ...(mapping $res_shift)")
             open("test", "w") do io
-                for line in eachline("ddphase")
+                for line in readlines("ddphase")
                     w = split(line)
                     println(io, "$(w[1]) $(w[2]) $(w[3])")
                 end
@@ -399,11 +401,11 @@ function main(argv::Vector{String})
         #
         if tmp_da > -1000 && tmp_da < 1000
             open("$spre.PRM", "a") do io
-                run(pipeline(`fitoffset.csh 3 3 offset.dat`, stdout=io))
+                run(pipeline(`$GMTSAR_JULIA $(gmtsar_script("fitoffset")) 3 3 offset.dat`, stdout=io))
             end
         else
             open("$spre.PRM", "a") do io
-                run(pipeline(`fitoffset.csh 3 3 offset2.dat`, stdout=io))
+                run(pipeline(`$GMTSAR_JULIA $(gmtsar_script("fitoffset")) 3 3 offset2.dat`, stdout=io))
             end
         end
         #
@@ -438,4 +440,4 @@ function main(argv::Vector{String})
     end
 end
 
-main(ARGS)
+main(filter(!isempty, ARGS))   # csh drops empty (unset) arguments

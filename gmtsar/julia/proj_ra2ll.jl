@@ -5,6 +5,8 @@
 # alias rm 'rm -f'
 # unset noclobber
 
+include(joinpath(@__DIR__, "gmtsar_common.jl"))   # script-to-script calls
+
 """awk's automatic string-to-number coercion: parse the leading numeric prefix of a string,
    ignoring any trailing non-numeric text; 0.0 if there is none"""
 function awk_num(s::AbstractString)
@@ -60,7 +62,7 @@ function main(argv::Vector{String})
     #
     #  add lon and lat columns and then just keep lon, lat, phase
     #
-    run(pipeline(`gmt grdtrack rap -nl -bi3f -bo5f -Graln.grd -Gralt.grd`, `gmt gmtconvert -bi5f -bo3f -o3,4,2`, stdout="llp"))
+    run(pipeline(pipeline(`gmt grdtrack rap -nl -bi3f -bo5f -Graln.grd -Gralt.grd`, `gmt gmtconvert -bi5f -bo3f -o3,4,2`), stdout="llp"))
     #
     # set the output grid spaccing to be 1/4 the filter wavelength
     #
@@ -86,7 +88,7 @@ function main(argv::Vector{String})
         end
     end
 
-    incs = split(strip(read(`m2s.csh $pix_m llp`, String)))			  # Get fine and crude grid interval for lookup grids
+    incs = split(strip(read(`$GMTSAR_JULIA $(gmtsar_script("m2s")) $pix_m llp`, String)))			  # Get fine and crude grid interval for lookup grids
     #
     R = strip(read(`gmt gmtinfo llp -I$(incs[2]) -bi3f`, String))
     run(pipeline(`gmt blockmedian llp $R -bi3f -bo3f -I$(incs[1]) -r -V`, stdout="llpb"))
@@ -105,4 +107,4 @@ function main(argv::Vector{String})
     rm("ralt"; force=true)
 end
 
-main(ARGS)
+main(filter(!isempty, ARGS))   # csh drops empty (unset) arguments

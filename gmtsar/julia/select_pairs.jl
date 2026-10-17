@@ -27,7 +27,7 @@ function main(argv::Vector{String})
     rm("intf.in"; force=true)
 
     open("text", "w") do io
-        for line in eachline(argv[1])
+        for line in readlines(argv[1])
             w = split(line)
             v = 2014 + parse(Float64, w[3]) / 365.25
             println(io, "$v $(w[5]) $(w[1])")
@@ -46,7 +46,7 @@ function main(argv::Vector{String})
     end
 
     pair_tokens = String[]
-    for line in eachline(file)
+    for line in readlines(file)
         w = split(line)
         push!(pair_tokens, join(w[1:5], ":"))
     end
@@ -84,7 +84,7 @@ function main(argv::Vector{String})
     end
 
     open("text2", "w") do io
-        for line in eachline("text")
+        for line in readlines("text")
             w = split(line)
             println(io, "$(w[1]) $(w[2])")
         end
@@ -95,4 +95,4 @@ function main(argv::Vector{String})
     run(`gmt psconvert baseline.ps -Tf -A`)
 end
 
-main(ARGS)
+main(filter(!isempty, ARGS))   # csh drops empty (unset) arguments

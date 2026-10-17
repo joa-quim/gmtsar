@@ -13,9 +13,9 @@
 
 """grep PATTERN file | awk '{print \$3}'  -- first matching line's 3rd whitespace field"""
 function grep_field(file::AbstractString, pattern::AbstractString)
-    for line in eachline(file)
+    for line in readlines(file)
         if occursin(pattern, line)
-            return split(line)[3]
+            return get(split(line), 3, "")
         end
     end
     error("pattern not found: $pattern in $file")
@@ -30,9 +30,9 @@ end
 function grep_field_glob_int(pattern::AbstractString, suffix::AbstractString)
     files = sort(filter(f -> endswith(f, suffix), readdir(".")))
     for f in files
-        for line in eachline(f)
+        for line in readlines(f)
             if occursin(pattern, line)
-                return trunc(Int, parse(Float64, split(line)[3]))
+                return trunc(Int, parse(Float64, get(split(line), 3, "")))
             end
         end
     end
@@ -42,7 +42,7 @@ end
 """grep Hint tmp | head -1 | awk '{for(i=1;i<=NF;i++) print \$i}' | grep /  -- fields of the first Hint line that contain a slash"""
 function grep_hint_slash(file::AbstractString)
     firstline = ""
-    for line in eachline(file)
+    for line in readlines(file)
         if occursin("Hint", line)
             firstline = line
             break
@@ -117,18 +117,18 @@ function main(argv::Vector{String})
     println(" range decimation is: ", " ", rng)
 
     if SC == "10" || SC == "11"
-        run(pipeline(`gmt grd2xyz --FORMAT_FLOAT_OUT=%lf $(argv[2]) -s`, `SAT_llt2rat $(argv[1]) 1 -bod`, stdout="trans.dat"))
+        run(pipeline(pipeline(`gmt grd2xyz --FORMAT_FLOAT_OUT=%lf $(argv[2]) -s`, `gmt SAT_llt2rat -A$(argv[1]) -P1 -D`), stdout="trans.dat"))
     else
-        run(pipeline(`gmt grd2xyz --FORMAT_FLOAT_OUT=%lf $(argv[2]) -s`, `SAT_llt2rat $(argv[1]) 0 -bod`, stdout="trans.dat"))
+        run(pipeline(pipeline(`gmt grd2xyz --FORMAT_FLOAT_OUT=%lf $(argv[2]) -s`, `gmt SAT_llt2rat -A$(argv[1]) -P0 -D`), stdout="trans.dat"))
     end
     #
     # use an azimuth spacing of 2 for low PRF data such as S1 TOPS
     #
     if PRF < 1000
-        run(pipeline(`gmt gmtconvert trans.dat -o0,1,2 -bi5d -bo3d`, `gmt blockmedian -R$region -I$rng/2 -bi3d -bo3d -r $V`, stdout="temp.rat"))
+        run(pipeline(pipeline(`gmt gmtconvert trans.dat -o0,1,2 -bi5d -bo3d`, `gmt blockmedian -R$region -I$rng/2 -bi3d -bo3d -r $V`), stdout="temp.rat"))
         if mode == 0
             open("tmp", "w") do io
-                run(pipeline(`gmt surface temp.rat -R$region -I$rng/2 -bi3d -T$tension -N1000 -Gpixel.grd -r -Q`, stdout=io, stderr=io))
+                run(pipeline(ignorestatus(`gmt surface temp.rat -R$region -I$rng/2 -bi3d -T$tension -N1000 -Gpixel.grd -r -Q`), stdout=io, stderr=io))
             end
             RR = grep_hint_slash("tmp")
             if isempty(RR)
@@ -149,10 +149,10 @@ function main(argv::Vector{String})
             rm("mean.rat"; force=true)
         end
     else
-        run(pipeline(`gmt gmtconvert trans.dat -o0,1,2 -bi5d -bo3d`, `gmt blockmedian -R$region -I$rng/4 -bi3d -bo3d -r $V`, stdout="temp.rat"))
+        run(pipeline(pipeline(`gmt gmtconvert trans.dat -o0,1,2 -bi5d -bo3d`, `gmt blockmedian -R$region -I$rng/4 -bi3d -bo3d -r $V`), stdout="temp.rat"))
         if mode == 0
             open("tmp", "w") do io
-                run(pipeline(`gmt surface temp.rat -R$region -I$rng/4 -bi3d -T$tension -N1000 -Gpixel.grd -r -Q`, stdout=io, stderr=io))
+                run(pipeline(ignorestatus(`gmt surface temp.rat -R$region -I$rng/4 -bi3d -T$tension -N1000 -Gpixel.grd -r -Q`), stdout=io, stderr=io))
             end
             RR = grep_hint_slash("tmp")
             if isempty(RR)
@@ -206,4 +206,4 @@ function main(argv::Vector{String})
     rm("topo_ra.cpt"; force=true)
 end
 
-main(ARGS)
+main(filter(!isempty, ARGS))   # csh drops empty (unset) arguments

@@ -13,6 +13,8 @@ using Pkg
 Pkg.activate(ARGS[1])
 Pkg.add(["GMT", "GMT_jll"]; io = devnull)
 using GMT_jll
+pkgversion(GMT_jll) >= v"6.6" || error("GMT_jll $(pkgversion(GMT_jll)); GMTSAR needs GMT 6.6 or newer")
+println("GMT_jll $(pkgversion(GMT_jll))")
 
 const WIN = Sys.iswindows()
 fwd(p) = replace(p, '\\' => '/')

@@ -12,9 +12,9 @@
 
 """grep PATTERN file | awk '{print \$3}'  -- first matching line's 3rd whitespace field"""
 function grep_field(file::AbstractString, pattern::AbstractString)
-    for line in eachline(file)
+    for line in readlines(file)
         if occursin(pattern, line)
-            return split(line)[3]
+            return get(split(line), 3, "")
         end
     end
     error("pattern not found: $pattern in $file")
@@ -45,7 +45,7 @@ function main(argv::Vector{String})
     if SC == "1" || SC == "2" || SC == "4" || SC == "6" || SC == "5"
         cp(argv[2], argv[2] * "0"; force=true)
         cp(argv[1], argv[1] * "0"; force=true)
-        out = read(`SAT_baseline $(argv[1]) $(argv[2])`, String)
+        out = read(`gmt SAT_baseline -A$(argv[1]) -B$(argv[2])`, String)
         lines = split(out, '\n')
         # drop a trailing empty element left by a final newline
         !isempty(lines) && lines[end] == "" && (lines = lines[1:end-1])
@@ -55,7 +55,7 @@ function main(argv::Vector{String})
                 println(io, line)
             end
         end
-        out2 = read(`SAT_baseline $(argv[1]) $(argv[1])`, String)
+        out2 = read(`gmt SAT_baseline -A$(argv[1]) -B$(argv[1])`, String)
         open(argv[1], "a") do io
             for line in split(out2, '\n')
                 if occursin("height", line)
@@ -66,7 +66,7 @@ function main(argv::Vector{String})
     elseif parse(Int, SC) > 6
         cp(argv[2], argv[2] * "0"; force=true)
         cp(argv[1], argv[1] * "0"; force=true)
-        out = read(`SAT_baseline $(argv[1]) $(argv[2])`, String)
+        out = read(`gmt SAT_baseline -A$(argv[1]) -B$(argv[2])`, String)
         lines = split(out, '\n')
         !isempty(lines) && lines[end] == "" && (lines = lines[1:end-1])
         tail9 = lines[max(1, length(lines) - 8):end]
@@ -75,7 +75,7 @@ function main(argv::Vector{String})
                 println(io, line)
             end
         end
-        out2 = read(`SAT_baseline $(argv[1]) $(argv[1])`, String)
+        out2 = read(`gmt SAT_baseline -A$(argv[1]) -B$(argv[1])`, String)
         open(argv[1], "a") do io
             for line in split(out2, '\n')
                 if occursin("height", line)
@@ -93,7 +93,12 @@ function main(argv::Vector{String})
     if length(argv) == 2 || length(argv) == 4 || length(argv) == 6
         println("intf.csh")
         println("running phasediff...")
-        run(Cmd(["phasediff"; argv]))
+        # The GMT module's options: ref.PRM rep.PRM [-topo f] [-model f] -> -Aref.PRM -Brep.PRM [-Tf] [-Mf]
+        opts = ["-A" * argv[1], "-B" * argv[2]]
+        for k in 3:2:length(argv)
+            push!(opts, "-" * Dict("-topo" => "T", "-model" => "M", "-real" => "E", "-imag" => "Q")[argv[k]] * argv[k+1])
+        end
+        run(`gmt phasediff $opts`)
     else
         usage_and_exit()
     end
@@ -101,4 +106,4 @@ function main(argv::Vector{String})
     mv(argv[2] * "0", argv[2]; force=true)
 end
 
-main(ARGS)
+main(filter(!isempty, ARGS))   # csh drops empty (unset) arguments

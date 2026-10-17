@@ -7,6 +7,8 @@
 # used for creating a new frame based on two input frames.
 #
 
+include(joinpath(@__DIR__, "gmtsar_common.jl"))   # script-to-script calls
+
 using Printf
 
 """awk-style substr(s,start,len), 1-indexed"""
@@ -36,7 +38,7 @@ end
 
 """grep TAG file | awk -F">" '{print \$2}' | awk -F"<" '{print \$1}'  -- text between the tag's opening and closing brackets"""
 function xml_tag_text(file::AbstractString, tag::AbstractString)
-    for line in eachline(file)
+    for line in readlines(file)
         if occursin(tag, line)
             after_gt = split(line, ">")[2]
             before_lt = split(after_gt, "<")[1]
@@ -138,7 +140,7 @@ function main(argv::Vector{String})
     ll2 = "$(w2[1]) $(w2[2])"
 
     tmpazi = pipe_in_field(`SAT_llt2rat tmp1.PRM 1`, "$ll1 0", 2)
-    run(`shift_atime_PRM.csh tmp1.PRM $tmpazi`)
+    run(`$GMTSAR_JULIA $(gmtsar_script("shift_atime_PRM")) tmp1.PRM $tmpazi`)
     azi1 = trunc(Int, parse(Float64, pipe_in_field(`SAT_llt2rat tmp1.PRM 1`, "$ll1 0", 2)) + 0.5 + parse(Float64, tmpazi))
     azi2 = trunc(Int, parse(Float64, pipe_in_field(`SAT_llt2rat tmp1.PRM 1`, "$ll2 0", 2)) + 0.5 + parse(Float64, tmpazi))
 
@@ -206,7 +208,7 @@ function main(argv::Vector{String})
     end
 
     tmpazi = pipe_in_field(`SAT_llt2rat tmp1.PRM 1`, "$ll1 0", 2)
-    run(`shift_atime_PRM.csh tmp1.PRM $tmpazi`)
+    run(`$GMTSAR_JULIA $(gmtsar_script("shift_atime_PRM")) tmp1.PRM $tmpazi`)
     azi1 = trunc(Int, parse(Float64, pipe_in_field(`SAT_llt2rat tmp1.PRM 1`, "$ll1 0", 2)) + 0.5 + parse(Float64, tmpazi))
     azi2 = trunc(Int, parse(Float64, pipe_in_field(`SAT_llt2rat tmp1.PRM 1`, "$ll2 0", 2)) + 0.5 + parse(Float64, tmpazi))
 
@@ -273,7 +275,7 @@ function main(argv::Vector{String})
     end
 
     tmpazi = pipe_in_field(`SAT_llt2rat tmp1.PRM 1`, "$ll1 0", 2)
-    run(`shift_atime_PRM.csh tmp1.PRM $tmpazi`)
+    run(`$GMTSAR_JULIA $(gmtsar_script("shift_atime_PRM")) tmp1.PRM $tmpazi`)
     azi1 = trunc(Int, parse(Float64, pipe_in_field(`SAT_llt2rat tmp1.PRM 1`, "$ll1 0", 2)) + 0.5 + parse(Float64, tmpazi))
     azi2 = trunc(Int, parse(Float64, pipe_in_field(`SAT_llt2rat tmp1.PRM 1`, "$ll2 0", 2)) + 0.5 + parse(Float64, tmpazi))
 
@@ -321,4 +323,4 @@ function main(argv::Vector{String})
     mv("new.SAFE", newname; force=true)
 end
 
-main(ARGS)
+main(filter(!isempty, ARGS))   # csh drops empty (unset) arguments

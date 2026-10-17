@@ -7,6 +7,8 @@
 # Xiaopeng Tong, Aug 27 2010
 #
 
+include(joinpath(@__DIR__, "gmtsar_common.jl"))   # script-to-script calls
+
 """awk 'substr(\$1,start,len)'  -- 1-indexed substring, same convention as awk"""
 substr(s::AbstractString, start::Int, len::Int) = s[start:(start + len - 1)]
 
@@ -41,7 +43,7 @@ function main(argv::Vector{String})
             #
             # clean up
             #
-            run(`cleanup.csh SLC`)
+            run(`$GMTSAR_JULIA $(gmtsar_script("cleanup")) SLC`)
             println("")
             println("START ALIGN A STACK OF IMAGES")
             println("")
@@ -75,7 +77,7 @@ function main(argv::Vector{String})
                         symlink("../../raw/LED-$masterstem", "LED-$masterstem")
                         symlink("../../raw/LED-$alignedstem", "LED-$alignedstem")
                         symlink("../../raw/LED-$supermasterstem", "LED-$supermasterstem")
-                        run(`align_ALOS2_SCAN.csh $master-F$subswath $aligned-F$subswath $supermaster-F$subswath`)
+                        run(`$GMTSAR_JULIA $(gmtsar_script("align_ALOS2_SCAN")) $master-F$subswath $aligned-F$subswath $supermaster-F$subswath`)
                     end
                     println("Align $aligned to $master via $supermaster - END")
                 else
@@ -92,4 +94,4 @@ function main(argv::Vector{String})
     println("")
 end
 
-main(ARGS)
+main(filter(!isempty, ARGS))   # csh drops empty (unset) arguments

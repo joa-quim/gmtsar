@@ -9,14 +9,16 @@
 # alias rm 'rm -f'
 # unset noclobber
 
+include(joinpath(@__DIR__, "gmtsar_common.jl"))   # script-to-script calls
+
 """awk substr(\$1,start,len)  -- 1-indexed substring, same convention as awk"""
 substr(s::AbstractString, start::Int, len::Int) = s[start:(start + len - 1)]
 
 """grep PATTERN file | awk '{print \$3}'  -- first matching line's 3rd whitespace field"""
 function grep_field(file::AbstractString, pattern::AbstractString)
-    for line in eachline(file)
+    for line in readlines(file)
         if occursin(pattern, line)
-            return split(line)[3]
+            return get(split(line), 3, "")
         end
     end
     error("pattern not found: $pattern in $file")
@@ -170,14 +172,14 @@ if stage < 5
       if stage < 2
         cd("F$swath")
         write_lines("tmp_config", sed_replace_line(readlines(config), "skip_stage", "skip_stage = 2,3,4,5,6"))
-        run(`p2p_processing.csh ALOS2_SCAN $arg1-F$swath $arg2-F$swath tmp_config`)
+        run(`$GMTSAR_JULIA $(gmtsar_script("p2p_processing")) ALOS2_SCAN $arg1-F$swath $arg2-F$swath tmp_config`)
         cd("raw")
-        run(`samp_slc.csh $arg1-F$swath 3350 0`)
-        run(`samp_slc.csh $arg2-F$swath 3350 0`)
+        run(`$GMTSAR_JULIA $(gmtsar_script("samp_slc")) $arg1-F$swath 3350 0`)
+        run(`$GMTSAR_JULIA $(gmtsar_script("samp_slc")) $arg2-F$swath 3350 0`)
         cd("..")
       end
       write_lines("tmp_config", sed_replace_line(readlines(config), "skip_stage", "skip_stage = 1"))
-      run(`p2p_processing.csh ALOS2_SCAN $arg1-F$swath $arg2-F$swath tmp_config`)
+      run(`$GMTSAR_JULIA $(gmtsar_script("p2p_processing")) ALOS2_SCAN $arg1-F$swath $arg2-F$swath tmp_config`)
       rm("tmp_config"; force=true)
       cd("..")
     end
@@ -187,7 +189,7 @@ if stage < 5
       for swath in 1:5
         cd("F$swath")
         write_lines("tmp_config", sed_replace_line(readlines(config), "skip_stage", "skip_stage = 2,3,4,5,6"))
-        push!(jobs, run(pipeline(`p2p_processing.csh ALOS2_SCAN $arg1-F$swath $arg2-F$swath tmp_config`, stdout="log", stderr="log"); wait=false))
+        push!(jobs, run(pipeline(`$GMTSAR_JULIA $(gmtsar_script("p2p_processing")) ALOS2_SCAN $arg1-F$swath $arg2-F$swath tmp_config`, stdout="log", stderr="log"); wait=false))
         cd("..")
       end
       for j in jobs
@@ -197,8 +199,8 @@ if stage < 5
       jobs2 = []
       for swath in 1:5
         cd("F$swath/raw")
-        push!(jobs2, run(`samp_slc.csh $arg1-F$swath 3350 0`; wait=false))
-        push!(jobs2, run(`samp_slc.csh $arg2-F$swath 3350 0`; wait=false))
+        push!(jobs2, run(`$GMTSAR_JULIA $(gmtsar_script("samp_slc")) $arg1-F$swath 3350 0`; wait=false))
+        push!(jobs2, run(`$GMTSAR_JULIA $(gmtsar_script("samp_slc")) $arg2-F$swath 3350 0`; wait=false))
         cd("../..")
       end
       for j in jobs2
@@ -210,7 +212,7 @@ if stage < 5
     for swath in 1:5
       cd("F$swath")
       write_lines("tmp_config", sed_replace_line(readlines(config), "skip_stage", "skip_stage = 1"))
-      push!(jobs3, run(pipeline(`p2p_processing.csh ALOS2_SCAN $arg1-F$swath $arg2-F$swath tmp_config`, stdout="log", stderr="log"); wait=false))
+      push!(jobs3, run(pipeline(`$GMTSAR_JULIA $(gmtsar_script("p2p_processing")) ALOS2_SCAN $arg1-F$swath $arg2-F$swath tmp_config`, stdout="log", stderr="log"); wait=false))
       cd("..")
     end
     for j in jobs3
@@ -276,7 +278,7 @@ end
     recompute_LUT = 0
   end
 
-  run(`merge_unwrap_geocode_tops.csh tmp.filelist $config $det_stitch`)
+  run(`$GMTSAR_JULIA $(gmtsar_script("merge_unwrap_geocode_tops")) tmp.filelist $config $det_stitch`)
   mv("merge_log", "merge_log1"; force=true)
   mv("tmp_phaselist", "tmp_phaselist1"; force=true)
   mkpath("tmp_first")
@@ -289,7 +291,7 @@ end
     println(io, "$pth4:$prm4m:$prm4s")
     println(io, "$pth5:$prm5m:$prm5s")
   end
-  run(`merge_unwrap_geocode_tops.csh tmp2.filelist $config det_stitch`)
+  run(`$GMTSAR_JULIA $(gmtsar_script("merge_unwrap_geocode_tops")) tmp2.filelist $config det_stitch`)
   mv("merge_log", "merge_log2"; force=true)
   mv("tmp_phaselist", "tmp_phaselist2"; force=true)
   #rm -rf tmp_first
@@ -303,7 +305,7 @@ end
     led = grep_field("$stem.PRM", "led_file")
     cp("$pth1$led", led; force=true)
     println("Recomputing the projection LUT...")
-    run(pipeline(`gmt grd2xyz --FORMAT_FLOAT_OUT=%lf dem.grd -s`, `SAT_llt2rat $stem.PRM 1 -bod`, stdout="trans.dat"))
+    run(pipeline(pipeline(`gmt grd2xyz --FORMAT_FLOAT_OUT=%lf dem.grd -s`, `SAT_llt2rat $stem.PRM 1 -bod`), stdout="trans.dat"))
   end
   cd("..")
 
@@ -329,7 +331,7 @@ if iono == 1
     println(io, "../../F2/iono_phase/intf_h/:$prm2m:$prm2s")
     println(io, "../../F3/iono_phase/intf_h/:$prm3m:$prm3s")
   end
-  run(`merge_unwrap_geocode_tops.csh tmp.filelist $config det_stitch`)
+  run(`$GMTSAR_JULIA $(gmtsar_script("merge_unwrap_geocode_tops")) tmp.filelist $config det_stitch`)
   mv("merge_log", "merge_log1"; force=true)
   mv("tmp_phaselist", "tmp_phaselist1"; force=true)
   mkpath("tmp_first")
@@ -343,11 +345,11 @@ if iono == 1
     println(io, "../../F5/iono_phase/intf_h/:$prm5m:$prm5s")
   end
   write_lines(config, sed_replace_line(readlines(config), "threshold_snaphu", "threshold_snaphu = 0.1"))
-  run(`merge_unwrap_geocode_tops.csh tmp2.filelist $config det_stitch`)
+  run(`$GMTSAR_JULIA $(gmtsar_script("merge_unwrap_geocode_tops")) tmp2.filelist $config det_stitch`)
   mv("merge_log", "merge_log2"; force=true)
   mv("tmp_phaselist", "tmp_phaselist2"; force=true)
-  run(`correct_merge_offset.csh tmp_phaselist1 merge_log1 unwrap.grd unwrap_corrected.grd`)
-  run(`correct_merge_offset.csh tmp_phaselist2 merge_log2 unwrap_corrected.grd unwrap.grd`)
+  run(`$GMTSAR_JULIA $(gmtsar_script("correct_merge_offset")) tmp_phaselist1 merge_log1 unwrap.grd unwrap_corrected.grd`)
+  run(`$GMTSAR_JULIA $(gmtsar_script("correct_merge_offset")) tmp_phaselist2 merge_log2 unwrap_corrected.grd unwrap.grd`)
   rm("unwrap_corrected.grd"; force=true)
   glob_cp("../../F1/SLC", "params*")
   mv("$stem.PRM", prm1m; force=true)
@@ -366,7 +368,7 @@ if iono == 1
     println(io, "../../F2/iono_phase/intf_l/:$prm2m:$prm2s")
     println(io, "../../F3/iono_phase/intf_l/:$prm3m:$prm3s")
   end
-  run(`merge_unwrap_geocode_tops.csh tmp.filelist $config det_stitch`)
+  run(`$GMTSAR_JULIA $(gmtsar_script("merge_unwrap_geocode_tops")) tmp.filelist $config det_stitch`)
   mv("merge_log", "merge_log1"; force=true)
   mv("tmp_phaselist", "tmp_phaselist1"; force=true)
   mkpath("tmp_first")
@@ -380,11 +382,11 @@ if iono == 1
     println(io, "../../F5/iono_phase/intf_l/:$prm5m:$prm5s")
   end
   write_lines(config, sed_replace_line(readlines(config), "threshold_snaphu", "threshold_snaphu = 0.1"))
-  run(`merge_unwrap_geocode_tops.csh tmp2.filelist $config det_stitch`)
+  run(`$GMTSAR_JULIA $(gmtsar_script("merge_unwrap_geocode_tops")) tmp2.filelist $config det_stitch`)
   mv("merge_log", "merge_log2"; force=true)
   mv("tmp_phaselist", "tmp_phaselist2"; force=true)
-  run(`correct_merge_offset.csh tmp_phaselist1 merge_log1 unwrap.grd unwrap_corrected.grd`)
-  run(`correct_merge_offset.csh tmp_phaselist2 merge_log2 unwrap_corrected.grd unwrap.grd`)
+  run(`$GMTSAR_JULIA $(gmtsar_script("correct_merge_offset")) tmp_phaselist1 merge_log1 unwrap.grd unwrap_corrected.grd`)
+  run(`$GMTSAR_JULIA $(gmtsar_script("correct_merge_offset")) tmp_phaselist2 merge_log2 unwrap_corrected.grd unwrap.grd`)
   rm("unwrap_corrected.grd"; force=true)
   glob_cp("../../F1/SLC", "params*")
   mv("$stem.PRM", prm1m; force=true)
@@ -403,7 +405,7 @@ if iono == 1
     println(io, "../../F2/iono_phase/intf_o/:$prm2m:$prm2s")
     println(io, "../../F3/iono_phase/intf_o/:$prm3m:$prm3s")
   end
-  run(`merge_unwrap_geocode_tops.csh tmp.filelist $config det_stitch`)
+  run(`$GMTSAR_JULIA $(gmtsar_script("merge_unwrap_geocode_tops")) tmp.filelist $config det_stitch`)
   mv("merge_log", "merge_log1"; force=true)
   mv("tmp_phaselist", "tmp_phaselist1"; force=true)
   mkpath("tmp_first")
@@ -417,11 +419,11 @@ if iono == 1
     println(io, "../../F5/iono_phase/intf_o/:$prm5m:$prm5s")
   end
   write_lines(config, sed_replace_line(readlines(config), "threshold_snaphu", "threshold_snaphu = 0.1"))
-  run(`merge_unwrap_geocode_tops.csh tmp2.filelist $config det_stitch`)
+  run(`$GMTSAR_JULIA $(gmtsar_script("merge_unwrap_geocode_tops")) tmp2.filelist $config det_stitch`)
   mv("merge_log", "merge_log2"; force=true)
   mv("tmp_phaselist", "tmp_phaselist2"; force=true)
-  run(`correct_merge_offset.csh tmp_phaselist1 merge_log1 unwrap.grd unwrap_corrected.grd`)
-  run(`correct_merge_offset.csh tmp_phaselist2 merge_log2 unwrap_corrected.grd unwrap.grd`)
+  run(`$GMTSAR_JULIA $(gmtsar_script("correct_merge_offset")) tmp_phaselist1 merge_log1 unwrap.grd unwrap_corrected.grd`)
+  run(`$GMTSAR_JULIA $(gmtsar_script("correct_merge_offset")) tmp_phaselist2 merge_log2 unwrap_corrected.grd unwrap.grd`)
   rm("unwrap_corrected.grd"; force=true)
   glob_cp("../../F1/SLC", "params*")
   mv("$stem.PRM", prm1m; force=true)
@@ -429,7 +431,7 @@ if iono == 1
   cd("..")
 
   cd("iono_correction")
-  run(`estimate_ionospheric_phase.csh ../intf_h ../intf_l ../intf_o ../../merge $iono_filt_rng $iono_filt_azi`)
+  run(`$GMTSAR_JULIA $(gmtsar_script("estimate_ionospheric_phase")) ../intf_h ../intf_l ../intf_o ../../merge $iono_filt_rng $iono_filt_azi`)
   cd("../../")
 
   cd("merge")
@@ -466,17 +468,17 @@ end
   if parse(Float64, threshold_snaphu) != 0
     if mask_water == 1
       if !isfile("landmask_ra.grd")
-        run(`landmask.csh $region_cut`)
+        run(`$GMTSAR_JULIA $(gmtsar_script("landmask")) $region_cut`)
       end
     end
 
     println("")
     println("SNAPHU.CSH - START")
     println("threshold_snaphu: $threshold_snaphu")
-    if parse(Int, near_interp) == 1
-      run(`snaphu_interp.csh $threshold_snaphu $defomax $region_cut`)
+    if near_interp == "1"
+      run(`$GMTSAR_JULIA $(gmtsar_script("snaphu_interp")) $threshold_snaphu $defomax $region_cut`)
     else
-      run(`snaphu.csh $threshold_snaphu $defomax $region_cut`)
+      run(`$GMTSAR_JULIA $(gmtsar_script("snaphu")) $threshold_snaphu $defomax $region_cut`)
     end
     println("SNAPHU.CSH - END")
   else
@@ -487,23 +489,23 @@ end
   if parse(Float64, threshold_geocode) != 0
     println("")
     println("GEOCODE-START")
-    run(`proj_ra2ll.csh trans.dat phasefilt.grd phasefilt_ll.grd`)
-    run(`proj_ra2ll.csh trans.dat corr.grd corr_ll.grd`)
+    run(`$GMTSAR_JULIA $(gmtsar_script("proj_ra2ll")) trans.dat phasefilt.grd phasefilt_ll.grd`)
+    run(`$GMTSAR_JULIA $(gmtsar_script("proj_ra2ll")) trans.dat corr.grd corr_ll.grd`)
     run(pipeline(`gmt makecpt -Crainbow -T-3.15/3.15/0.05 -Z`, stdout="phase.cpt"))
     BT = field_n(`gmt grdinfo -C corr.grd`, 7)
     run(pipeline(`gmt makecpt -Cgray -T0/$BT/0.05 -Z -M --COLOR_NAN=red`, stdout="corr.cpt"))
-    run(`grd2kml.csh phasefilt_ll phase.cpt`)
-    run(`grd2kml.csh corr_ll corr.cpt`)
+    run(`$GMTSAR_JULIA $(gmtsar_script("grd2kml")) phasefilt_ll phase.cpt`)
+    run(`$GMTSAR_JULIA $(gmtsar_script("grd2kml")) corr_ll corr.cpt`)
 
     if isfile("unwrap.grd")
       run(`gmt grdmath unwrap.grd mask.grd MUL = unwrap_mask.grd`)
-      run(`proj_ra2ll.csh trans.dat unwrap.grd unwrap_ll.grd`)
-      run(`proj_ra2ll.csh trans.dat unwrap_mask.grd unwrap_mask_ll.grd`)
+      run(`$GMTSAR_JULIA $(gmtsar_script("proj_ra2ll")) trans.dat unwrap.grd unwrap_ll.grd`)
+      run(`$GMTSAR_JULIA $(gmtsar_script("proj_ra2ll")) trans.dat unwrap_mask.grd unwrap_mask_ll.grd`)
       BT = field_n(`gmt grdinfo -C unwrap.grd`, 7)
       BL = field_n(`gmt grdinfo -C unwrap.grd`, 6)
       run(pipeline(`gmt makecpt -T$BL/$BT/0.5 -Z`, stdout="unwrap.cpt"))
-      run(`grd2kml.csh unwrap_mask_ll unwrap.cpt`)
-      run(`grd2kml.csh unwrap_ll unwrap.cpt`)
+      run(`$GMTSAR_JULIA $(gmtsar_script("grd2kml")) unwrap_mask_ll unwrap.cpt`)
+      run(`$GMTSAR_JULIA $(gmtsar_script("grd2kml")) unwrap_ll unwrap.cpt`)
     end
 
     println("GEOCODE END")
@@ -512,4 +514,4 @@ end
   end
 end
 
-main(ARGS)
+main(filter(!isempty, ARGS))   # csh drops empty (unset) arguments

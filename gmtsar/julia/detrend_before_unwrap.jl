@@ -1,6 +1,8 @@
 #!/usr/bin/env julia
 #
 # Original version: Eric Lindsey, May 2015
+include(joinpath(@__DIR__, "gmtsar_common.jl"))   # script-to-script calls
+
 using Printf
 
 """find the single subdirectory matching parent/*  (like `cd parent/*/`)"""
@@ -13,9 +15,9 @@ end
 function grep_field_glob(dir::AbstractString, master::AbstractString, pattern::AbstractString)
     files = sort(filter(f -> occursin(master, f) && endswith(f, "PRM"), readdir(dir)))
     for f in files
-        for line in eachline(joinpath(dir, f))
+        for line in readlines(joinpath(dir, f))
             if occursin(pattern, line)
-                return split(line)[3]
+                return get(split(line), 3, "")
             end
         end
     end
@@ -90,7 +92,7 @@ function main(argv::Vector{String})
     # unwrap the patch
     println("unwrap the selected region")
     #snaphu_interp_lindsey.csh $corr_threshold 0 $3
-    run(`snaphu.csh $corr_threshold 1 $(argv[3])`)
+    run(`$GMTSAR_JULIA $(gmtsar_script("snaphu")) $corr_threshold 1 $(argv[3])`)
 
     rng_actual_min = grdinfo_Ineg_field("unwrap.grd", 2)
     rng_actual_max = grdinfo_Ineg_field("unwrap.grd", 3)
@@ -158,12 +160,12 @@ function main(argv::Vector{String})
         if isfile("phasefilt_mask_ll.grd")
             println("redoing geocoding of phasefilt")
             run(`gmt grdmath phasefilt.grd mask2.grd MUL = phasefilt_mask.grd`)
-            run(`proj_ra2ll.csh trans.dat phasefilt_mask.grd phasefilt_mask_ll.grd`)
-            run(`grd2kml.csh phasefilt_mask_ll phase.cpt`)
+            run(`$GMTSAR_JULIA $(gmtsar_script("proj_ra2ll")) trans.dat phasefilt_mask.grd phasefilt_mask_ll.grd`)
+            run(`$GMTSAR_JULIA $(gmtsar_script("grd2kml")) phasefilt_mask_ll phase.cpt`)
         end
 
         cd("../../../")
     end
 end
 
-main(ARGS)
+main(filter(!isempty, ARGS))   # csh drops empty (unset) arguments

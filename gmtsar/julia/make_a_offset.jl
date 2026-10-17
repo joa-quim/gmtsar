@@ -10,6 +10,8 @@
 #
 # Revised by David Sandwell, Dec 28, 2018: corrected azi pixel size using ground velocity and added more comments
 #
+include(joinpath(@__DIR__, "gmtsar_common.jl"))   # script-to-script calls
+
 using Printf
 
 """find the single subdirectory matching parent/*  (like `cd parent/*/`)"""
@@ -20,7 +22,7 @@ end
 
 """grep PATTERN file | awk -F"=" '{print \$2}'  -- first matching line's value after '=', trimmed"""
 function grep_field_eq(file::AbstractString, pattern::AbstractString)
-    for line in eachline(file)
+    for line in readlines(file)
         if occursin(pattern, line)
             return strip(split(line, "=")[2])
         end
@@ -94,7 +96,7 @@ function main(argv::Vector{String})
     #
     ground_vel = SC_vel / sqrt(1 + SC_height / earth_radius)
     println("ground velocity: $ground_vel")
-    azi_size = @sprintf("%10.3f", ground_vel / PRF)
+    azi_size = strip(@sprintf("%10.3f", ground_vel / PRF))
     println("azi pixel size, $azi_size")
     #
     # these SLC's are already aligned so reset all the offsets to zero
@@ -126,7 +128,7 @@ function main(argv::Vector{String})
     # ********edit the following line
     #
     open("azi.dat", "w") do io
-        for line in eachline("freq_xcorr.dat")
+        for line in readlines("freq_xcorr.dat")
             w = split(line)
             v4 = parse(Float64, w[4])
             if v4 > -1.1 && v4 < 1.1
@@ -149,7 +151,7 @@ function main(argv::Vector{String})
     yinc = yinc * 12
     println("xinc:$xinc  yinc:$yinc")
     #
-    run(pipeline(`gmt blockmedian azi.dat -R$xmin/$xmax/$ymin/$ymax -I$xinc/$yinc -Wi`, `awk '{print $1, $2, $3}'`, stdout="azi_b.dat"))
+    run(pipeline(pipeline(`gmt blockmedian azi.dat -R$xmin/$xmax/$ymin/$ymax -I$xinc/$yinc -Wi`, `awk '{print $1, $2, $3}'`), stdout="azi_b.dat"))
     #mv azi_b.dat azi.dat
     run(`gmt xyz2grd azi_b.dat -R$xmin/$xmax/$ymin/$ymax -I$xinc/$yinc -Gaoff.grd`)
     run(`gmt grdmath aoff.grd $azi_size MUL = azi_offset.grd`)
@@ -160,15 +162,15 @@ function main(argv::Vector{String})
     #
     # project to lon/lat coordinates
     #
-    run(`proj_ra2ll_ascii.csh trans.dat azi_b.dat aoff.llo`)
+    run(`$GMTSAR_JULIA $(gmtsar_script("proj_ra2ll_ascii")) trans.dat azi_b.dat aoff.llo`)
     #
     xmin2 = parse(Float64, cmd_field(`gmt gmtinfo aoff.llo -C`, 1))
     xmax2 = parse(Float64, cmd_field(`gmt gmtinfo aoff.llo -C`, 2))
     ymin2 = parse(Float64, cmd_field(`gmt gmtinfo aoff.llo -C`, 3))
     ymax2 = parse(Float64, cmd_field(`gmt gmtinfo aoff.llo -C`, 4))
     #
-    xinc2 = @sprintf("%12.5f", (xmax2 - xmin2) / (nx - 1))
-    yinc2 = @sprintf("%12.5f", (ymax2 - ymin2) / (ny - 1))
+    xinc2 = strip(@sprintf("%12.5f", (xmax2 - xmin2) / (nx - 1)))
+    yinc2 = strip(@sprintf("%12.5f", (ymax2 - ymin2) / (ny - 1)))
     xinc2 = @sprintf("%.6g", parse(Float64, xinc2) * 12)
     yinc2 = @sprintf("%.6g", parse(Float64, yinc2) * 12)
     #
@@ -233,4 +235,4 @@ function main(argv::Vector{String})
     end
 end
 
-main(ARGS)
+main(filter(!isempty, ARGS))   # csh drops empty (unset) arguments

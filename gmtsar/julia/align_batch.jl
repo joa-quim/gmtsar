@@ -4,13 +4,15 @@
 # Align RAW or SLC images using orbits and DEM
 # by Kang Wang in June. 2018
 #
+include(joinpath(@__DIR__, "gmtsar_common.jl"))   # script-to-script calls
+
 using Printf
 
 """grep PATTERN file | awk '{print \$3}'  -- first matching line's 3rd whitespace field"""
 function grep_field(file::AbstractString, pattern::AbstractString)
-    for line in eachline(file)
+    for line in readlines(file)
         if occursin(pattern, line)
-            return split(line)[3]
+            return get(split(line), 3, "")
         end
     end
     error("pattern not found: $pattern in $file")
@@ -19,9 +21,9 @@ end
 """grep PATTERN file | tail -1 | awk '{print \$3}'  -- last matching line's 3rd whitespace field"""
 function grep_field_last(file::AbstractString, pattern::AbstractString)
     result = nothing
-    for line in eachline(file)
+    for line in readlines(file)
         if occursin(pattern, line)
-            result = split(line)[3]
+            result = get(split(line), 3, "")
         end
     end
     result === nothing && error("pattern not found: $pattern in $file")
@@ -115,7 +117,7 @@ function main(argv::Vector{String})
     #
     # clean up
     #
-    run(`cleanup.csh SLC`)
+    run(`$GMTSAR_JULIA $(gmtsar_script("cleanup")) SLC`)
     println()
     println("START ALIGN A STACK OF IMAGES")
     println()
@@ -180,7 +182,7 @@ function main(argv::Vector{String})
 
         if data_type == "RAW"
             println("Focusing the master - START")
-            run(`sarp.csh $master.PRM`)
+            run(`$GMTSAR_JULIA $(gmtsar_script("sarp")) $master.PRM`)
             println("Focusing the master - END")
         end
 
@@ -208,7 +210,7 @@ function main(argv::Vector{String})
 
             if data_type == "RAW"
                 println("Focusing the aligned - START")
-                run(`sarp.csh $aligned.PRM`)
+                run(`$GMTSAR_JULIA $(gmtsar_script("sarp")) $aligned.PRM`)
                 println("Focusing the aligned - END")
             end
 
@@ -228,7 +230,7 @@ function main(argv::Vector{String})
                 end
             end
             open("offset.dat", "w") do io
-                for line in eachline("tmp.dat")
+                for line in readlines("tmp.dat")
                     w = split(line)
                     v1 = parse(Float64, w[1]); v3 = parse(Float64, w[3])
                     if v1 > 0 && v1 < rmax && v3 > 0 && v3 < amax
@@ -237,20 +239,20 @@ function main(argv::Vector{String})
                 end
             end
             open("r.xyz", "w") do io
-                for line in eachline("offset.dat")
+                for line in readlines("offset.dat")
                     w = split(line)
                     @printf(io, "%.6f %.6f %.6f \n", parse(Float64, w[1]), parse(Float64, w[3]), parse(Float64, w[2]))
                 end
             end
             open("a.xyz", "w") do io
-                for line in eachline("offset.dat")
+                for line in readlines("offset.dat")
                     w = split(line)
                     @printf(io, "%.6f %.6f %.6f \n", parse(Float64, w[1]), parse(Float64, w[3]), parse(Float64, w[4]))
                 end
             end
 
             open("$aligned.PRM", "a") do io
-                run(pipeline(`fitoffset.csh 3 3 offset.dat`, stdout=io))
+                run(pipeline(`$GMTSAR_JULIA $(gmtsar_script("fitoffset")) 3 3 offset.dat`, stdout=io))
             end
             run(`resamp $master.PRM $aligned.PRM $aligned.PRMresamp $aligned.SLCresamp 4`)
             mv("$aligned.SLC", "$aligned.SLC_old"; force=true)
@@ -271,7 +273,7 @@ function main(argv::Vector{String})
                 run(`update_PRM tmp.PRM a_stretch_a 0.0`)
                 run(`xcorr $master.PRM tmp.PRM -xsearch 128 -ysearch 256 -nx 15 -ny 30`)
                 open("tmp.PRM", "a") do io
-                    run(pipeline(`fitoffset.csh 1 1 freq_xcorr.dat 20`, stdout=io))
+                    run(pipeline(`$GMTSAR_JULIA $(gmtsar_script("fitoffset")) 1 1 freq_xcorr.dat 20`, stdout=io))
                 end
                 run(`resamp $master.PRM tmp.PRM $aligned.PRMresamp $aligned.SLCresamp 4`)
                 mv("$aligned.SLC", "$aligned.SLC_old"; force=true)
@@ -292,4 +294,4 @@ function main(argv::Vector{String})
     end
 end
 
-main(ARGS)
+main(filter(!isempty, ARGS))   # csh drops empty (unset) arguments

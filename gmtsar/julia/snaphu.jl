@@ -5,6 +5,8 @@
 # alias rm 'rm -f'
 # unset noclobber
 #
+include(joinpath(@__DIR__, "gmtsar_common.jl"))   # script-to-script calls
+
 using Printf
 
 """cmd | cut -fN  -- Nth tab-separated field of a subprocess's captured stdout"""
@@ -82,16 +84,17 @@ function main(argv::Vector{String})
     #
     # run snaphu
     #
-    sharedir = strip(read(`gmtsar_sharedir.csh`, String))
+    sharedir = strip(read(`$GMTSAR_JULIA $(gmtsar_script("gmtsar_sharedir"))`, String))
     println("unwrapping phase with snaphu - higher threshold for faster unwrapping ")
 
     if argv[2] == "0"
         width = cut_field_cmd(`gmt grdinfo -C phase_patch.grd`, 10)
-        run(`snaphu phase.in $width -f $sharedir/snaphu/config/snaphu.conf.brief -c corr.in -o unwrap.out -v -s -g conncomp.out`)
+        run(`gmt snaphu -Dphase.in -R$width -f$sharedir/snaphu/config/snaphu.conf.brief -ccorr.in -ounwrap.out -v -s -gconncomp.out`)
     else
-        run(pipeline(`sed s/.\*DEFOMAX_CYCLE.\*/DEFOMAX_CYCLE\ \ $(argv[2])/g $sharedir/snaphu/config/snaphu.conf.brief`, stdout="snaphu.conf.brief"))
+        # sed s/.*DEFOMAX_CYCLE.*/DEFOMAX_CYCLE  <defomax>/g, in Julia (no sed on Windows)
+        write("snaphu.conf.brief", replace(read("$sharedir/snaphu/config/snaphu.conf.brief", String), r".*DEFOMAX_CYCLE.*" => "DEFOMAX_CYCLE  $(argv[2])"))
         width = cut_field_cmd(`gmt grdinfo -C phase_patch.grd`, 10)
-        run(`snaphu phase.in $width -f snaphu.conf.brief -c corr.in -o unwrap.out -v -d -g conncomp.out`)
+        run(`gmt snaphu -Dphase.in -R$width -fsnaphu.conf.brief -ccorr.in -ounwrap.out -v -d -gconncomp.out`)
     end
     #
     # convert to grd
@@ -129,9 +132,9 @@ function main(argv::Vector{String})
     #
     run(`gmt grdgradient unwrap.grd -Nt.9 -A0. -Gunwrap_grad.grd`)
     tmp_tokens = split(strip(read(`gmt grdinfo -C -L2 unwrap.grd`, String)))
-    limitU = @sprintf("%5.1f", parse(Float64, tmp_tokens[12]) + parse(Float64, tmp_tokens[13]) * 2)
-    limitL = @sprintf("%5.1f", parse(Float64, tmp_tokens[12]) - parse(Float64, tmp_tokens[13]) * 2)
-    std = @sprintf("%5.1f", parse(Float64, tmp_tokens[13]))
+    limitU = strip(@sprintf("%5.1f", parse(Float64, tmp_tokens[12]) + parse(Float64, tmp_tokens[13]) * 2))
+    limitL = strip(@sprintf("%5.1f", parse(Float64, tmp_tokens[12]) - parse(Float64, tmp_tokens[13]) * 2))
+    std = strip(@sprintf("%5.1f", parse(Float64, tmp_tokens[13])))
     run(pipeline(`gmt makecpt -Cseis -I -Z -T$limitL/$limitU/1 -D`, stdout="unwrap.cpt"))
     run(pipeline(`gmt grdimage unwrap.grd -Iunwrap_grad.grd -Cunwrap.cpt -JX6.5i -Bxaf+lRange -Byaf+lAzimuth -BWSen -X1.3i -Y3i -P -K`, stdout="unwrap.ps"))
     open("unwrap.ps", "a") do io
@@ -165,4 +168,4 @@ function main(argv::Vector{String})
     #
 end
 
-main(ARGS)
+main(filter(!isempty, ARGS))   # csh drops empty (unset) arguments

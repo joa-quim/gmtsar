@@ -8,12 +8,14 @@
 #
 #
 
+include(joinpath(@__DIR__, "gmtsar_common.jl"))   # script-to-script calls
+
 """grep PATTERN file | tail -1 | awk '{print \$3}'  -- last matching line's 3rd whitespace field"""
 function grep_field_last(file::AbstractString, pattern::AbstractString)
     result = nothing
-    for line in eachline(file)
+    for line in readlines(file)
         if occursin(pattern, line)
-            result = split(line)[3]
+            result = get(split(line), 3, "")
         end
     end
     result === nothing && error("pattern not found: $pattern in $file")
@@ -22,9 +24,9 @@ end
 
 """grep PATTERN file | awk '{print \$3}'  -- first matching line's 3rd whitespace field"""
 function grep_field(file::AbstractString, pattern::AbstractString)
-    for line in eachline(file)
+    for line in readlines(file)
         if occursin(pattern, line)
-            return split(line)[3]
+            return get(split(line), 3, "")
         end
     end
     error("pattern not found: $pattern in $file")
@@ -137,9 +139,9 @@ function main(argv::Vector{String})
             rm("tmp"; force=true)
 
             if length(argv) == 3
-                run(`merge_unwrap_geocode_tops.csh tmp.filelist $config $det_stitch`)
+                run(`$GMTSAR_JULIA $(gmtsar_script("merge_unwrap_geocode_tops")) tmp.filelist $config $det_stitch`)
             else
-                run(`merge_unwrap_geocode_tops.csh tmp.filelist $config`)
+                run(`$GMTSAR_JULIA $(gmtsar_script("merge_unwrap_geocode_tops")) tmp.filelist $config`)
             end
 
             if !isfile(joinpath("..", "trans.dat")) && isfile("trans.dat")
@@ -165,4 +167,4 @@ function main(argv::Vector{String})
 
 end
 
-main(ARGS)
+main(filter(!isempty, ARGS))   # csh drops empty (unset) arguments

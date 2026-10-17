@@ -39,7 +39,7 @@ function main(argv::Vector{String})
     #  first extract the range and azimuth data
     #
     open("r.xyz", "w") do io
-        for line in eachline(argv[3])
+        for line in readlines(argv[3])
             w = split(line)
             if length(w) >= 5 && parse(Float64, w[5]) > snr_val
                 @printf(io, "%f %f %f \n", parse(Float64, w[1]), parse(Float64, w[3]), parse(Float64, w[2]))
@@ -47,7 +47,7 @@ function main(argv::Vector{String})
         end
     end
     open("a.xyz", "w") do io
-        for line in eachline(argv[3])
+        for line in readlines(argv[3])
             w = split(line)
             if length(w) >= 5 && parse(Float64, w[5]) > snr_val
                 @printf(io, "%f %f %f \n", parse(Float64, w[1]), parse(Float64, w[3]), parse(Float64, w[4]))
@@ -101,14 +101,14 @@ function main(argv::Vector{String})
     end
 
     open("tmp.coef", "w") do io
-        for line in eachline("rm.coef")
+        for line in readlines("rm.coef")
             w = split(line)
             println(io, "$(w[1]) $(w[2]) $(w[3])")
         end
     end
     mv("tmp.coef", "rm.coef"; force=true)
     open("tmp.coef", "w") do io
-        for line in eachline("am.coef")
+        for line in readlines("am.coef")
             w = split(line)
             println(io, "$(w[1]) $(w[2]) $(w[3])")
         end
@@ -145,32 +145,32 @@ function main(argv::Vector{String})
     #   now convert to range coefficients
     #
     open("rshift", "w") do io
-        for line in eachline("rm.rng")
+        for line in readlines("rm.rng")
             w = parse.(Float64, split(line))
             f1, f2, f3, f4, f5, f6, f7 = w[1], w[2], w[3], w[4], w[5], w[6], w[7]
             val = f1 - f2 * (f5 + f4) / (f5 - f4) - f3 * (f7 + f6) / (f7 - f6)
             println(io, val)
         end
     end
-    for line in eachline("rshift")
+    for line in readlines("rshift")
         v = parse(Float64, line)
         if v >= 0
             @printf("%s %g \n", "rshift = ", trunc(v))
             @printf("%s %g \n", "sub_int_r = ", rem(v, 1))
         end
     end
-    for line in eachline("rshift")
+    for line in readlines("rshift")
         v = parse(Float64, line)
         if v < 0
             @printf("%s %g \n", "rshift = ", trunc(v) - 1)
             @printf("%s %g \n", "sub_int_r = ", rem(v, 1) + 1)
         end
     end
-    for line in eachline("rm.rng")
+    for line in readlines("rm.rng")
         w = parse.(Float64, split(line))
         @printf("%s %g \n", "stretch_r = ", w[2] * 2.0 / (w[5] - w[4]))
     end
-    for line in eachline("rm.rng")
+    for line in readlines("rm.rng")
         w = parse.(Float64, split(line))
         @printf("%s %g \n", "a_stretch_r = ", w[3] * 2.0 / (w[7] - w[6]))
     end
@@ -178,32 +178,32 @@ function main(argv::Vector{String})
     #  now convert to azimuth coefficients
     #
     open("ashift", "w") do io
-        for line in eachline("am.rng")
+        for line in readlines("am.rng")
             w = parse.(Float64, split(line))
             f1, f2, f3, f4, f5, f6, f7 = w[1], w[2], w[3], w[4], w[5], w[6], w[7]
             val = f1 - f2 * (f5 + f4) / (f5 - f4) - f3 * (f7 + f6) / (f7 - f6)
             println(io, val)
         end
     end
-    for line in eachline("ashift")
+    for line in readlines("ashift")
         v = parse(Float64, line)
         if v >= 0
             @printf("%s %g \n", "ashift = ", trunc(v))
             @printf("%s %g \n", "sub_int_a = ", rem(v, 1))
         end
     end
-    for line in eachline("ashift")
+    for line in readlines("ashift")
         v = parse(Float64, line)
         if v < 0
             @printf("%s %g \n", "ashift = ", trunc(v) - 1)
             @printf("%s %g \n", "sub_int_a = ", rem(v, 1) + 1)
         end
     end
-    for line in eachline("am.rng")
+    for line in readlines("am.rng")
         w = parse.(Float64, split(line))
         @printf("%s %g \n", "stretch_a = ", w[2] * 2.0 / (w[5] - w[4]))
     end
-    for line in eachline("am.rng")
+    for line in readlines("am.rng")
         w = parse.(Float64, split(line))
         @printf("%s %g \n", "a_stretch_a = ", w[3] * 2.0 / (w[7] - w[6]))
     end
@@ -220,4 +220,4 @@ function main(argv::Vector{String})
     #  echo " NPTS0, NPTS  " $NPTS0 $NPTS
 end
 
-main(ARGS)
+main(filter(!isempty, ARGS))   # csh drops empty (unset) arguments

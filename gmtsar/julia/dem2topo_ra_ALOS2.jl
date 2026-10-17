@@ -13,9 +13,9 @@
 
 """grep PATTERN file | awk '{print \$3}'  -- first matching line's 3rd whitespace field"""
 function grep_field(file::AbstractString, pattern::AbstractString)
-    for line in eachline(file)
+    for line in readlines(file)
         if occursin(pattern, line)
-            return split(line)[3]
+            return get(split(line), 3, "")
         end
     end
     error("pattern not found: $pattern in $file")
@@ -30,9 +30,9 @@ end
 function grep_field_glob_int(pattern::AbstractString, suffix::AbstractString)
     files = sort(filter(f -> endswith(f, suffix), readdir(".")))
     for f in files
-        for line in eachline(f)
+        for line in readlines(f)
             if occursin(pattern, line)
-                return trunc(Int, parse(Float64, split(line)[3]))
+                return trunc(Int, parse(Float64, get(split(line), 3, "")))
             end
         end
     end
@@ -41,9 +41,9 @@ end
 
 """grep PATTERN file | awk 'NR==1{print \$4}'  -- first match, 4th field"""
 function grep_field4(file::AbstractString, pattern::AbstractString)
-    for line in eachline(file)
+    for line in readlines(file)
         if occursin(pattern, line)
-            return split(line)[4]
+            return get(split(line), 4, "")
         end
     end
     error("pattern not found: $pattern in $file")
@@ -106,20 +106,20 @@ function main(argv::Vector{String})
 
     if SC == "5"
         println(" processing for ALOS data")
-        run(pipeline(`gmt grd2xyz --FORMAT_FLOAT_OUT=%lf $(argv[2]) -s`, `SAT_llt2rat $(argv[1]) 0 -bod`, stdout="trans.dat"))
+        run(pipeline(pipeline(`gmt grd2xyz --FORMAT_FLOAT_OUT=%lf $(argv[2]) -s`, `SAT_llt2rat $(argv[1]) 0 -bod`), stdout="trans.dat"))
     else
         println(" processing generic data")
         if SC == "10"
-            run(pipeline(`gmt grd2xyz --FORMAT_FLOAT_OUT=%lf $(argv[2]) -s`, `SAT_llt2rat $(argv[1]) 1 -bod`, stdout="trans.dat"))
+            run(pipeline(pipeline(`gmt grd2xyz --FORMAT_FLOAT_OUT=%lf $(argv[2]) -s`, `SAT_llt2rat $(argv[1]) 1 -bod`), stdout="trans.dat"))
         else
-            run(pipeline(`gmt grd2xyz --FORMAT_FLOAT_OUT=%lf $(argv[2]) -s`, `SAT_llt2rat $(argv[1]) 0 -bod`, stdout="trans.dat"))
+            run(pipeline(pipeline(`gmt grd2xyz --FORMAT_FLOAT_OUT=%lf $(argv[2]) -s`, `SAT_llt2rat $(argv[1]) 0 -bod`), stdout="trans.dat"))
         end
     end
     #
     # use an aximuth spacing of 2 for low PRF data such as S1 TOPS
     #
     if PRF < 1000
-        run(pipeline(`gmt gmtconvert trans.dat -o0,1,2 -bi5d -bo3d`, `gmt blockmedian -R0/$XMAX/0/$YMAX -I2/32 -bi3d -bo3d -r $V`, stdout="temp.rat"))
+        run(pipeline(pipeline(`gmt gmtconvert trans.dat -o0,1,2 -bi5d -bo3d`, `gmt blockmedian -R0/$XMAX/0/$YMAX -I2/32 -bi3d -bo3d -r $V`), stdout="temp.rat"))
         open("tmp.hint", "w") do io
             run(pipeline(`gmt surface temp.rat -Q -R0/$XMAX/0/$YMAX -I2/32 -bi3d -T.50 -N1000 -Gpixel.grd -r $V`, stdout=io, stderr=io))
         end
@@ -128,7 +128,7 @@ function main(argv::Vector{String})
         run(`gmt surface temp.rat $nregion -I2/32 -bi3d -T.50 -N1000 -Gpixel.grd -r $V`)
         run(`gmt grdsample pixel.grd -R0/$XMAX/0/$YMAX -I2/32 -r -Gpixel.grd`)
     else
-        run(pipeline(`gmt gmtconvert trans.dat -o0,1,2 -bi5d -bo3d`, `gmt blockmedian -R0/$XMAX/0/$YMAX -I2/32 -bi3d -bo3d -r $V`, stdout="temp.rat"))
+        run(pipeline(pipeline(`gmt gmtconvert trans.dat -o0,1,2 -bi5d -bo3d`, `gmt blockmedian -R0/$XMAX/0/$YMAX -I2/32 -bi3d -bo3d -r $V`), stdout="temp.rat"))
         open("tmp.hint", "w") do io
             run(pipeline(`gmt surface temp.rat -Q -R0/$XMAX/0/$YMAX -I2/32 -bi3d -T.50 -N1000 -Gpixel.grd -r $V`, stdout=io, stderr=io))
         end
@@ -160,4 +160,4 @@ function main(argv::Vector{String})
     rm("topo_ra.cpt"; force=true)
 end
 
-main(ARGS)
+main(filter(!isempty, ARGS))   # csh drops empty (unset) arguments

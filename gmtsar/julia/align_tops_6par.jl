@@ -14,13 +14,15 @@
 # alias rm 'rm -f'
 # unset noclobber
 #
+include(joinpath(@__DIR__, "gmtsar_common.jl"))   # script-to-script calls
+
 using Printf
 
 """grep PATTERN file | awk '{print \$3}'  -- first matching line's 3rd whitespace field"""
 function grep_field(file::AbstractString, pattern::AbstractString)
-    for line in eachline(file)
+    for line in readlines(file)
         if occursin(pattern, line)
-            return split(line)[3]
+            return get(split(line), 3, "")
         end
     end
     error("pattern not found: $pattern in $file")
@@ -29,9 +31,9 @@ end
 """grep PATTERN file | tail -1 | awk '{print \$3}'  -- last matching line's 3rd whitespace field"""
 function grep_field_last(file::AbstractString, pattern::AbstractString)
     result = nothing
-    for line in eachline(file)
+    for line in readlines(file)
         if occursin(pattern, line)
-            result = split(line)[3]
+            result = get(split(line), 3, "")
         end
     end
     result === nothing && error("pattern not found: $pattern in $file")
@@ -41,9 +43,9 @@ end
 """grep PATTERN file | grep -v EXCLUDE | tail -1 | awk '{print \$3}'"""
 function grep_field_exclude_last(file::AbstractString, pattern::AbstractString, exclude::AbstractString)
     result = nothing
-    for line in eachline(file)
+    for line in readlines(file)
         if occursin(pattern, line) && !occursin(exclude, line)
-            result = split(line)[3]
+            result = get(split(line), 3, "")
         end
     end
     result === nothing && error("pattern not found: $pattern (excluding $exclude) in $file")
@@ -177,7 +179,7 @@ function main(argv::Vector{String})
     rmax = parse(Float64, grep_field("$spre.PRM", "num_rng_bins"))
     amax = parse(Float64, grep_field("$spre.PRM", "num_lines"))
     open("offset.dat", "w") do io
-        for line in eachline("tmp.dat")
+        for line in readlines("tmp.dat")
             w = split(line)
             v1 = parse(Float64, w[1]); v3 = parse(Float64, w[3])
             if v1 > 0 && v1 < rmax && v3 > 0 && v3 < amax
@@ -189,7 +191,7 @@ function main(argv::Vector{String})
     #  run fitoffset
     #
     open("$spre.PRM", "a") do io
-        run(pipeline(`fitoffset.csh 3 3 offset.dat`, stdout=io))
+        run(pipeline(`$GMTSAR_JULIA $(gmtsar_script("fitoffset")) 3 3 offset.dat`, stdout=io))
     end
     #
     #  save the rshift and ashift for the end
@@ -257,4 +259,4 @@ function main(argv::Vector{String})
     end
 end
 
-main(ARGS)
+main(filter(!isempty, ARGS))   # csh drops empty (unset) arguments
