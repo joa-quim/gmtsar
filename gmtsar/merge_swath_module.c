@@ -87,7 +87,10 @@ EXTERN_MSC int GMT_merge_swath(void *V_API, int mode, void *args) {
 			if (stem && n_pair) { legacy[3] = stem; legacy[4] = n1_str; legacy[5] = n2_str; argc = 6; }
 			else if (stem) { legacy[3] = stem; argc = 4; }
 			else if (n_pair) { legacy[3] = n1_str; legacy[4] = n2_str; argc = 5; }
+			unsigned int gmtsar_pad = API->pad;	/* the legacy code's grids use the pad its own session had: 0 */
+			API->pad = 0U; gmt_set_pad(GMT, 0U);
 			error = gmtsar_merge_swath_run(API, argc, legacy);
+			API->pad = gmtsar_pad; gmt_set_pad(GMT, gmtsar_pad);
 		}
 	}
 

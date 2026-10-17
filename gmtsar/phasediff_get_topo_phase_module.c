@@ -60,7 +60,10 @@ EXTERN_MSC int GMT_phasediff_get_topo_phase(void *V_API, int mode, void *args) {
 #define ADD_PAIR(flag, value) do { if (value) { legacy[argc++] = flag; legacy[argc++] = value; } } while (0)
 	ADD_PAIR("-topo", topo); ADD_PAIR("-model", model);
 #undef ADD_PAIR
+	unsigned int gmtsar_pad = API->pad;	/* the legacy code's grids use the pad its own session had: 0 */
+	API->pad = 0U; gmt_set_pad(GMT, 0U);
 	if (!error) error = gmtsar_phasediff_get_topo_phase_run(API, argc, legacy);
+	API->pad = gmtsar_pad; gmt_set_pad(GMT, gmtsar_pad);
 
 	gmt_end_module(GMT, copy);
 	return error;

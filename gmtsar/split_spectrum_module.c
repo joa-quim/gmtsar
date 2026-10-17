@@ -58,7 +58,10 @@ EXTERN_MSC int GMT_split_spectrum(void *V_API, int mode, void *args) {
 	legacy[0] = (char *)THIS_MODULE_CLASSIC_NAME;
 	legacy[1] = prm1;
 	if (half_band) { legacy[2] = "1"; argc = 3; }
+	unsigned int gmtsar_pad = API->pad;	/* the legacy code's grids use the pad its own session had: 0 */
+	API->pad = 0U; gmt_set_pad(GMT, 0U);
 	if (!error) error = gmtsar_split_spectrum_run(API, argc, legacy);
+	API->pad = gmtsar_pad; gmt_set_pad(GMT, gmtsar_pad);
 
 	gmt_end_module(GMT, copy);
 	return error;

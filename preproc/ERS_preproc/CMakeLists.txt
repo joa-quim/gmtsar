@@ -24,7 +24,7 @@ add_library (ERS_modules OBJECT
 	${CMAKE_CURRENT_SOURCE_DIR}/../../gmtsar/read_sarleader_ccrs_module.c
 	${CMAKE_CURRENT_SOURCE_DIR}/../../gmtsar/read_sarleader_dpaf_module.c
 	${CMAKE_CURRENT_SOURCE_DIR}/../../gmtsar/ccrs2dpaf_module.c)
-target_include_directories (ERS_modules PRIVATE ${CMAKE_SOURCE_DIR} include ../../gmtsar ../ALOS_preproc/include ${GMT_INCLUDE_DIR} ${GDAL_INCLUDE_DIR})
+target_include_directories (ERS_modules PRIVATE ${CMAKE_SOURCE_DIR} include ../../gmtsar ../ALOS_preproc/include ${GMT_INCLUDE_DIR} ${GDAL_INCLUDE_DIR} ${GETOPT_INC})
 target_sources (gmtsar PRIVATE $<TARGET_OBJECTS:ERS_modules>)
 target_link_libraries (gmtsar ${GETOPT_LIB})
 

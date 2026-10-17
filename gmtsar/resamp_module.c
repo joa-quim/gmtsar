@@ -94,7 +94,10 @@ EXTERN_MSC int GMT_resamp(void *V_API, int mode, void *args) {
 			legacy[7] = agrid;
 			argc = 8;
 		}
+		unsigned int gmtsar_pad = API->pad;	/* the legacy code's grids use the pad its own session had: 0 */
+		API->pad = 0U; gmt_set_pad(GMT, 0U);
 		error = gmtsar_resamp_run(API, argc, legacy);
+		API->pad = gmtsar_pad; gmt_set_pad(GMT, gmtsar_pad);
 	}
 
 	gmt_end_module(GMT, copy);

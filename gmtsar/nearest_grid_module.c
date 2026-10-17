@@ -73,7 +73,10 @@ EXTERN_MSC int GMT_nearest_grid(void *V_API, int mode, void *args) {
 		else if (opt->option != 'V') error += gmt_default_option_error(GMT, opt);
 	}
 	if (!error && (!input || !output)) error = nearest_grid_usage(API, GMT_USAGE);
+	unsigned int gmtsar_pad = API->pad;	/* the legacy code's grids use the pad its own session had: 0 */
+	API->pad = 0U; gmt_set_pad(GMT, 0U);
 	if (!error) error = gmtsar_nearest_grid_run(API, input, output, (int)parsed_radius);
+	API->pad = gmtsar_pad; gmt_set_pad(GMT, gmtsar_pad);
 
 cleanup:
 	gmt_end_module(GMT, GMT_cpy);

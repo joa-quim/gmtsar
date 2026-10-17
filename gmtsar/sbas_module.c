@@ -115,7 +115,10 @@ EXTERN_MSC int GMT_sbas(void *V_API, int mode, void *args) {
 		if (dem_flag) legacy[argc++] = "-dem";
 		if (mmap_flag) legacy[argc++] = "-mmap";
 		if (robust_flag) legacy[argc++] = "-robust";
+		unsigned int gmtsar_pad = API->pad;	/* the legacy code's grids use the pad its own session had: 0 */
+		API->pad = 0U; gmt_set_pad(GMT, 0U);
 		error = gmtsar_sbas_run(API, argc, legacy);
+		API->pad = gmtsar_pad; gmt_set_pad(GMT, gmtsar_pad);
 	}
 
 	gmt_end_module(GMT, copy);

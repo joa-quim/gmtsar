@@ -80,7 +80,10 @@ EXTERN_MSC int GMT_conv(void *V_API, int mode, void *args) {
 		snprintf(jdec_str, sizeof(jdec_str), "%ld", jdec);
 		legacy[0] = (char *)THIS_MODULE_CLASSIC_NAME;
 		legacy[1] = idec_str; legacy[2] = jdec_str; legacy[3] = filter_file; legacy[4] = input; legacy[5] = output;
+		unsigned int gmtsar_pad = API->pad;	/* the legacy code's grids use the pad its own session had: 0 */
+		API->pad = 0U; gmt_set_pad(GMT, 0U);
 		error = gmtsar_conv_run(API, 6, legacy);
+		API->pad = gmtsar_pad; gmt_set_pad(GMT, gmtsar_pad);
 	}
 
 	gmt_end_module(GMT, copy);

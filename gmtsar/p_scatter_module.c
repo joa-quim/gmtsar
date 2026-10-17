@@ -74,7 +74,10 @@ EXTERN_MSC int GMT_p_scatter(void *V_API, int mode, void *args) {
 		legacy[1] = filelist;
 		legacy[2] = fileout;
 		legacy[3] = mode_str;
+		unsigned int gmtsar_pad = API->pad;	/* the legacy code's grids use the pad its own session had: 0 */
+		API->pad = 0U; gmt_set_pad(GMT, 0U);
 		error = gmtsar_p_scatter_run(API, 4, legacy);
+		API->pad = gmtsar_pad; gmt_set_pad(GMT, gmtsar_pad);
 	}
 
 	gmt_end_module(GMT, copy);

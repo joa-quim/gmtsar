@@ -89,7 +89,10 @@ EXTERN_MSC int GMT_offset_topo(void *V_API, int mode, void *args) {
 		legacy[4] = y_str;
 		legacy[5] = s_str;
 		if (shifted) { legacy[6] = shifted; argc = 7; }
+		unsigned int gmtsar_pad = API->pad;	/* the legacy code's grids use the pad its own session had: 0 */
+		API->pad = 0U; gmt_set_pad(GMT, 0U);
 		error = gmtsar_offset_topo_run(API, argc, legacy);
+		API->pad = gmtsar_pad; gmt_set_pad(GMT, gmtsar_pad);
 	}
 
 	gmt_end_module(GMT, copy);

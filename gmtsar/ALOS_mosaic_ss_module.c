@@ -95,7 +95,10 @@ EXTERN_MSC int GMT_ALOS_mosaic_ss(void *V_API, int mode, void *args) {
 		legacy[argc++] = mosaic;
 		legacy[argc++] = dec;
 		legacy[argc++] = dir;
+		unsigned int gmtsar_pad = API->pad;	/* the legacy code's grids use the pad its own session had: 2 */
+		API->pad = 2U; gmt_set_pad(GMT, 2U);
 		error = gmtsar_ALOS_mosaic_ss_run(API, argc, legacy);
+		API->pad = gmtsar_pad; gmt_set_pad(GMT, gmtsar_pad);
 	}
 
 	gmt_end_module(GMT, copy);

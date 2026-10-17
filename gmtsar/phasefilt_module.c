@@ -48,6 +48,9 @@ EXTERN_MSC int GMT_phasefilt(void *V_API, int mode, void *args) {
 	ADD_PAIR("-psize",psize); ADD_PAIR("-alpha",alpha); ADD_PAIR("-corrfilt",corr); ADD_PAIR("-real_out",realout);
 	ADD_PAIR("-imag_out",imagout); ADD_PAIR("-diff_out",diffout);
 #undef ADD_PAIR
+	unsigned int gmtsar_pad = API->pad;	/* the legacy code's grids use the pad its own session had: 0 */
+	API->pad = 0U; gmt_set_pad(GMT, 0U);
 	if (want_verbose) legacy[argc++]="-v"; if (!error) error=gmtsar_phasefilt_run(API,argc,legacy);
+	API->pad = gmtsar_pad; gmt_set_pad(GMT, gmtsar_pad);
 	gmt_end_module(GMT,copy); return error;
 }

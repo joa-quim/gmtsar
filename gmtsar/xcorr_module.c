@@ -123,7 +123,10 @@ EXTERN_MSC int GMT_xcorr(void *V_API, int mode, void *args) {
 		if (have_s) { snprintf(s_str, sizeof(s_str), "%ld", xsearch); legacy[argc++] = "-xsearch"; legacy[argc++] = s_str; }
 		if (have_t) { snprintf(t_str, sizeof(t_str), "%ld", ysearch); legacy[argc++] = "-ysearch"; legacy[argc++] = t_str; }
 		if (have_w) { snprintf(w_str, sizeof(w_str), "%ld", w_val); legacy[argc++] = "-interp"; legacy[argc++] = w_str; }
+		unsigned int gmtsar_pad = API->pad;	/* the legacy code's grids use the pad its own session had: 0 */
+		API->pad = 0U; gmt_set_pad(GMT, 0U);
 		error = gmtsar_xcorr_run(API, argc, legacy);
+		API->pad = gmtsar_pad; gmt_set_pad(GMT, gmtsar_pad);
 	}
 
 	gmt_end_module(GMT, copy);

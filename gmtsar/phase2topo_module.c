@@ -60,7 +60,10 @@ EXTERN_MSC int GMT_phase2topo(void *V_API, int mode, void *args) {
 
 	legacy[0] = (char *)THIS_MODULE_CLASSIC_NAME;
 	legacy[1] = prm; legacy[2] = topo_in; legacy[3] = res_phase; legacy[4] = topo_out;
+	unsigned int gmtsar_pad = API->pad;	/* the legacy code's grids use the pad its own session had: 0 */
+	API->pad = 0U; gmt_set_pad(GMT, 0U);
 	if (!error) error = gmtsar_phase2topo_run(API, 5, legacy);
+	API->pad = gmtsar_pad; gmt_set_pad(GMT, gmtsar_pad);
 
 	gmt_end_module(GMT, copy);
 	return error;

@@ -56,6 +56,11 @@
 #endif
 #include <time.h>
 #include <unistd.h>
+#ifdef _MSC_VER
+/* getopt is not in the MSVC CRT. Its header declares optarg/optind the way that library exports
+ * them (dllimport for a DLL such as conda-forge's getopt-win32). */
+#include <getopt.h>
+#endif
 
 #include <errno.h>
 #include <fcntl.h>
@@ -152,8 +157,10 @@ int gmtsar_ers_line_fixer_run(int argc, char *argv[]) {
 	int pcount; /* actual count of data pixels */
 	double pri, swst;
 	double near_range, near_range_in = 0.0;
+#ifndef _MSC_VER
 	extern char *optarg;
 	extern int optind;
+#endif
 
 	/*------------------------*/
 	/* check endian           */

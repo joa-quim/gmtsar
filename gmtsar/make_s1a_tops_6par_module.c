@@ -75,7 +75,10 @@ EXTERN_MSC int GMT_make_s1a_tops_6par(void *V_API, int mode, void *args) {
 	legacy[0] = (char *)THIS_MODULE_CLASSIC_NAME;
 	legacy[1] = xml_file; legacy[2] = tiff_file; legacy[3] = output_stem; legacy[4] = mode_str;
 	legacy[5] = rng; legacy[6] = azi; legacy[7] = stretch_a; legacy[8] = a_stretch_a; legacy[9] = stretch_r; legacy[10] = a_stretch_r;
+	unsigned int gmtsar_pad = API->pad;	/* the legacy code's grids use the pad its own session had: 0 */
+	API->pad = 0U; gmt_set_pad(GMT, 0U);
 	if (!error) error = gmtsar_make_s1a_tops_6par_run(API, 11, legacy);
+	API->pad = gmtsar_pad; gmt_set_pad(GMT, gmtsar_pad);
 
 	gmt_end_module(GMT, copy);
 	return error;

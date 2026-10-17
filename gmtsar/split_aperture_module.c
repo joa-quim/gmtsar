@@ -53,7 +53,10 @@ EXTERN_MSC int GMT_split_aperture(void *V_API, int mode, void *args) {
 	if (!error && !prm_file) error = usage(API, GMT_USAGE);
 
 	legacy[0] = (char *)THIS_MODULE_CLASSIC_NAME; legacy[1] = prm_file;
+	unsigned int gmtsar_pad = API->pad;	/* the legacy code's grids use the pad its own session had: 0 */
+	API->pad = 0U; gmt_set_pad(GMT, 0U);
 	if (!error) error = gmtsar_split_aperture_run(API, 2, legacy);
+	API->pad = gmtsar_pad; gmt_set_pad(GMT, gmtsar_pad);
 
 	gmt_end_module(GMT, copy);
 	return error;
