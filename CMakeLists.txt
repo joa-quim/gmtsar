@@ -45,6 +45,9 @@ include (CTest)
 # CMake builds the implementations into the GMTSAR module library.  The
 # traditional Makefiles still compile these same sources as standalone tools.
 add_compile_definitions (GMTSAR_MODULE_BUILD)
+# The sensor OBJECT and STATIC libraries end up inside that shared library,
+# so they must be position independent too.
+set (CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # MSVC needs an export table for legacy libraries whose headers do not
 # consistently use dllexport.

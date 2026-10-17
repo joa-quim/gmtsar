@@ -62,8 +62,12 @@ open(ARGS[2], "w") do io
 	c("LAPACK_LIBRARIES",  linklib(blas, "libopenblas"))
 	c("HDF5_INCLUDE_DIR",  fwd(joinpath(hdf5, "include")), "PATH")
 	c("HDF5_LIBRARY",      linklib(hdf5, "libhdf5"), "FILEPATH")
-	# GMT's gmt_dev.h -> gmt_shore.h includes <netcdf.h>; only GMT_jll has it.
-	c("CMAKE_C_FLAGS",     "-I" * fwd(joinpath(netcdf, "include")))
+	# GMT's gmt_dev.h -> gmt_shore.h includes <netcdf.h>; only GMT_jll has it. HDF5_jll is built
+	# with MPI on Linux and macOS, and its H5public.h then includes <mpi.h>, from the MPI artifact.
+	incs = [joinpath(netcdf, "include")]
+	mpi = findfirst(p -> isfile(joinpath(p, "include", "mpi.h")), unique(dirname.(libdirs)))
+	mpi === nothing || push!(incs, joinpath(unique(dirname.(libdirs))[mpi], "include"))
+	c("CMAKE_C_FLAGS",     join(("-I" * fwd(i) for i in incs), ' '))
 end
 
 write(ARGS[3], join(fwd.(WIN ? vcat(libdirs, Sys.BINDIR) : libdirs), '\n'))

@@ -41,7 +41,7 @@ jobs:
             libgdal
             libtiff
             hdf5
-            liblapack
+            openblas
             getopt-win32
             cmake
             ninja
@@ -55,12 +55,21 @@ jobs:
         shell: pwsh
         run: |
           $L = "$env:CONDA_PREFIX\Library" -replace '\\', '/'
-          foreach ($f in "$L/lib/gmt.lib", "$L/lib/tiff.lib", "$L/lib/lapack.lib", "$L/lib/hdf5.lib", "$L/lib/getopt.lib") {
+          foreach ($f in "$L/lib/gmt.lib", "$L/lib/tiff.lib", "$L/lib/hdf5.lib", "$L/lib/getopt.lib") {
             if (-not (Test-Path $f)) {
               Get-ChildItem "$L/lib" -Filter *.lib | ForEach-Object { $_.Name }
               throw "$f not found"
             }
           }
+          # LAPACK: OpenBLAS (LAPACK included). conda-forge's liblapack metapackage brings no import
+          # library here (it resolved to the MKL variant, without lapack.lib).
+          $lapack = @("openblas.lib", "libopenblas.lib", "lapack.lib", "liblapack.lib") |
+            ForEach-Object { "$L/lib/$_" } | Where-Object { Test-Path $_ } | Select-Object -First 1
+          if (-not $lapack) {
+            Get-ChildItem "$L/lib" -Filter *.lib | ForEach-Object { $_.Name }
+            throw "no LAPACK import library (openblas.lib, lapack.lib) in $L/lib"
+          }
+          Write-Host "LAPACK: $lapack"
           cmake -S . -B build-ci -G Ninja `
             -DCMAKE_BUILD_TYPE=Release `
             -DCMAKE_PREFIX_PATH="$L" `
@@ -70,7 +79,7 @@ jobs:
             -DGDAL_INCLUDE_DIR="$L/include" `
             -DTIFF_INCLUDE_DIR="$L/include" `
             -DTIFF_LIBRARY="$L/lib/tiff.lib" `
-            -DLAPACK_LIBRARIES="$L/lib/lapack.lib" `
+            -DLAPACK_LIBRARIES="$lapack" `
             -DHDF5_INCLUDE_DIR="$L/include" `
             -DHDF5_LIBRARY="$L/lib/hdf5.lib" `
             -DGETOPT_INC="$L/include" `
