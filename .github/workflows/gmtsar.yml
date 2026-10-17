@@ -64,7 +64,7 @@ jobs:
         cmake --build build-ci --parallel
         ctest --test-dir build-ci --output-on-failure
         cmake --install build-ci
-        inst/bin/gmtsar_sharedir.csh
+        cat inst/bin/gmtsar_sharedir.csh
     - uses: julia-actions/setup-julia@v2
       with:
         version: '1'
@@ -113,7 +113,7 @@ jobs:
         cmake --build build-ci --parallel
         ctest --test-dir build-ci --output-on-failure
         cmake --install build-ci
-        inst/bin/gmtsar_sharedir.csh
+        cat inst/bin/gmtsar_sharedir.csh
     - uses: julia-actions/setup-julia@v2
       with:
         version: '1'
