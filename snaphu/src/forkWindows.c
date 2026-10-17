@@ -142,7 +142,7 @@ static int child_entry(void) {
     return 0;
 }
 /*--------------------------------------------------------------------------*/
-static BOOL haveLoadedFunctionsForFork(void) {
+BOOL haveLoadedFunctionsForFork(void) {	/* declared in forkWindows.h */
     HMODULE ntdll = GetModuleHandle("ntdll");
     if (ntdll == NULL)
         return FALSE;

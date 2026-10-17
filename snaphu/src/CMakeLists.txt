@@ -34,11 +34,11 @@ if (HAVE_M_LIBRARY)
 	target_link_libraries (snaphu m)
 endif (HAVE_M_LIBRARY)
 
-if (MSVC)
-	# gethostname() is provided by Winsock on native Windows.
+if (WIN32)
+	# gethostname() is provided by Winsock on native Windows (MSVC and MinGW).
 	target_link_libraries (snaphu ws2_32)
 	target_link_libraries (gmtsar ws2_32)
-endif (MSVC)
+endif (WIN32)
 
 # add the install targets
 install (TARGETS snaphu

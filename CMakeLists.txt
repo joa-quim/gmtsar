@@ -56,6 +56,17 @@ if (MSVC)
 	add_compile_options (/FI${CMAKE_SOURCE_DIR}/declspec.h)
 endif ()
 
+# Much of the preprocessor code calls functions without a visible prototype
+# (and has implicit int), which GCC 14 and Clang 16 made errors.  Keep them
+# warnings, as they are with MSVC and older compilers.  Headers such as the
+# ERS make_prm ones also define (not declare) globals that several files of
+# the one library include: -fcommon merges them, as MSVC does and as GCC did
+# before version 10 (the Makefile build uses -z muldefs for the same reason).
+if (CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
+	add_compile_options (-Wno-error=implicit-function-declaration
+		-Wno-error=implicit-int -Wno-error=incompatible-pointer-types -fcommon)
+endif ()
+
 # Where to find our CMake modules (this variable is visible in subdirectories).
 set (CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules/"
 	CACHE INTERNAL "Location of our custom CMake modules." FORCE)
@@ -71,10 +82,12 @@ find_program (GS gs gswin64)
 # Find dependent libraries
 find_package (GMT REQUIRED)
 find_package (TIFF REQUIRED)
-if (MSVC AND LAPACK_LIBRARIES)
-	# The long-standing MSVC build supplies a known-compatible LAPACK import
-	# library explicitly.  Avoid FindLAPACK's Fortran/BLAS probes, which are
-	# both unnecessary and unreliable in a C-only Visual Studio environment.
+if (LAPACK_LIBRARIES)
+	# An explicitly supplied LAPACK library is used as given.  The MSVC build
+	# passes a known-compatible import library, and the CI plugin build passes
+	# the OpenBLAS GMT_jll's libgmt links (LAPACK included).  Avoid
+	# FindLAPACK's Fortran/BLAS probes, which are unnecessary here and
+	# unreliable in a C-only Visual Studio environment.
 	set (LAPACK_FOUND TRUE)
 else ()
 	find_package (LAPACK REQUIRED)
@@ -89,6 +102,17 @@ if (EXISTS "${CMAKE_SOURCE_DIR}/snaphu/src/CMakeLists.txt")
 	add_subdirectory (snaphu/src)
 endif ()
 add_subdirectory (preproc)
+
+# The sensor OBJECT libraries are compiled into the gmtsar library, so they
+# see GMTSAR's EXTERN_MSC declarations as the library itself does (see the
+# LIBRARY_EXPORTS comment in gmtsar/CMakeLists.txt); otherwise GMT's
+# declspec.h makes them dllimport references that MinGW cannot resolve.
+foreach (_t CSK_modules ENVI_modules ENVI_SLC_decode_modules ERS_modules
+		GF3_modules LT1_modules NSR_modules RS2_modules TSX_modules)
+	if (TARGET ${_t})
+		target_compile_definitions (${_t} PRIVATE LIBRARY_EXPORTS)
+	endif ()
+endforeach ()
 
 # Install the GMTSAR "sharedir" (filter kernels, snaphu configs, virgin PRM
 # templates) -- the CMake build's counterpart to the top-level Makefile's

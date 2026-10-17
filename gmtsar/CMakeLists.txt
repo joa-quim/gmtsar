@@ -143,6 +143,10 @@ target_include_directories (gmtsar PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 # LIBRARY_EXPORTS is defined (relevant to non-MSVC Windows toolchains; MSVC
 # here relies on CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS instead, set above).
 target_compile_definitions (gmtsar PRIVATE LIBRARY_EXPORTS)
+# GMT takes a plugin's tag from its file name (gmtapi_lib_tag: the name
+# without extension) and looks up <tag>_module_show_all etc. in it, so the
+# file must be gmtsar.so / gmtsar.dylib / gmtsar.dll -- never libgmtsar.*.
+set_target_properties (gmtsar PROPERTIES PREFIX "")
 
 set (GMTSAR_LINK_LIBS ${GMTSAR_LINK_LIBS} gmtsar)
 
@@ -212,6 +216,10 @@ if (MSVC)
 	# fitoffset.c is the only file calling POSIX getline().
 	set_source_files_properties (fitoffset.c PROPERTIES COMPILE_OPTIONS
 		/FI${CMAKE_CURRENT_SOURCE_DIR}/compat_win32/getline_shim.h)
+elseif (WIN32)
+	# MinGW: the runtime does not export getline() either.
+	set_source_files_properties (fitoffset.c PROPERTIES COMPILE_OPTIONS
+		"-include;${CMAKE_CURRENT_SOURCE_DIR}/compat_win32/getline_shim.h")
 endif (MSVC)
 
 add_executable (solid_tide cli/solid_tide.c gmtsar_commands.h)

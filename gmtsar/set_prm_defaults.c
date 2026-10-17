@@ -1,3 +1,4 @@
+#include "declspec.h"	/* EXTERN_MSC; MSVC force-includes it, other compilers need it here */
 #include "PRM.h"
 #include "lib_functions.h"
 #include <stdio.h>

@@ -1,0 +1,477 @@
+# Build GMTSAR with CMake on Windows (MSVC), Linux (GCC) and macOS (Clang), and build, test and
+# (on request) publish the GMTSAR GMT plugin that InteractiveGMT installs from
+# Geophysics > GMTSAR > Install as plugin.
+#
+# gmtsar.yml (upstream's Autotools build plus the S1A processing test) is separate and unchanged.
+# The Windows dependencies come from conda-forge; cmake/ConfigUser.cmake is not used in CI.
+
+name: Build
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: 'Upload the InteractiveGMT plugin archives to the gmtsar-latest release'
+        type: boolean
+        default: false
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows:
+    name: Windows (MSVC, x64)
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies (conda-forge)
+        uses: mamba-org/setup-micromamba@v2
+        with:
+          environment-name: gmtsardeps
+          init-shell: powershell
+          cache-environment: true
+          create-args: >-
+            gmt
+            libgdal
+            libtiff
+            hdf5
+            liblapack
+            getopt-win32
+            cmake
+            ninja
+
+      - name: Set up MSVC environment
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Configure
+        shell: pwsh
+        run: |
+          $L = "$env:CONDA_PREFIX\Library" -replace '\\', '/'
+          foreach ($f in "$L/lib/gmt.lib", "$L/lib/tiff.lib", "$L/lib/lapack.lib", "$L/lib/hdf5.lib", "$L/lib/getopt.lib") {
+            if (-not (Test-Path $f)) {
+              Get-ChildItem "$L/lib" -Filter *.lib | ForEach-Object { $_.Name }
+              throw "$f not found"
+            }
+          }
+          cmake -S . -B build-ci -G Ninja `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DCMAKE_PREFIX_PATH="$L" `
+            -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/gmtsar-install" `
+            -DGMT_INCLUDE_DIR="$L/include/gmt" `
+            -DGMT_LIBRARY="$L/lib/gmt.lib" `
+            -DGDAL_INCLUDE_DIR="$L/include" `
+            -DTIFF_INCLUDE_DIR="$L/include" `
+            -DTIFF_LIBRARY="$L/lib/tiff.lib" `
+            -DLAPACK_LIBRARIES="$L/lib/lapack.lib" `
+            -DHDF5_INCLUDE_DIR="$L/include" `
+            -DHDF5_LIBRARY="$L/lib/hdf5.lib" `
+            -DGETOPT_INC="$L/include" `
+            -DGETOPT_LIB="$L/lib/getopt.lib"
+
+      - name: Build
+        shell: pwsh
+        # -k 0: keep going after errors so one run reports every failure.
+        run: cmake --build build-ci --parallel -- -k 0
+
+      - name: Test
+        shell: pwsh
+        run: |
+          $env:PATH = "${{ github.workspace }}\build-ci\gmtsar;$env:CONDA_PREFIX\Library\bin;$env:PATH"
+          ctest --test-dir build-ci --output-on-failure
+
+      - name: Install
+        shell: pwsh
+        run: cmake --install build-ci
+
+      - name: Make package self-contained
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = "${{ github.workspace }}\gmtsar-install"
+          $bin  = "$root\bin"
+          $L    = "$env:CONDA_PREFIX\Library"
+
+          # GMTSAR installs gmtsar.dll to lib/ (or bin/), but Windows only finds DLLs next to the
+          # executable (or on PATH).
+          Copy-Item "$root\lib\*.dll" $bin -Force -ErrorAction SilentlyContinue
+          # gmt.exe runs the GMTSAR GMT modules in gmtsar.dll.
+          Copy-Item "$L\bin\gmt.exe" $bin
+
+          # Copy every DLL the executables and DLLs in bin/ depend on, recursively, from the conda
+          # environment. Windows system DLLs are not found there and are skipped.
+          $search = @("$L\bin", $env:CONDA_PREFIX)
+          $seen   = @{}
+          $queue  = [System.Collections.Generic.Queue[string]]::new()
+          Get-ChildItem "$bin\*" -Include *.exe, *.dll | ForEach-Object {
+            $seen[$_.Name.ToLower()] = $true
+            $queue.Enqueue($_.FullName)
+          }
+          $added = 0
+          while ($queue.Count -gt 0) {
+            $file = $queue.Dequeue()
+            foreach ($line in (dumpbin /nologo /dependents $file)) {
+              if ($line -notmatch '^\s+(\S+\.dll)\s*$') { continue }
+              $name = $Matches[1]
+              $key  = $name.ToLower()
+              if ($seen.ContainsKey($key)) { continue }
+              $seen[$key] = $true
+              if ($key -match '^(api-ms-|ext-ms-|ucrtbase)') { continue }
+              foreach ($dir in $search) {
+                $src = Join-Path $dir $name
+                if (Test-Path $src) {
+                  Copy-Item $src $bin
+                  $queue.Enqueue((Join-Path $bin $name))
+                  $added++
+                  break
+                }
+              }
+            }
+          }
+          Write-Host "Copied $added dependency DLLs into bin/"
+
+          # Runtime data: GMT defaults, PROJ database, GDAL data.
+          foreach ($d in 'gmt', 'proj', 'gdal') {
+            if (Test-Path "$L\share\$d") {
+              Copy-Item "$L\share\$d" "$root\share\$d" -Recurse -Force
+            }
+          }
+
+          @"
+          GMTSAR for Windows x64 (built by GitHub Actions, commit ${{ github.sha }})
+
+          All programs are in bin\ together with the DLLs they need.
+          Add bin\ to PATH, or run the programs from there.
+
+          If GMT, PROJ or GDAL cannot find their data files, set:
+            GMT_SHAREDIR = <this folder>\share\gmt
+            PROJ_DATA    = <this folder>\share\proj
+            GDAL_DATA    = <this folder>\share\gdal
+
+          To run the GMTSAR GMT modules with the bundled gmt.exe, point GMT
+          at the plugin, e.g. in gmt.conf:
+            GMT_CUSTOM_LIBS = <this folder>\bin\gmtsar.dll
+          "@ | Set-Content "$root\README-windows.txt" -Encoding utf8
+
+      - name: Upload package
+        uses: actions/upload-artifact@v4
+        with:
+          name: gmtsar-windows-x64
+          path: gmtsar-install
+          if-no-files-found: error
+
+  linux:
+    name: Linux (GCC, Ubuntu 24.04)
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            cmake ninja-build \
+            gmt libgmt-dev libgdal-dev libnetcdf-dev libtiff-dev liblapack-dev libhdf5-dev
+
+      # Debian's HDF5 lives in its serial/ subdirectories, which CMake is not told about otherwise.
+      - name: Configure
+        run: |
+          cmake -S . -B build-ci -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DHDF5_INCLUDE_DIR=/usr/include/hdf5/serial \
+            -DHDF5_LIBRARY=/usr/lib/x86_64-linux-gnu/hdf5/serial/libhdf5.so
+
+      - name: Build
+        run: cmake --build build-ci --parallel -- -k 0
+
+      - name: Test
+        run: ctest --test-dir build-ci --output-on-failure
+
+      # The binaries have /usr/local compiled in, so the package holds a /usr/local tree. A
+      # tarball keeps the executable bits that the artifact zip would drop.
+      - name: Package
+        run: |
+          DESTDIR="$PWD/stage" cmake --install build-ci
+          tar -czf gmtsar-linux-x64.tar.gz -C stage/usr/local .
+
+      - name: Upload package
+        uses: actions/upload-artifact@v4
+        with:
+          name: gmtsar-linux-x64
+          path: gmtsar-linux-x64.tar.gz
+          if-no-files-found: error
+
+  macos:
+    name: macOS (Clang, arm64)
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: 1
+          HOMEBREW_NO_INSTALL_CLEANUP: 1
+        run: brew install cmake ninja gmt gdal netcdf libtiff hdf5
+
+      # LAPACK comes from Apple's Accelerate framework (FindLAPACK).
+      - name: Configure
+        run: |
+          cmake -S . -B build-ci -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_PREFIX_PATH="$(brew --prefix)" \
+            -DHDF5_INCLUDE_DIR="$(brew --prefix hdf5)/include" \
+            -DHDF5_LIBRARY="$(brew --prefix hdf5)/lib/libhdf5.dylib"
+
+      - name: Build
+        run: cmake --build build-ci --parallel -- -k 0
+
+      - name: Test
+        run: ctest --test-dir build-ci --output-on-failure
+
+      # Same /usr/local layout as the Linux package.
+      - name: Package
+        run: |
+          DESTDIR="$PWD/stage" cmake --install build-ci
+          tar -czf gmtsar-macos-arm64.tar.gz -C stage/usr/local .
+
+      - name: Upload package
+        uses: actions/upload-artifact@v4
+        with:
+          name: gmtsar-macos-arm64
+          path: gmtsar-macos-arm64.tar.gz
+          if-no-files-found: error
+
+  # The GMTSAR GMT plugin (gmtsar.so / gmtsar.dylib) for InteractiveGMT, on Linux and macOS. It is
+  # loaded into a Julia process where GMT.jl has already loaded GMT_jll's libgmt and the libraries
+  # it brings (GDAL, libtiff, HDF5, OpenBLAS, ...), so it is linked against exactly those (resolved
+  # through GMT.jl, i.e. the GMT_jll version users get) and the archive holds only gmtsar itself.
+  # The file is named gmtsar.*, never libgmtsar.*: GMT takes the plugin's tag from its file name.
+  #
+  # Relocatable ($ORIGIN / @loader_path): the archive unpacks to gmtsar/ anywhere, e.g. under the
+  # InteractiveGMT root, which then sets GMT_CUSTOM_LIBS to gmtsar/lib/gmtsar.{so,dylib}.
+  #
+  # Linux runs on ubuntu-22.04 on purpose: glibc 2.35 + gcc 11, the same floor InteractiveGMT's own
+  # Linux library has and the gcc GMT_jll is built with. Never ubuntu-latest.
+  plugin:
+    name: GMT plugin for InteractiveGMT (${{ matrix.name }})
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write        # needed only by the publish step
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {name: linux-x86_64, os: ubuntu-22.04,   julia_arch: x64}
+          - {name: macos-arm64,  os: macos-14,       julia_arch: aarch64}
+          - {name: macos-x86_64, os: macos-15-intel, julia_arch: x64}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Host tools
+        run: |
+          if [[ $RUNNER_OS == Linux ]]; then
+            sudo apt-get update
+            sudo apt-get install -y --no-install-recommends ninja-build
+          else
+            brew install ninja
+          fi
+
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1.10'
+          arch: ${{ matrix.julia_arch }}
+
+      - name: CMake cache from GMT_jll
+        run: |
+          julia .github/scripts/jll_cache.jl "$RUNNER_TEMP/jllenv" "$RUNNER_TEMP/jll_cache.cmake" "$RUNNER_TEMP/jll_libdirs.txt"
+          echo "JLL_LIBDIRS=$(paste -sd: "$RUNNER_TEMP/jll_libdirs.txt")" >> "$GITHUB_ENV"
+
+      # pkg-config would hand libraries from the SYSTEM ahead of the jll ones, so it is fenced off.
+      # Only the plugin library: the programs would need GMT_jll on their own library path.
+      - name: Configure
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/pc"
+          if [[ $RUNNER_OS == Linux ]]; then
+            RPATH='$ORIGIN'
+            EXTRA=(-DCMAKE_SHARED_LINKER_FLAGS="-Wl,-rpath-link,$JLL_LIBDIRS")
+          else
+            RPATH='@loader_path'
+            EXTRA=(-DCMAKE_OSX_DEPLOYMENT_TARGET=11.0)
+          fi
+          export PKG_CONFIG_LIBDIR="$RUNNER_TEMP/pc" PKG_CONFIG_PATH=
+          cmake -S . -B build-plugin -G Ninja -C "$RUNNER_TEMP/jll_cache.cmake" \
+            -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF \
+            -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+            -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON -DCMAKE_INSTALL_RPATH="$RPATH" \
+            "${EXTRA[@]}"
+
+      - name: Build
+        run: cmake --build build-plugin --target gmtsar -- -k 0
+
+      - name: Stage
+        run: |
+          bash .github/scripts/stage_plugin.sh build-plugin "$RUNNER_TEMP/stage" "${{ github.sha }}"
+          if [[ $RUNNER_OS == Linux ]]; then ext=so; else ext=dylib; fi
+          echo "PLUGIN=$RUNNER_TEMP/stage/gmtsar/lib/gmtsar.$ext" >> "$GITHUB_ENV"
+
+      - name: Check dependencies
+        run: bash .github/scripts/check_plugin_deps.sh "$PLUGIN" "$RUNNER_TEMP/jll_libdirs.txt" build-plugin
+
+      - name: Package
+        run: tar -C "$RUNNER_TEMP/stage" -czf "gmtsar-${{ matrix.name }}.tar.gz" gmtsar
+
+      # Uploaded BEFORE the smoke test, so the archive is there to inspect even if the test fails.
+      # Publishing to the release (below) still happens only after the test passes.
+      - name: Upload package
+        uses: actions/upload-artifact@v4
+        with:
+          name: gmtsar-${{ matrix.name }}
+          path: gmtsar-${{ matrix.name }}.tar.gz
+          if-no-files-found: error
+
+      # The real test: the archive unpacked elsewhere, loaded into GMT.jl, modules run on a grid.
+      - name: Smoke-test through GMT.jl
+        run: |
+          set -euo pipefail
+          probe="$RUNNER_TEMP/probe"; mkdir -p "$probe"
+          tar -xzf "gmtsar-${{ matrix.name }}.tar.gz" -C "$probe"
+          lib=$(ls "$probe"/gmtsar/lib/gmtsar.*)
+          script="$PWD/.github/scripts/smoke_test.jl"
+          cd "$probe"
+          julia --project="$RUNNER_TEMP/jllenv" "$script" setup "$lib"
+          julia --project="$RUNNER_TEMP/jllenv" "$script" run "$probe/gmtsar/lib"
+
+      # Manual runs only, and only when the run asks for it. One fixed tag whose files are replaced
+      # in place (--clobber), never a new tag per build.
+      - name: Publish to the gmtsar-latest release
+        if: github.event_name == 'workflow_dispatch' && inputs.publish
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          # The platform jobs can race to create it: a failed create is fine if it now exists.
+          gh release view gmtsar-latest -R "$REPO" >/dev/null 2>&1 || \
+            gh release create gmtsar-latest -R "$REPO" --prerelease \
+              --title "GMTSAR GMT plugin for InteractiveGMT (rolling)" \
+              --notes "GMTSAR GMT supplement for Linux, macOS and Windows, built against GMT_jll." || \
+            gh release view gmtsar-latest -R "$REPO" >/dev/null
+          gh release upload gmtsar-latest "gmtsar-${{ matrix.name }}.tar.gz" -R "$REPO" --clobber
+
+  # The same plugin for InteractiveGMT on Windows, for a GMT.jl that runs GMT_jll's GMT (GMT.isJLL).
+  # GMT_jll is built by BinaryBuilder with MinGW-w64 against msvcrt.dll, and grids and other memory
+  # pass between GMT and the GMTSAR modules, so the plugin uses the same toolchain AND the same C
+  # runtime: MSYS2's MINGW64 environment (msvcrt), never UCRT64 and never MSVC. (GMTSAR's own
+  # Windows build, the windows job above, stays MSVC.)
+  #
+  # No MinGW runtime DLL may be imported. libgcc is linked statically, and so is winpthread: the
+  # libwinpthread-1.dll Julia ships in its bin/ -- the one any process running GMT.jl already has
+  # loaded -- is older than MSYS2's and lacks clock_gettime64.
+  plugin-windows:
+    name: GMT plugin for InteractiveGMT (windows-x86_64)
+    runs-on: windows-latest
+    permissions:
+      contents: write        # needed only by the publish step
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: false
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-ninja
+
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1.10'
+
+      - name: CMake cache from GMT_jll
+        shell: bash
+        run: |
+          julia .github/scripts/jll_cache.jl "$RUNNER_TEMP/jllenv" "$RUNNER_TEMP/jll_cache.cmake" "$RUNNER_TEMP/jll_libdirs.txt"
+
+      # The static runtime: see the job's comment. --exclude-libs keeps winpthread's own functions
+      # out of the DLL's export table.
+      - name: Configure
+        shell: msys2 {0}
+        run: |
+          set -euo pipefail
+          cache="$(cygpath -m "$RUNNER_TEMP")/jll_cache.cmake"
+          static="-static-libgcc -Wl,-Bstatic,--whole-archive -lwinpthread -Wl,--no-whole-archive,-Bdynamic -Wl,--exclude-libs,libwinpthread.a"
+          cmake -S . -B build-plugin -G Ninja -C "$cache" \
+            -DCMAKE_C_COMPILER=gcc \
+            -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF \
+            "-DCMAKE_SHARED_LINKER_FLAGS=$static"
+
+      - name: Build
+        shell: msys2 {0}
+        run: cmake --build build-plugin --target gmtsar -- -k 0
+
+      - name: Stage
+        shell: msys2 {0}
+        run: bash .github/scripts/stage_plugin.sh build-plugin "$(cygpath -u "$RUNNER_TEMP")/stage" "${{ github.sha }}"
+
+      # Imports (our own, GMT_jll's or Windows' only) and the module exports.
+      - name: Check dependencies and exports
+        shell: msys2 {0}
+        run: |
+          t="$(cygpath -u "$RUNNER_TEMP")"
+          bash .github/scripts/check_plugin_deps.sh "$t/stage/gmtsar/lib/gmtsar.dll" "$t/jll_libdirs.txt" build-plugin
+
+      - name: Package
+        shell: msys2 {0}
+        run: tar -C "$(cygpath -u "$RUNNER_TEMP")/stage" -czf gmtsar-windows-x86_64.tar.gz gmtsar
+
+      # Uploaded BEFORE the smoke test, so the archive is there to inspect even if the test fails.
+      - name: Upload package
+        uses: actions/upload-artifact@v4
+        with:
+          name: gmtsar-windows-x86_64
+          path: gmtsar-windows-x86_64.tar.gz
+          if-no-files-found: error
+
+      # As InteractiveGMT loads it: GMT.jl on GMT_jll, GMT_CUSTOM_LIBS from a ./gmt.conf GMT wrote.
+      # gmtsar.dll imports only GMT_jll's DLLs, which the process has loaded with libgmt.
+      - name: Smoke-test through GMT.jl
+        shell: bash
+        run: |
+          set -euo pipefail
+          # POSIX form: Git-bash's tar reads "D:\a\_temp" as a remote host:path and fails
+          probe="$(cygpath -u "$RUNNER_TEMP")/probe"; mkdir -p "$probe"
+          tar -xzf gmtsar-windows-x86_64.tar.gz -C "$probe"
+          lib="$(cygpath -m "$probe/gmtsar/lib/gmtsar.dll")"
+          script="$PWD/.github/scripts/smoke_test.jl"
+          env="$RUNNER_TEMP/jllenv"
+          cd "$probe"
+          julia --project="$env" "$script" setup "$lib"
+          julia --project="$env" "$script" run "$(cygpath -w "$probe/gmtsar/lib")"
+
+      - name: Publish to the gmtsar-latest release
+        if: github.event_name == 'workflow_dispatch' && inputs.publish
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          gh release view gmtsar-latest -R "$REPO" >/dev/null 2>&1 || \
+            gh release create gmtsar-latest -R "$REPO" --prerelease \
+              --title "GMTSAR GMT plugin for InteractiveGMT (rolling)" \
+              --notes "GMTSAR GMT supplement for Linux, macOS and Windows, built against GMT_jll." || \
+            gh release view gmtsar-latest -R "$REPO" >/dev/null
+          gh release upload gmtsar-latest gmtsar-windows-x86_64.tar.gz -R "$REPO" --clobber
