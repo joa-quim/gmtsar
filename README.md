@@ -1,5 +1,18 @@
 [![GMTSAR tests](https://github.com/gmtsar/gmtsar/actions/workflows/gmtsar.yml/badge.svg)](https://github.com/gmtsar/gmtsar/actions/workflows/gmtsar.yml)
 
+__ABOUT THIS FORK__
+-------------------
+
+This repository (joa-quim/gmtsar) is a fork of the official GMTSAR repository, [gmtsar/gmtsar](https://github.com/gmtsar/gmtsar), whose changes are merged in regularly. It differs from the original in these ways:
+
+- **Windows**: GMTSAR builds natively on Windows with MSVC, and also with MinGW-w64, with CMake.
+- **GMT modules**: the GMTSAR programs (core, Sentinel-1, ALOS, ERS, ENVISAT, TSX, RS2, CSK and snaphu) are also built as GMT modules in the `gmtsar` shared library, so they run in-process from GMT and from GMT's language wrappers (e.g. GMT.jl). Small executables in `gmtsar/cli` keep the traditional command-line syntax. The Makefiles still build the standalone programs.
+- **InteractiveGMT plugin**: that library is also built against GMT_jll as a plugin that [InteractiveGMT](https://github.com/joa-quim/InteractiveGMT) downloads and installs (Geophysics > GMTSAR > Install as plugin).
+- **Julia scripts**: `gmtsar/julia` holds Julia ports of the csh processing scripts (`p2p_S1_TOPS_Frame`, `p2p_ALOS2_SCAN_Frame`, `intf_tops`, ...), with the same names.
+- **Builds for download**: GitHub Actions builds GMTSAR for Windows, Linux and macOS, and the InteractiveGMT plugins for Windows, Linux and macOS (arm64 and x86_64). All of them are on the [gmtsar-latest release](https://github.com/joa-quim/gmtsar/releases/tag/gmtsar-latest), rebuilt from every change to master.
+
+Questions about GMTSAR itself belong to the official project; issues with the Windows port, the GMT modules, the Julia scripts or the InteractiveGMT plugin belong here.
+
 __INSTRUCTIONS FOR INSTALLING AND RUNNING GMTSAR__
 ----------------------------------------------
 
