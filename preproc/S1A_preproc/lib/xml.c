@@ -21,7 +21,19 @@
 int N = 0;
 int MAX_TREE_SIZE = 2000000; // size of the tree in maximum
 int MAX_CHAR_SIZE = 60000;  // size of char arrays in maximum
-char STR[4000][60000];
+/* The table of over-long values (see strasign). Allocated on first need, never as a fixed global:
+   a global char[4000][60000] put 240 MB in the library's writable data section, which every process
+   loading gmtsar pays for in committed memory whether or not it ever parses an XML file. */
+#define STR_ROWS 4000
+static char (*STR)[60000] = NULL;
+
+static int alloc_STR(void) {
+	if (STR == NULL && (STR = calloc(STR_ROWS, sizeof(*STR))) == NULL) {
+		fprintf(stderr, "xml: could not allocate the long-value table\n");
+		return (0);
+	}
+	return (1);
+}
 
 int search_tree(tree *list, char *str, char *s_out, int type, int loc, int num) {
 	/***************************************************************************
@@ -349,6 +361,9 @@ int strasign(char *str_out, char *str, int n1, int n2) {
 
 		// STR[N] = (char *)malloc(MAX_CHAR_SIZE*sizeof(char));
 
+		if (!alloc_STR() || N >= STR_ROWS) {
+			return (-1);
+		}
 		for (i = n1; i <= n2; i++) {
 			STR[N][i - n1] = str[i];
 		}
@@ -628,10 +643,9 @@ int str2dbs(double *a, char *c) {
 }
 
 int null_MEM_STR() {
-	int i;
-	for (i = 0; i < 100; i++) {
-		STR[i][0] = '\0';
-	}
+	/* A new parse starts: the previous run's long values are released (re-allocated if needed). */
+	free(STR);
+	STR = NULL;
 	N = 0;
 	return (1);
 }
@@ -829,7 +843,7 @@ int assemble_trees(int nfiles, struct tree **T, int ct, int lvl, FILE *fp) {
 
 /*
 add_branch(int n, struct tree **T, str, ct) {
-    
+    
     int i;
     char str_out[60000];
     i = search_tree(T[0],str,str_out,1,0,1);
@@ -879,7 +893,7 @@ getting a good tree structure
     int ii1,jj1,kk1,ct,nn1,ii2,jj2,kk2,kk3,nn2,qq;
     char tmp_c[60000],s_name[200],s_out[200];
     double t1,t2;
-  
+  
     ct = 0;
     while (T[0][ct].sibr != -1 || T[0][ct].firstchild != -1) {
         if (T[0][ct].sibr != -1) ct = T[0][ct].sibr;
@@ -940,7 +954,7 @@ T[0][ii2+nlmx*qq*5].firstchild;
         T[0][kk2].parent = ii1;
         sprintf(tmp_c,"orbitList count=\"%d\"",nn1+nn2-ct);
         strcpy(T[0][ii1].name,tmp_c);
-    
+    
 
     }
 
