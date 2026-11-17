@@ -44,8 +44,8 @@ int gmtsar_split_spectrum_run(void *API, int argc1, char **argv1) {
 
 	FILE *SLC_file1, *SLCH, *SLCL;
     TIFF *tif, *tifh, *tifl;
-    uint32 width, height, nii;
-    uint16 s = 0;
+    uint32_t width, height, nii;
+    uint16_t s = 0;
 	struct PRM p1;
 	int ii, jj, nffti, nc;
 	double bc, bw, cf, fh, fl;

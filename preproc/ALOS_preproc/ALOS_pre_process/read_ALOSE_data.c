@@ -61,6 +61,7 @@ int set_file_position(FILE *, int64_t *, int);
 int reset_params(struct PRM *prm, int64_t *, int *, int *);
 int fill_shift_data(int, int, int, int, int, char *, char *, FILE *);
 int handle_prf_change_ALOSE(struct PRM *, FILE *, int64_t *, int);
+double get_clock_ALOSE(struct sardata_info_ALOSE, double);
 
 struct sardata_record r1;
 struct sardata_descriptor_ALOSE dfd;
@@ -86,8 +87,6 @@ int64_t read_ALOSE_data(FILE *imagefile, FILE *outfile, struct PRM *prm, int64_t
 	int k, n, m, ishift, shift, shift0;
 	int header_size, line_prefix_size;
 	double pri;
-
-	double get_clock_ALOSE();
 
 	settable(12345);
 

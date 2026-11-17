@@ -70,6 +70,7 @@ int set_file_position(FILE *, int64_t *, int);
 int reset_params(struct PRM *prm, int64_t *, int *, int *);
 int fill_shift_data(int, int, int, int, int, char *, char *, FILE *);
 int handle_prf_change(struct PRM *, FILE *, int64_t *, int);
+double get_clock(struct sardata_info, double);
 
 struct sardata_record r1;
 struct sardata_descriptor dfd;
@@ -86,8 +87,6 @@ int64_t read_ALOS_data(FILE *imagefile, FILE *outfile, struct PRM *prm, int64_t 
 	int data_length;           /* bytes of data			*/
 	int n, m, ishift, shift, shift0, npatch_max;
 	int header_size, line_prefix_size;
-
-	double get_clock();
 
 	settable(12345);
 
@@ -294,7 +293,6 @@ int64_t read_sardata_info(FILE *imagefile, struct PRM *prm, int *header_size, in
 }
 /***************************************************************************/
 int assign_sardata_params(struct PRM *prm, int line_prefix_size, int *line_suffix_size, int *record_length0) {
-	double get_clock();
 
 	prm->prf = sdr.PRF;
 	prm->pulsedur = (1e-9) * sdr.chirp_length;
@@ -360,7 +358,6 @@ int set_file_position(FILE *imagefile, int64_t *byte_offset, int header_size) {
 }
 /***************************************************************************/
 int reset_params(struct PRM *prm, int64_t *byte_offset, int *n, int *m) {
-	double get_clock();
 
 	prm->clock_start = get_clock(sdr, tbias);
 	prm->SC_clock_start = ((double)sdr.sensor_acquisition_year) * 1000 + prm->clock_start;

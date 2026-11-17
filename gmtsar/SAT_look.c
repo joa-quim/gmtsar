@@ -87,6 +87,8 @@ char *USAGE = " \n Usage: "
 EXTERN_MSC void read_orb(FILE *, struct SAT_ORB *);
 EXTERN_MSC void hermite_c(double *, double *, double *, int, int, double, double *, int *);
 EXTERN_MSC void set_prm_defaults(struct PRM *);
+int goldop(double, double, double **, int, int, int, double, double, double, double *, double *);
+double dist(double, double, double, int, double **);
 
 int gmtsar_SAT_look_run(const char *prmfile, int otype) {
 
@@ -102,7 +104,6 @@ int gmtsar_SAT_look_run(const char *prmfile, int otype) {
 	double rad = PI / 180.;
 	double fll;
 	int i, j, k, nrec, npad = 8000;
-	int goldop();
 	int stai, endi, midi, xmin;
 	double **orb_pos;
 	struct PRM prm;
@@ -110,7 +111,6 @@ int gmtsar_SAT_look_run(const char *prmfile, int otype) {
 	FILE *ldrfile;
 	int calorb_alos(struct SAT_ORB *, double **orb_pos, double ts, double t1, int nrec);
 	double len, unit_x, unit_y, unit_z;
-	double dist();
 
 	double Rx[3][3] = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
 	double Rz[3][3] = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
@@ -415,7 +415,6 @@ int goldop(double ts, double t1, double **orb_pos, int ax, int bx, int cx, doubl
 	double f1, f2;
 	int x0, x1, x2, x3;
 	int xmin;
-	double dist();
 
 	x0 = ax;
 	x3 = bx;

@@ -56,6 +56,7 @@ int set_file_position(FILE *, int64_t *, int);
 int reset_params(struct PRM *prm, int64_t *, int *, int *);
 int fill_shift_data(int, int, int, int, int, char *, char *, FILE *);
 int handle_prf_change(struct PRM *, FILE *, int64_t *, int);
+double get_clock(struct sardata_info, double);
 
 void swap32_(char *in, char *out, int n) { /* Swaps 4 bytes within each 32-bit word of array in. */
 	register char *ip, *op; /* Local register variables */
@@ -91,8 +92,6 @@ int64_t read_ALOS_data_SLC(FILE *imagefile, FILE *outfile, struct PRM *prm, int6
 	int header_size, line_prefix_size;
 	int nclip = 0, nsum = 0;
 	double rtest, sgn, rsum = 0., rmad = 0., tfac = 1.;
-
-	double get_clock();
 
 	if (debug)
 		fprintf(stderr, ".... reading header \n");
@@ -335,7 +334,6 @@ int64_t read_sardata_info(FILE *imagefile, struct PRM *prm, int *header_size, in
 }
 /***************************************************************************/
 int assign_sardata_params(struct PRM *prm, int line_prefix_size, int *line_suffix_size, int *record_length0) {
-	double get_clock();
 
 	prm->prf = sdr.PRF;
 	prm->pulsedur = (1e-9) * sdr.chirp_length;
@@ -410,7 +408,6 @@ int set_file_position(FILE *imagefile, int64_t *byte_offset, int header_size) {
 }
 /***************************************************************************/
 int reset_params(struct PRM *prm, int64_t *byte_offset, int *n, int *m) {
-	double get_clock();
 
 	prm->clock_start = get_clock(sdr, tbias);
 	prm->SC_clock_start = ((double)sdr.sensor_acquisition_year) * 1000 + prm->clock_start;

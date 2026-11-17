@@ -9,6 +9,8 @@
 #define ram2ras resamp_ram2ras
 #define sinc_kernel resamp_sinc_kernel
 #define sinc_one resamp_sinc_one
+#define sinc_one_nisar resamp_sinc_one_nisar
+#define bisinc_nisar resamp_bisinc_nisar
 /*	$Id$	*/
 /***************************************************************************
  * resamp resamples a aligned image to match the geometry of a master image. *
@@ -64,6 +66,8 @@ void bicubic(double *, short *, int, int, short *);
 void bicubic_one(double *, double *, double, double, double *);
 void bisinc(double *, short *, int, int, short *);
 void sinc_one(double *, double *, double, double, double *);
+void sinc_one_nisar(double *, double *, double, double, double, double, double *);
+void bisinc_nisar(double *, short *, int, int, double, double, short *);
 
 int gmtsar_resamp_run(void *API, int argc, char **argv) {
 	int ii, jj;
@@ -72,6 +76,7 @@ int gmtsar_resamp_run(void *API, int argc, char **argv) {
 	int xdims, ydims;                 /* size of aligned SLC file */
 	short *sinn = NULL, *sout = NULL; /* pointer to input (whole array) and output (row) files.*/
 	double ram[2], ras[2];            /* range and azimuth locations for master and aligned images */
+	struct PRM pm, ps;
 	FILE *SLC_file2 = NULL, *prmout = NULL;
 	int fdin;
 	double sv_pr[6];
@@ -82,8 +87,6 @@ int gmtsar_resamp_run(void *API, int argc, char **argv) {
     double f11,f12,f21,f22;
     double gx, gy, tx, ty;
     int nx, ny;
-
-	struct PRM pm, ps;
 
 	debug = 0;
 	intrp = 2;
@@ -120,13 +123,16 @@ int gmtsar_resamp_run(void *API, int argc, char **argv) {
             die("shift table size does not match or too small", ""); 
         if (R->header->inc[GMT_Y] != A->header->inc[GMT_Y] || R->header->inc[GMT_Y] <= 1)
             die("shift table size does not match or too small", ""); 
-        if (GMT_Read_Data(API, GMT_IS_GRID, GMT_IS_FILE, GMT_IS_SURFACE, GMT_GRID_DATA_ONLY, NULL, rgrid, R) == NULL)
+        if (GMT_Read_Data(API, GMT_IS_GRID, GMT_IS_FILE, GMT_IS_SURFACE, GMT_GRID_DATA_ONLY, NULL, rgrid, R) == NULL) {
             return EXIT_FAILURE;
-        if (GMT_Read_Data(API, GMT_IS_GRID, GMT_IS_FILE, GMT_IS_SURFACE, GMT_GRID_DATA_ONLY, NULL, agrid, A) == NULL)
+        }
+        if (GMT_Read_Data(API, GMT_IS_GRID, GMT_IS_FILE, GMT_IS_SURFACE, GMT_GRID_DATA_ONLY, NULL, agrid, A) == NULL) {
             return EXIT_FAILURE;
-	    /* for R grid */
-	    nx = (int)R->header->n_columns;
-	    ny = (int)R->header->n_rows;
+        }
+
+        /* for R grid */
+        nx = (int)R->header->n_columns;
+        ny = (int)R->header->n_rows;
     }
     else {
         if (argc < 6) die(USAGE, "");
@@ -264,7 +270,7 @@ int gmtsar_resamp_run(void *API, int argc, char **argv) {
 	            }
 
                 // interpolate with bisinc
-                bisinc(ras, sinn, ydims, xdims, &sout[2 * jj]);
+                bisinc_nisar(ras, sinn, ydims, xdims, ps.fdd1, ps.prf, &sout[2 * jj]);
 
             }
             else {
@@ -630,6 +636,60 @@ void bisinc(double *ras, short *s_in, int ydims, int xdims, short *sout) {
 	}
 	/*if(nclip > 0) fprintf(stderr," %d integers were clipped \n",nclip);*/
 }
+
+/************************************************************************
+ * NISAR bi-sinc interpolation using Doppler-aware azimuth sinc weights *
+ ************************************************************************/
+void bisinc_nisar(double *ras, short *s_in, int ydims, int xdims, double doppler, double prf, short *sout) {
+	double dr, da, ns2 = NS / 2 - 1;
+	double rdata[NS * NS], idata[NS * NS], cz[2];
+	int i, j, k, kk;
+	int i0, j0;
+	int nclip;
+	short *tmp_sin;
+
+	/* compute the residual offsets */
+	nclip = 0;
+	j0 = (int)floor(ras[0]);
+	i0 = (int)floor(ras[1]);
+	dr = ras[0] - (double)j0;
+	da = ras[1] - (double)i0;
+	if (dr < 0. || dr > 1. || da < 0. || da > 1.)
+		fprintf(stderr, " dr or da out of bounds %f %f \n", dr, da);
+
+	/* make sure all NS x NS samples are within the aligned array */
+	if ((i0 - ns2) < 0 || (i0 + ns2 + 1) >= ydims || (j0 - ns2) < 0 || (j0 + ns2 + 1) >= xdims) {
+		sout[0] = 0;
+		sout[1] = 0;
+	}
+	else {
+		/* shift the pointer by i0-ns2 lines */
+		tmp_sin = s_in;
+		tmp_sin++;
+		tmp_sin = s_in + (size_t)(2 * xdims) * (size_t)(i0 - ns2) * (tmp_sin - s_in);
+
+		for (i = 0; i < NS; i++) {
+			for (j = 0; j < NS; j++) {
+				k = i * NS + j;
+				kk = 2 * xdims * i + 2 * (j0 + j - ns2);
+				rdata[k] = tmp_sin[kk];
+				idata[k] = tmp_sin[kk + 1];
+			}
+		}
+
+		/* NISAR Doppler-aware interpolation */
+		sinc_one_nisar(rdata, idata, dr, da, doppler, prf, cz);
+
+		if ((int)fabs(cz[0]) > I2MAX)
+			nclip = nclip + 1;
+		sout[0] = (short)clipi2(cz[0] + 0.5);
+		if ((int)fabs(cz[1]) > I2MAX)
+			nclip = nclip + 1;
+		sout[1] = (short)clipi2(cz[1] + 0.5);
+	}
+	/*if(nclip > 0) fprintf(stderr," %d integers were clipped \n",nclip);*/
+}
+
 #include "gmtsar.h"
 #include "lib_functions.h"
 
@@ -750,3 +810,67 @@ void sinc_one(double *rdata, double *idata, double x, double y, double *cz) {
 	cz[0] = rsum / wsum;
 	cz[1] = isum / wsum;
 }
+
+/************************************************************************
+ * NISAR sinc interpolation with azimuth Doppler centroid from fdd1.    *
+ * The RSLC uses zero-Doppler geometry (fd1 = 0). The centroid in Hz    *
+ * is used for complex azimuth interpolation.                           *
+ ************************************************************************/
+void sinc_one_nisar(double *rdata, double *idata, double x, double y, double doppler, double prf, double *cz) {
+	int i, j, ij, ns2 = NS / 2 - 1;
+	double wx[NS], wy[NS];
+	double arg, w, wsum, rsum, isum;
+	double dy, fdnorm, phase, cp, sp;
+	double rr, ii;
+	static int doppler_reported = 0;
+
+	if (!doppler_reported) {
+		fprintf(stderr, "resamp: NISAR Doppler centroid (fdd1) = %.9g Hz\n", doppler);
+		doppler_reported = 1;
+	}
+
+	/*
+	 * Convert the physical Doppler centroid to cycles per azimuth sample
+	 */
+	fdnorm = doppler / prf;
+	//fdnorm = fdnorm - round(fdnorm);
+
+	for (i = 0; i < NS; i++) {
+		arg = fabs(x + ns2 - i);
+		wx[i] = sinc_kernel(arg);
+		arg = fabs(y + ns2 - i);
+		wy[i] = sinc_kernel(arg);
+	}
+
+	rsum = isum = wsum = 0.0;
+	ij = 0;
+	for (j = 0; j < NS; j++) {
+
+		/*
+		 * Signed azimuth distance, in samples, from input sample j
+		 * to the desired interpolation point.
+		 */
+		dy = y + ns2 - j;
+		phase = 2.0 * PI * fdnorm * dy;
+		cp = cos(phase);
+		sp = sin(phase);
+
+		for (i = 0; i < NS; i++) {
+			w = wx[i] * wy[j];
+			rr = rdata[ij + i];
+			ii = idata[ij + i];
+
+			/* apply Doppler phase to the azimuth sinc interpolation */
+			rsum += w * (rr * cp - ii * sp);
+			isum += w * (rr * sp + ii * cp);
+			wsum += w;
+		}
+		ij += NS;
+	}
+
+	if (wsum <= 0.0)
+		printf(" error wsum is zero \n");
+	cz[0] = rsum / wsum;
+	cz[1] = isum / wsum;
+}
+

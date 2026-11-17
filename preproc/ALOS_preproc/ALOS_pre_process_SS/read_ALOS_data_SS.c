@@ -73,6 +73,7 @@ int check_shift(struct PRM *, int *, int *, int *, int);
 int set_file_position(FILE *, int64_t *, int);
 int fill_shift_data(int, int, int, int, int, char *, char *, FILE *);
 int handle_prf_change(struct PRM *, FILE *, int64_t *, int);
+double get_clock(struct sardata_info, double);
 
 struct sardata_record r1;
 struct sardata_descriptor dfd;
@@ -98,7 +99,7 @@ int64_t read_ALOS_data_SS(FILE *imagefile, FILE *outfile, struct PRM *prm, int64
 	int j, ngap, nlines = 0, ntot;
 	int nprfchange, nburstchange;
 
-	double tbias = 0.0, get_clock();
+	double tbias = 0.0;
 	double ttot = 0., dt = 0., tgap = 0.; /* total time, burst interval, burst gap, fractional gap */
 	settable(12345);
 
@@ -414,7 +415,7 @@ int64_t read_sardata_info(FILE *imagefile, struct PRM *prm, int *header_size, in
 }
 /***************************************************************************/
 int assign_sardata_params(struct PRM *prm, int line_prefix_size, int *line_suffix_size, int *record_length0) {
-	double tbias = 0.0, get_clock();
+	double tbias = 0.0;
 
 	prm->prf = sdr.PRF;
 	prm->pulsedur = (1e-9) * sdr.chirp_length;

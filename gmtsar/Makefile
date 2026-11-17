@@ -19,7 +19,7 @@ LIB_C		= aastretch.c acpatch.c calc_dop.c conv2d.c do_freq_xcorr.c \
 		  nearest_grid.c nearest_grid_module.c \
 		  cut_slc.c cut_slc_module.c phase2topo.c phase2topo_module.c conv.c conv_module.c fitoffset.c fitoffset_module.c \
 		  xcorr.c xcorr_module.c split_aperture.c split_aperture_module.c \
-		  p_scatter.c p_scatter_module.c solid_tide.c solid_tide_module.c sbas.c sbas_module.c bperp.c bperp_module.c \
+		  p_scatter.c p_scatter_module.c solid_tide.c solid_tide_module.c sbas.c sbas_module.c sbas0.c sbas0_module.c bperp.c bperp_module.c \
 		  make_gaussian_filter.c make_gaussian_filter_module.c \
 		  offset_topo.c offset_topo_module.c split_spectrum.c split_spectrum_module.c extend_orbit.c extend_orbit_module.c \
 		  esarp.c esarp_module.c phasediff.c phasediff_module.c \
@@ -46,7 +46,7 @@ PROGS_O         = $(PROGS_C:.c=.o)
 LEGACY_PROGS    = $(PROGS_C:.c=)
 CLI_PROGS       = get_PRM update_PRM calc_dop_orb nearest_grid cut_slc phase2topo \
 		  conv fitoffset xcorr split_aperture p_scatter \
-		  solid_tide sbas bperp make_gaussian_filter offset_topo split_spectrum \
+		  solid_tide sbas sbas0 bperp make_gaussian_filter offset_topo split_spectrum \
 		  extend_orbit esarp phasediff phasefilt resamp SAT_baseline \
 		  SAT_llt2rat SAT_look phasediff_get_topo_phase geocode_slc
 PROGS           = $(LEGACY_PROGS) $(CLI_PROGS)

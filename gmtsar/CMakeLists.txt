@@ -127,7 +127,7 @@ add_library (gmtsar aastretch.c acpatch.c calc_dop.c conv2d.c do_freq_xcorr.c
 	nearest_grid.c nearest_grid_module.c
 	cut_slc.c cut_slc_module.c phase2topo.c phase2topo_module.c conv.c conv_module.c fitoffset.c fitoffset_module.c
 	xcorr.c xcorr_module.c split_aperture.c split_aperture_module.c
-	p_scatter.c p_scatter_module.c solid_tide.c solid_tide_module.c sbas.c sbas_module.c bperp.c bperp_module.c
+	p_scatter.c p_scatter_module.c solid_tide.c solid_tide_module.c sbas.c sbas_module.c sbas0.c sbas0_module.c bperp.c bperp_module.c
 	make_gaussian_filter.c make_gaussian_filter_module.c
 	offset_topo.c offset_topo_module.c split_spectrum.c split_spectrum_module.c extend_orbit.c extend_orbit_module.c
 	esarp.c esarp_module.c phasediff.c phasediff_module.c
@@ -195,6 +195,9 @@ target_link_libraries (SAT_look ${GMTSAR_LINK_LIBS})
 add_executable (sbas cli/sbas.c gmtsar_commands.h)
 target_link_libraries (sbas ${GMTSAR_LINK_LIBS})
 
+add_executable (sbas0 cli/sbas0.c gmtsar_commands.h)
+target_link_libraries (sbas0 ${GMTSAR_LINK_LIBS})
+
 add_executable (update_PRM cli/update_PRM.c gmtsar_commands.h)
 target_link_libraries (update_PRM ${GMTSAR_LINK_LIBS})
 
@@ -253,7 +256,7 @@ add_executable (xcorr cli/xcorr.c gmtsar_commands.h)
 target_link_libraries (xcorr ${GMTSAR_LINK_LIBS})
 
 # add the install targets
-install (TARGETS gmtsar bperp calc_dop_orb conv esarp extend_orbit make_gaussian_filter offset_topo phase2topo phasediff phasefilt resamp SAT_baseline SAT_llt2rat SAT_look sbas xcorr update_PRM get_PRM nearest_grid fitoffset solid_tide p_scatter split_spectrum cut_slc split_aperture phasediff_get_topo_phase geocode_slc
+install (TARGETS gmtsar bperp calc_dop_orb conv esarp extend_orbit make_gaussian_filter offset_topo phase2topo phasediff phasefilt resamp SAT_baseline SAT_llt2rat SAT_look sbas sbas0 xcorr update_PRM get_PRM nearest_grid fitoffset solid_tide p_scatter split_spectrum cut_slc split_aperture phasediff_get_topo_phase geocode_slc
 	ARCHIVE DESTINATION lib
 	COMPONENT Runtime
 	LIBRARY DESTINATION lib

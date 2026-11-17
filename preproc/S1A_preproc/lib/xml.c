@@ -157,7 +157,7 @@ int get_tree(FILE *fp, tree *list, int num_parse) {
 
 	char *buffer;
 	char tmp_char[200], tmp_s[200], *tmp_c;
-	int i1, i2, j1, j2, have_slash;
+	int i1, i2, j1, have_slash;
 	long int count = 0;
 	// int *num_space;
 	long int level[100] = {-1}, lev_ct = 0;
@@ -183,7 +183,6 @@ int get_tree(FILE *fp, tree *list, int num_parse) {
 		i1 = strlocate(buffer, '<', 1);
 		j1 = strlocate(buffer, '>', 1);
 		i2 = strlocate(buffer, '<', 2);
-		j2 = strlocate(buffer, '>', 2);
 
 		if (i1 < 0 || j1 < 0) {
             continue;
@@ -843,7 +842,7 @@ int assemble_trees(int nfiles, struct tree **T, int ct, int lvl, FILE *fp) {
 
 /*
 add_branch(int n, struct tree **T, str, ct) {
-    
+    
     int i;
     char str_out[60000];
     i = search_tree(T[0],str,str_out,1,0,1);
@@ -893,7 +892,7 @@ getting a good tree structure
     int ii1,jj1,kk1,ct,nn1,ii2,jj2,kk2,kk3,nn2,qq;
     char tmp_c[60000],s_name[200],s_out[200];
     double t1,t2;
-  
+  
     ct = 0;
     while (T[0][ct].sibr != -1 || T[0][ct].firstchild != -1) {
         if (T[0][ct].sibr != -1) ct = T[0][ct].sibr;
@@ -954,7 +953,7 @@ T[0][ii2+nlmx*qq*5].firstchild;
         T[0][kk2].parent = ii1;
         sprintf(tmp_c,"orbitList count=\"%d\"",nn1+nn2-ct);
         strcpy(T[0][ii1].name,tmp_c);
-    
+    
 
     }
 

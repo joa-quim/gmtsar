@@ -36,6 +36,8 @@ in CEOS SAR data file
 
 int is_big_endian_(void);
 int is_big_endian__(void);
+double calc_pri(struct lineparam);
+double calc_swst(struct lineparam);
 
 int gmtsar_read_data_file_ccrs_run(const char *datafile) {
 
@@ -69,9 +71,6 @@ int gmtsar_read_data_file_ccrs_run(const char *datafile) {
 		double pri;
 		double swst;
 	};
-
-	double calc_pri();
-	double calc_swst();
 
 	logflag = 0;
 
@@ -218,9 +217,9 @@ int gmtsar_read_data_file_ccrs(int argc, char **argv) {
 	return gmtsar_read_data_file_ccrs_run(argv[1]);
 }
 /* these are taken verbatim from fix_line */
-double calc_pri(info) struct lineparam info;
+double calc_pri(struct lineparam info)
 { return (((double)info.pri_dn + 2.0) * SEC_PER_PRI_COUNT); }
-double calc_swst(info) struct lineparam info;
+double calc_swst(struct lineparam info)
 {
 	return ((double)info.swst_dn * SEC_PER_PRI_COUNT + 9.0 * info.pri - 6.6E-6);
 	/* based on Johan Jacob Mohr and Søren Nørvang Madsen, Member, IEEE,Geometric
